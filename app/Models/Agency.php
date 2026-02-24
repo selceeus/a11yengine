@@ -2,22 +2,26 @@
 
 namespace App\Models;
 
+use Database\Factories\AgencyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Agency extends Model
 {
-    /** @use HasFactory<\Database\Factories\AgencyFactory> */
+    /** @use HasFactory<AgencyFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'billing_email'];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'billing_email',
+    ];
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
-
-    public function organizations()
+    public function organizations(): HasMany
     {
         return $this->hasMany(Organization::class);
     }

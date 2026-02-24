@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\OrganizationFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,15 @@ class Organization extends Model
         'domain',
         'status',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('agency', function (Builder $builder) {
+            if (app()->bound('currentAgency')) {
+                $builder->where('agency_id', app('currentAgency')->id);
+            }
+        });
+    }
 
     public function agency(): BelongsTo
     {
