@@ -6,18 +6,19 @@ use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Property extends Model
+class Scan extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'agency_id',
         'organization_id',
-        'name',
-        'base_url',
+        'property_id',
         'status',
+        'started_at',
+        'completed_at',
+        'raw_summary',
     ];
 
     protected static function booted(): void
@@ -25,9 +26,13 @@ class Property extends Model
         static::addGlobalScope(new TenantScope);
     }
 
-    public function organization(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Organization::class);
+        return [
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'raw_summary' => 'array',
+        ];
     }
 
     public function agency(): BelongsTo
@@ -35,8 +40,13 @@ class Property extends Model
         return $this->belongsTo(Agency::class);
     }
 
-    public function scans(): HasMany
+    public function organization(): BelongsTo
     {
-        return $this->hasMany(Scan::class);
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function property(): BelongsTo
+    {
+        return $this->belongsTo(Property::class);
     }
 }
