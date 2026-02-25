@@ -39,4 +39,9 @@ class Property extends Model
     {
         return $this->hasMany(Scan::class);
     }
+
+    public function findings(): HasMany
+    {
+        return $this->hasMany(Finding::class);
+    }
 }
