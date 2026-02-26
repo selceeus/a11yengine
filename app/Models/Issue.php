@@ -19,6 +19,7 @@ class Issue extends Model
         'organization_id',
         'property_id',
         'rule_key',
+        'page_url',
         'severity',
         'status',
         'occurrence_count',

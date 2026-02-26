@@ -23,6 +23,7 @@ class IssueFactory extends Factory
                 'organization_id' => $attributes['organization_id'],
             ]),
             'rule_key' => 'wcag-'.fake()->numerify('#.#.#'),
+            'page_url' => fake()->url(),
             'severity' => fake()->randomElement(IssueSeverity::cases()),
             'status' => IssueStatus::Open,
             'occurrence_count' => fake()->numberBetween(1, 50),
