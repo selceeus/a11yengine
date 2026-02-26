@@ -2,27 +2,29 @@
 
 namespace App\Models;
 
-use App\Enums\FindingSeverity;
+use App\Enums\IssueSeverity;
+use App\Enums\IssueStatus;
 use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Finding extends Model
+class Issue extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'agency_id',
-        'issue_id',
-        'scan_id',
+        'organization_id',
         'property_id',
         'rule_key',
         'severity',
-        'element_identifier',
-        'page_url',
-        'message',
-        'detected_at',
+        'status',
+        'occurrence_count',
+        'risk_weight',
+        'first_detected_at',
+        'last_detected_at',
     ];
 
     protected static function booted(): void
@@ -33,8 +35,10 @@ class Finding extends Model
     protected function casts(): array
     {
         return [
-            'severity' => FindingSeverity::class,
-            'detected_at' => 'datetime',
+            'severity' => IssueSeverity::class,
+            'status' => IssueStatus::class,
+            'first_detected_at' => 'datetime',
+            'last_detected_at' => 'datetime',
         ];
     }
 
@@ -43,9 +47,9 @@ class Finding extends Model
         return $this->belongsTo(Agency::class);
     }
 
-    public function scan(): BelongsTo
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(Scan::class);
+        return $this->belongsTo(Organization::class);
     }
 
     public function property(): BelongsTo
@@ -53,8 +57,8 @@ class Finding extends Model
         return $this->belongsTo(Property::class);
     }
 
-    public function issue(): BelongsTo
+    public function findings(): HasMany
     {
-        return $this->belongsTo(Issue::class);
+        return $this->hasMany(Finding::class);
     }
 }

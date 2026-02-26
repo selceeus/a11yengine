@@ -1,0 +1,34 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Enums\IssueSeverity;
+use App\Enums\IssueStatus;
+use App\Models\Agency;
+use App\Models\Organization;
+use App\Models\Property;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class IssueFactory extends Factory
+{
+    public function definition(): array
+    {
+        return [
+            'agency_id' => Agency::factory(),
+            'organization_id' => Organization::factory()->state(fn (array $attributes) => [
+                'agency_id' => $attributes['agency_id'],
+            ]),
+            'property_id' => Property::factory()->state(fn (array $attributes) => [
+                'agency_id' => $attributes['agency_id'],
+                'organization_id' => $attributes['organization_id'],
+            ]),
+            'rule_key' => 'wcag-'.fake()->numerify('#.#.#'),
+            'severity' => fake()->randomElement(IssueSeverity::cases()),
+            'status' => IssueStatus::Open,
+            'occurrence_count' => fake()->numberBetween(1, 50),
+            'risk_weight' => fake()->numberBetween(0, 100),
+            'first_detected_at' => fake()->dateTimeBetween('-2 months', '-1 month'),
+            'last_detected_at' => fake()->dateTimeBetween('-1 month', 'now'),
+        ];
+    }
+}
