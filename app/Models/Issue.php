@@ -26,6 +26,7 @@ class Issue extends Model
         'risk_weight',
         'first_detected_at',
         'last_detected_at',
+        'resolved_at',
     ];
 
     protected static function booted(): void
@@ -40,6 +41,7 @@ class Issue extends Model
             'status' => IssueStatus::class,
             'first_detected_at' => 'datetime',
             'last_detected_at' => 'datetime',
+            'resolved_at' => 'datetime',
         ];
     }
 

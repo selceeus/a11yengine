@@ -30,6 +30,18 @@ class IssueFactory extends Factory
             'risk_weight' => fake()->numberBetween(0, 100),
             'first_detected_at' => fake()->dateTimeBetween('-2 months', '-1 month'),
             'last_detected_at' => fake()->dateTimeBetween('-1 month', 'now'),
+            'resolved_at' => null,
         ];
+    }
+
+    public function resolved(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => IssueStatus::Resolved,
+            'resolved_at' => fake()->dateTimeBetween(
+                $attributes['last_detected_at'] ?? '-1 month',
+                'now'
+            ),
+        ]);
     }
 }
