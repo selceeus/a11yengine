@@ -6,9 +6,6 @@ use App\Models\Agency;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends Factory<Agency>
- */
 class AgencyFactory extends Factory
 {
     protected $model = Agency::class;

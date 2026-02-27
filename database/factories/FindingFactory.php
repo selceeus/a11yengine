@@ -4,14 +4,10 @@ namespace Database\Factories;
 
 use App\Enums\FindingSeverity;
 use App\Models\Agency;
-use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Scan;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Finding>
- */
 class FindingFactory extends Factory
 {
     public function definition(): array

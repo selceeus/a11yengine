@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Issues\NormalizeScanFindings;
 use App\Enums\FindingSeverity;
 use App\Enums\IssueSeverity;
 use App\Enums\IssueStatus;
@@ -10,7 +11,6 @@ use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Scan;
 use App\Models\User;
-use App\Services\NormalizeScanFindings;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 

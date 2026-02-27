@@ -7,9 +7,6 @@ use App\Models\Organization;
 use App\Models\Property;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Scan>
- */
 class ScanFactory extends Factory
 {
     public function definition(): array

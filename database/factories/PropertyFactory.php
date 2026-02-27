@@ -6,9 +6,6 @@ use App\Models\Agency;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Property>
- */
 class PropertyFactory extends Factory
 {
     public function definition(): array

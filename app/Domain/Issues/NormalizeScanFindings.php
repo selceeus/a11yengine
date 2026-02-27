@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Domain\Issues;
 
 use App\Enums\FindingSeverity;
 use App\Enums\IssueSeverity;
