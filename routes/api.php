@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\OrganizationGovernanceSummaryController;
+use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
 use Illuminate\Support\Facades\Route;
@@ -13,3 +14,6 @@ Route::get('organizations/{organizationId}/risk-summary', OrganizationRiskSummar
 
 Route::get('organizations/{organizationId}/governance-summary', OrganizationGovernanceSummaryController::class)
     ->name('api.organizations.governance-summary');
+
+Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBreakdownController::class)
+    ->name('api.organizations.risk-breakdown');
