@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\OrganizationGovernanceSummaryController;
+use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
@@ -13,7 +13,7 @@ Route::post('organizations/{organizationId}/risk-snapshot', OrganizationRiskCont
 Route::get('organizations/{organizationId}/risk-summary', OrganizationRiskSummaryController::class)
     ->name('api.organizations.risk-summary');
 
-Route::get('organizations/{organizationId}/governance-summary', OrganizationGovernanceSummaryController::class)
+Route::get('organizations/{organizationId}/governance-summary', OrganizationGovernanceReportController::class)
     ->name('api.organizations.governance-summary');
 
 Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBreakdownController::class)

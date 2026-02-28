@@ -186,14 +186,17 @@ it('returns the endpoint response correctly via the API', function (): void {
         ->assertOk()
         ->assertJsonStructure([
             'organization_id',
-            'risk_score',
+            'organization_name',
+            'total_risk_score',
             'risk_delta',
             'open_issues',
-            'new_issues_since_last_scan',
-            'resolved_issues_since_last_scan',
-            'aging_high_risk_issues',
-            'last_scan_at',
-            'snapshot_at',
+            'severity_distribution',
+            'aging_distribution',
+            'estimated_user_impact_score',
+            'impact_distribution',
+            'affected_wcag_categories',
+            'assistive_technology_risk',
+            'generated_at',
         ])
         ->assertJsonFragment(['organization_id' => $this->organization->id]);
 });
