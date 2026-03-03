@@ -62,4 +62,9 @@ class Scan extends Model
     {
         return $this->hasMany(Finding::class);
     }
+
+    public function scanPages(): HasMany
+    {
+        return $this->hasMany(ScanPage::class);
+    }
 }
