@@ -1,0 +1,154 @@
+<?php
+
+namespace App\Domain\Issues;
+
+use App\Domain\Risk\RecordOrganizationRiskSnapshot;
+use App\Domain\Risk\RecordRiskSnapshot;
+use App\Domain\Scans\ScanPage as ScanPageDomain;
+use App\Enums\FindingSeverity;
+use App\Enums\IssueSeverity;
+use App\Enums\IssueStatus;
+use App\Models\Finding;
+use App\Models\Issue;
+use App\Models\Scan;
+use App\Models\ScanPage;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
+
+class ProcessHtmlScan
+{
+    public function __construct(
+        private readonly ScanPageDomain $scanPage,
+        private readonly RecordRiskSnapshot $riskSnapshot,
+        private readonly RecordOrganizationRiskSnapshot $orgRiskSnapshot,
+    ) {}
+
+    /**
+     * Process a single axe-core page result, persisting findings and issues
+     * then triggering risk and governance recalculation.
+     *
+     * @param  array{url: string, violations: array<int, array{id: string, impact: string|null, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>}  $pageResult
+     */
+    public function handle(Scan $scan, array $pageResult): ScanPage
+    {
+        $url = $pageResult['url'];
+        $violations = $pageResult['violations'] ?? [];
+        $detectedAt = Date::now();
+
+        $findings = $this->persistFindings($scan, $url, $violations, $detectedAt);
+
+        $this->normalizeFindings($findings, $scan);
+
+        $page = $this->scanPage->record($scan, $url, $findings->count());
+
+        $this->riskSnapshot->handle($scan->organization_id);
+        $this->orgRiskSnapshot->handle($scan->organization_id);
+
+        return $page;
+    }
+
+    /**
+     * @param  array<int, array{id: string, impact: string|null, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>  $violations
+     * @return Collection<int, Finding>
+     */
+    private function persistFindings(Scan $scan, string $url, array $violations, \DateTimeInterface $detectedAt): Collection
+    {
+        $findings = collect();
+
+        foreach ($violations as $violation) {
+            $severity = $this->mapImpact($violation['impact'] ?? null);
+
+            foreach ($violation['nodes'] as $node) {
+                $finding = Finding::query()->create([
+                    'agency_id' => $scan->agency_id,
+                    'scan_id' => $scan->id,
+                    'property_id' => $scan->property_id,
+                    'rule_key' => $violation['id'],
+                    'severity' => $severity,
+                    'element_identifier' => isset($node['target'][0]) ? $node['target'][0] : null,
+                    'page_url' => $url,
+                    'message' => $node['failureSummary'] ?? '',
+                    'detected_at' => $detectedAt,
+                ]);
+
+                $findings->push($finding);
+            }
+        }
+
+        return $findings;
+    }
+
+    /**
+     * @param  Collection<int, Finding>  $findings
+     */
+    private function normalizeFindings(Collection $findings, Scan $scan): void
+    {
+        foreach ($findings as $finding) {
+            $issue = Issue::query()
+                ->where('agency_id', $finding->agency_id)
+                ->where('property_id', $finding->property_id)
+                ->where('rule_key', $finding->rule_key)
+                ->where('page_url', $finding->page_url)
+                ->whereIn('status', [IssueStatus::Open->value, IssueStatus::InProgress->value])
+                ->first();
+
+            if ($issue) {
+                $issue->increment('occurrence_count');
+                $issue->update(['last_detected_at' => $finding->detected_at]);
+
+                $finding->update(['issue_id' => $issue->id]);
+
+                continue;
+            }
+
+            $issue = Issue::query()->create([
+                'agency_id' => $finding->agency_id,
+                'organization_id' => $scan->organization_id,
+                'property_id' => $finding->property_id,
+                'rule_key' => $finding->rule_key,
+                'page_url' => $finding->page_url,
+                'severity' => $this->mapSeverityToIssue($finding->severity),
+                'status' => IssueStatus::Open,
+                'occurrence_count' => 1,
+                'risk_weight' => $this->resolveRiskWeight($finding->severity),
+                'first_detected_at' => $finding->detected_at,
+                'last_detected_at' => $finding->detected_at,
+            ]);
+
+            $finding->update(['issue_id' => $issue->id]);
+        }
+    }
+
+    private function mapImpact(?string $impact): FindingSeverity
+    {
+        return match ($impact) {
+            'critical' => FindingSeverity::CRITICAL,
+            'serious' => FindingSeverity::SERIOUS,
+            'moderate' => FindingSeverity::MODERATE,
+            'minor' => FindingSeverity::MINOR,
+            default => FindingSeverity::INFO,
+        };
+    }
+
+    private function mapSeverityToIssue(FindingSeverity $severity): IssueSeverity
+    {
+        return match ($severity) {
+            FindingSeverity::CRITICAL => IssueSeverity::Critical,
+            FindingSeverity::SERIOUS => IssueSeverity::High,
+            FindingSeverity::MODERATE => IssueSeverity::Medium,
+            FindingSeverity::MINOR => IssueSeverity::Low,
+            FindingSeverity::INFO => IssueSeverity::Low,
+        };
+    }
+
+    private function resolveRiskWeight(FindingSeverity $severity): int
+    {
+        return match ($severity) {
+            FindingSeverity::CRITICAL => 100,
+            FindingSeverity::SERIOUS => 75,
+            FindingSeverity::MODERATE => 50,
+            FindingSeverity::MINOR => 25,
+            FindingSeverity::INFO => 10,
+        };
+    }
+}
