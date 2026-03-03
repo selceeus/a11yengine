@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\ScanStatus;
 use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Scan extends Model
 {
@@ -17,6 +18,9 @@ class Scan extends Model
         'organization_id',
         'property_id',
         'status',
+        'pages_scanned',
+        'total_violations',
+        'raw_output_path',
         'started_at',
         'completed_at',
         'raw_summary',
@@ -30,6 +34,9 @@ class Scan extends Model
     protected function casts(): array
     {
         return [
+            'status' => ScanStatus::class,
+            'pages_scanned' => 'integer',
+            'total_violations' => 'integer',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
             'raw_summary' => 'array',

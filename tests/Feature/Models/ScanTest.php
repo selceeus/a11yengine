@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ScanStatus;
 use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\Property;
@@ -109,13 +110,13 @@ it('is mass assignable with expected fillable fields', function (): void {
     $property = Property::factory()->for($agency)->for($organization)->create();
 
     $scan = Scan::factory()->for($agency)->for($organization)->for($property)->create([
-        'status' => 'completed',
+        'status' => ScanStatus::Completed,
         'started_at' => '2026-02-24 10:00:00',
         'completed_at' => '2026-02-24 10:05:00',
         'raw_summary' => ['issues' => 3],
     ]);
 
-    expect($scan->status)->toBe('completed')
+    expect($scan->status)->toBe(ScanStatus::Completed)
         ->and($scan->raw_summary)->toBe(['issues' => 3])
         ->and($scan->started_at)->not->toBeNull()
         ->and($scan->completed_at)->not->toBeNull();
