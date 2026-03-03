@@ -30,4 +30,9 @@ class Agency extends Model
     {
         return $this->hasMany(Property::class);
     }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(AgencyInvitation::class);
+    }
 }

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AcceptInvitationController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\SendInvitationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -18,6 +20,13 @@ Route::get('dashboard', function () {
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('organizations', [OrganizationController::class, 'index'])->name('organizations.index');
     Route::post('organizations', [OrganizationController::class, 'store'])->name('organizations.store');
+
+    Route::post('invitations', SendInvitationController::class)->name('invitations.send');
+});
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('invitations/{token}', [AcceptInvitationController::class, 'show'])->name('invitations.show');
+    Route::post('invitations/{token}', [AcceptInvitationController::class, 'accept'])->name('invitations.accept');
 });
 
 require __DIR__.'/settings.php';
