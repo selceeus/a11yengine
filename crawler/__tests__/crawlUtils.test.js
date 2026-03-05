@@ -1,6 +1,6 @@
 'use strict';
 
-const { normaliseUrl, isSameDomain, extractLinks } = require('../crawlUtils');
+const { normaliseUrl, isSameDomain, extractLinks, isAllowedByRobots } = require('../crawlUtils');
 
 // ─── normaliseUrl ─────────────────────────────────────────────────────────────
 
@@ -132,5 +132,48 @@ describe('extractLinks', () => {
         const links = await extractLinks(mockPage, 'https://example.com');
 
         expect(links).toEqual([]);
+    });
+});
+
+// ─── isAllowedByRobots ──────────────────────────────────────────────────────────────────
+
+describe('isAllowedByRobots', () => {
+    test('returns true when robots.txt is empty', () => {
+        expect(isAllowedByRobots('', 'https://example.com/page')).toBe(true);
+    });
+
+    test('returns true when no rules match the path', () => {
+        const robots = 'User-agent: *\nDisallow: /private';
+        expect(isAllowedByRobots(robots, 'https://example.com/public')).toBe(true);
+    });
+
+    test('returns false when the path is disallowed', () => {
+        const robots = 'User-agent: *\nDisallow: /admin';
+        expect(isAllowedByRobots(robots, 'https://example.com/admin/panel')).toBe(false);
+    });
+
+    test('returns false when Disallow: / blocks all paths', () => {
+        const robots = 'User-agent: *\nDisallow: /';
+        expect(isAllowedByRobots(robots, 'https://example.com/anything')).toBe(false);
+    });
+
+    test('Allow overrides a broader Disallow when it is more specific', () => {
+        const robots = 'User-agent: *\nDisallow: /private\nAllow: /private/public';
+        expect(isAllowedByRobots(robots, 'https://example.com/private/public/page')).toBe(true);
+    });
+
+    test('ignores rules under a named user-agent', () => {
+        const robots = 'User-agent: somebot\nDisallow: /page';
+        expect(isAllowedByRobots(robots, 'https://example.com/page')).toBe(true);
+    });
+
+    test('returns true for an invalid URL', () => {
+        const robots = 'User-agent: *\nDisallow: /page';
+        expect(isAllowedByRobots(robots, 'not-a-url')).toBe(true);
+    });
+
+    test('returns true when Disallow is empty (allows all)', () => {
+        const robots = 'User-agent: *\nDisallow: ';
+        expect(isAllowedByRobots(robots, 'https://example.com/page')).toBe(true);
     });
 });

@@ -2,7 +2,7 @@
 
 const puppeteer = require('puppeteer');
 const config = require('./config');
-const { normaliseUrl, isSameDomain, extractLinks } = require('./crawlUtils');
+const { normaliseUrl, isSameDomain, extractLinks, fetchRobotsTxt, isAllowedByRobots } = require('./crawlUtils');
 const { runAxe } = require('./axeRunner');
 
 /**
@@ -45,6 +45,9 @@ async function scan() {
 
     log('info', `Starting scan: ${baseUrl} (maxDepth=${maxDepth}, maxPages=${maxPages})`);
 
+    const robotsTxt = await fetchRobotsTxt(baseUrl);
+    log('info', robotsTxt ? 'Loaded robots.txt' : 'No robots.txt found — all paths allowed');
+
     const browser = await puppeteer.launch(config.puppeteer);
 
     /** @type {Set<string>} */
@@ -67,6 +70,11 @@ async function scan() {
 
             visited.add(normalisedUrl);
             log('info', `Scanning [${visited.size}/${maxPages}] depth=${depth} ${normalisedUrl}`);
+
+            // Rate-limit: wait between requests to avoid hammering the target.
+            if (visited.size > 1 && config.requestDelayMs > 0) {
+                await new Promise((resolve) => setTimeout(resolve, config.requestDelayMs));
+            }
 
             const page = await browser.newPage();
             page.setDefaultNavigationTimeout(config.navigationTimeoutMs);
@@ -98,6 +106,7 @@ async function scan() {
                         if (
                             !visited.has(link) &&
                             isSameDomain(baseUrl, link) &&
+                            isAllowedByRobots(robotsTxt, link) &&
                             visited.size + queue.length < maxPages
                         ) {
                             queue.push({ url: link, depth: depth + 1 });

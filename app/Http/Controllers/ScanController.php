@@ -6,18 +6,25 @@ use App\Enums\ScanStatus;
 use App\Http\Requests\StoreScanRequest;
 use App\Jobs\RunScanJob;
 use App\Models\Agency;
+use App\Models\Finding;
 use App\Models\Property;
 use App\Models\Scan;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ScanController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct(private readonly Agency $agency) {}
 
     public function index(): Response
     {
+        $this->authorize('viewAny', Scan::class);
+
         $scans = Scan::query()
             ->with('property:id,name,base_url')
             ->latest()
@@ -36,6 +43,8 @@ class ScanController extends Controller
 
     public function store(StoreScanRequest $request): RedirectResponse
     {
+        $this->authorize('create', Scan::class);
+
         $property = Property::findOrFail($request->validated()['property_id']);
 
         $scan = Scan::create([
@@ -52,13 +61,36 @@ class ScanController extends Controller
 
     public function show(Scan $scan): Response
     {
+        $this->authorize('view', $scan);
+
         $scan->load([
             'property:id,name,base_url',
             'scanPages' => fn ($q) => $q->orderByDesc('violations_count'),
         ]);
 
+        $severityBreakdown = Finding::query()
+            ->where('scan_id', $scan->id)
+            ->select('severity', DB::raw('count(*) as count'))
+            ->groupBy('severity')
+            ->orderByDesc('count')
+            ->get()
+            ->map(fn ($row) => [
+                'severity' => $row->severity->value,
+                'count' => $row->count,
+            ]);
+
+        $topRules = Finding::query()
+            ->where('scan_id', $scan->id)
+            ->select('rule_key', DB::raw('count(*) as count'))
+            ->groupBy('rule_key')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->pluck('count', 'rule_key');
+
         return Inertia::render('scans/show', [
             'scan' => $scan,
+            'severityBreakdown' => $severityBreakdown,
+            'topRules' => $topRules,
         ]);
     }
 }

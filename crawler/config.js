@@ -3,6 +3,7 @@ module.exports = {
     maxDepth: parseInt(process.env.CRAWLER_MAX_DEPTH, 10) || 5,
     pageTimeoutMs: parseInt(process.env.CRAWLER_PAGE_TIMEOUT_MS, 10) || 30000,
     navigationTimeoutMs: parseInt(process.env.CRAWLER_NAV_TIMEOUT_MS, 10) || 60000,
+    requestDelayMs: parseInt(process.env.CRAWLER_REQUEST_DELAY_MS, 10) || 500,
     logLevel: process.env.CRAWLER_LOG_LEVEL || 'error', // silent | error | warn | info
 
     axe: {

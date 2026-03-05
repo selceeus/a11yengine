@@ -18,6 +18,11 @@ type ScanPage = {
     status: 'completed' | 'failed';
 };
 
+type SeverityRow = {
+    severity: 'critical' | 'serious' | 'moderate' | 'minor' | 'info';
+    count: number;
+};
+
 type Scan = {
     id: number;
     status: 'pending' | 'running' | 'completed' | 'failed';
@@ -28,6 +33,14 @@ type Scan = {
     created_at: string;
     property: Property | null;
     scan_pages: ScanPage[];
+};
+
+const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
+    critical: 'bg-red-500',
+    serious: 'bg-orange-500',
+    moderate: 'bg-yellow-500',
+    minor: 'bg-blue-400',
+    info: 'bg-slate-400',
 };
 
 function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -47,7 +60,15 @@ function pageStatusVariant(status: ScanPage['status']): 'default' | 'destructive
     return status === 'completed' ? 'default' : 'destructive';
 }
 
-export default function Show({ scan }: { scan: Scan }) {
+export default function Show({
+    scan,
+    severityBreakdown,
+    topRules,
+}: {
+    scan: Scan;
+    severityBreakdown: SeverityRow[];
+    topRules: Record<string, number>;
+}) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
 
@@ -151,6 +172,54 @@ export default function Show({ scan }: { scan: Scan }) {
                 {scan.status === 'completed' && scan.scan_pages.length === 0 && (
                     <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
                         No pages were recorded for this scan.
+                    </div>
+                )}
+
+                {/* Breakdown — only show once completed */}
+                {scan.status === 'completed' && severityBreakdown.length > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {/* Severity breakdown */}
+                        <div className="rounded-xl border p-4">
+                            <h2 className="mb-3 text-sm font-semibold">Violations by severity</h2>
+                            <div className="space-y-2">
+                                {severityBreakdown.map((row) => {
+                                    const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
+                                    const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                                    return (
+                                        <div key={row.severity}>
+                                            <div className="mb-1 flex justify-between text-xs">
+                                                <span className="capitalize">{row.severity}</span>
+                                                <span className="tabular-nums text-muted-foreground">
+                                                    {row.count} ({pct}%)
+                                                </span>
+                                            </div>
+                                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Top rules */}
+                        <div className="rounded-xl border p-4">
+                            <h2 className="mb-3 text-sm font-semibold">Top violated rules</h2>
+                            <ol className="space-y-1.5">
+                                {Object.entries(topRules).map(([rule, count], i) => (
+                                    <li key={rule} className="flex items-center gap-2 text-xs">
+                                        <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">
+                                            {i + 1}.
+                                        </span>
+                                        <span className="flex-1 truncate font-mono">{rule}</span>
+                                        <span className="tabular-nums font-medium">{count}</span>
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
                     </div>
                 )}
 

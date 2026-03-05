@@ -2,9 +2,14 @@
 
 jest.mock('puppeteer', () => ({ launch: jest.fn() }));
 jest.mock('../axeRunner', () => ({ runAxe: jest.fn() }));
+jest.mock('../crawlUtils', () => ({
+    ...jest.requireActual('../crawlUtils'),
+    fetchRobotsTxt: jest.fn().mockResolvedValue(''),
+}));
 
 const puppeteer = require('puppeteer');
 const { runAxe } = require('../axeRunner');
+const { fetchRobotsTxt } = require('../crawlUtils');
 const { scan, parseArgs } = require('../scan');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -47,6 +52,8 @@ beforeEach(() => {
 
     puppeteer.launch.mockResolvedValue(mockBrowser);
     runAxe.mockResolvedValue({ url: 'https://example.com/', violations: [] });
+    fetchRobotsTxt.mockClear();
+    fetchRobotsTxt.mockResolvedValue('');
 
     mockStdoutWrite = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     mockStderrWrite = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
@@ -313,5 +320,32 @@ describe('scan — stdout JSON contract', () => {
         await scan();
 
         expect(() => JSON.parse(mockStdoutWrite.mock.calls[0][0])).not.toThrow();
+    });
+});
+
+// ─── robots.txt enforcement ─────────────────────────────────────────────────────────────────────────
+
+describe('scan — robots.txt enforcement', () => {
+    test('skips a discovered link that is disallowed by robots.txt', async () => {
+        fetchRobotsTxt.mockResolvedValue('User-agent: *\nDisallow: /private');
+
+        // First page returns two links: one allowed, one disallowed
+        mockPage.$$eval.mockReset();
+        mockPage.$$eval
+            .mockResolvedValueOnce(['https://example.com/about', 'https://example.com/private/page'])
+            .mockResolvedValue([]);
+
+        await scan();
+
+        // Base URL + /about = 2; /private should be blocked by robots.txt
+        expect(mockBrowser.newPage).toHaveBeenCalledTimes(2);
+    });
+
+    test('fetches robots.txt exactly once per scan', async () => {
+        await scan();
+
+        expect(fetchRobotsTxt).toHaveBeenCalledTimes(1);
+        // normaliseUrl adds trailing slash to bare origins
+        expect(fetchRobotsTxt).toHaveBeenCalledWith('https://example.com/');
     });
 });
