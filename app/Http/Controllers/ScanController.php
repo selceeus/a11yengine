@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\ScanStatus;
+use App\Http\Requests\StoreScanRequest;
+use App\Jobs\RunScanJob;
+use App\Models\Agency;
+use App\Models\Property;
+use App\Models\Scan;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ScanController extends Controller
+{
+    public function __construct(private readonly Agency $agency) {}
+
+    public function index(): Response
+    {
+        $scans = Scan::query()
+            ->with('property:id,name,base_url')
+            ->latest()
+            ->get();
+
+        $properties = $this->agency->properties()
+            ->select(['id', 'name', 'base_url', 'organization_id'])
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('scans/index', [
+            'scans' => $scans,
+            'properties' => $properties,
+        ]);
+    }
+
+    public function store(StoreScanRequest $request): RedirectResponse
+    {
+        $property = Property::findOrFail($request->validated()['property_id']);
+
+        $scan = Scan::create([
+            'agency_id' => $this->agency->id,
+            'organization_id' => $property->organization_id,
+            'property_id' => $property->id,
+            'status' => ScanStatus::Pending,
+        ]);
+
+        RunScanJob::dispatch($scan);
+
+        return redirect()->route('scans.show', $scan);
+    }
+
+    public function show(Scan $scan): Response
+    {
+        $scan->load([
+            'property:id,name,base_url',
+            'scanPages' => fn ($q) => $q->orderByDesc('violations_count'),
+        ]);
+
+        return Inertia::render('scans/show', [
+            'scan' => $scan,
+        ]);
+    }
+}
