@@ -21,7 +21,12 @@ Route::get('dashboard', function () {
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('organizations', [OrganizationController::class, 'index'])->name('organizations.index');
+    Route::get('organizations/create', [OrganizationController::class, 'create'])->name('organizations.create');
     Route::post('organizations', [OrganizationController::class, 'store'])->name('organizations.store');
+    Route::get('organizations/{organization}', [OrganizationController::class, 'show'])->name('organizations.show');
+    Route::get('organizations/{organization}/edit', [OrganizationController::class, 'edit'])->name('organizations.edit');
+    Route::patch('organizations/{organization}', [OrganizationController::class, 'update'])->name('organizations.update');
+    Route::delete('organizations/{organization}', [OrganizationController::class, 'destroy'])->name('organizations.destroy');
 
     Route::get('properties', [PropertyController::class, 'index'])->name('properties.index');
     Route::get('properties/create', [PropertyController::class, 'create'])->name('properties.create');

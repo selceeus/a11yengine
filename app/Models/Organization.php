@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\TenantScope;
 use Database\Factories\OrganizationFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,13 +24,9 @@ class Organization extends Model
         'status',
     ];
 
-    protected static function booted()
+    protected static function booted(): void
     {
-        static::addGlobalScope('agency', function (Builder $builder) {
-            if (app()->bound('currentAgency')) {
-                $builder->where('agency_id', app('currentAgency')->id);
-            }
-        });
+        static::addGlobalScope(new TenantScope);
     }
 
     public function agency(): BelongsTo

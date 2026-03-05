@@ -4,8 +4,11 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreOrganizationRequest extends FormRequest
+class UpdateOrganizationRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
         return true;
@@ -19,6 +22,7 @@ class StoreOrganizationRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'domain' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'string', 'in:active,inactive'],
         ];
     }
 }

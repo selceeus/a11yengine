@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, Globe, LayoutGrid, ScanSearch } from 'lucide-react';
+import { BookOpen, Building2, Folder, Globe, LayoutGrid, ScanSearch } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -15,6 +15,7 @@ import {
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { dashboard } from '@/routes';
+import OrganizationController from '@/actions/App/Http/Controllers/OrganizationController';
 import PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 
@@ -23,6 +24,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Organizations',
+        href: OrganizationController.index(),
+        icon: Building2,
     },
     {
         title: 'Properties',
