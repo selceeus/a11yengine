@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, CircleAlert, Folder, Globe, LayoutGrid, ScanSearch } from 'lucide-react';
+import { BookOpen, Building2, CircleAlert, Folder, Globe, LayoutGrid, ScanSearch, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -19,6 +19,7 @@ import IssueController from '@/actions/App/Http/Controllers/IssueController';
 import OrganizationController from '@/actions/App/Http/Controllers/OrganizationController';
 import PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
+import TeamController from '@/actions/App/Http/Controllers/TeamController';
 
 const mainNavItems: NavItem[] = [
     {
@@ -45,6 +46,11 @@ const mainNavItems: NavItem[] = [
         title: 'Issues',
         href: IssueController.index(),
         icon: CircleAlert,
+    },
+    {
+        title: 'Team',
+        href: TeamController.index(),
+        icon: Users,
     },
 ];
 

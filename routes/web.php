@@ -6,6 +6,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\SendInvitationController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -41,13 +42,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
 
-    Route::get('issues', [IssueController::class, 'index'])->name('issues.index');
-    Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
-    Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
-
     Route::get('scans', [ScanController::class, 'index'])->name('scans.index');
     Route::post('scans', [ScanController::class, 'store'])->name('scans.store');
     Route::get('scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
+
+    Route::get('team', [TeamController::class, 'index'])->name('team.index');
+    Route::delete('team/members/{user}', [TeamController::class, 'destroyMember'])->name('team.members.destroy');
+    Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroyInvitation'])->name('team.invitations.destroy');
 
     Route::post('invitations', SendInvitationController::class)->name('invitations.send');
 });
