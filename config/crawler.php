@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'script_path' => env('CRAWLER_SCRIPT_PATH', base_path('crawler/index.js')),
+    'script_path' => env('CRAWLER_SCRIPT_PATH', base_path('crawler/scan.js')),
 
     /*
     |--------------------------------------------------------------------------

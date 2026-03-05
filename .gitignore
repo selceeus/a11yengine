@@ -1,6 +1,9 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
+/crawler/node_modules
+/crawler/package-lock.json
+/crawler/__tests__/__snapshots__
 /public/build
 /public/hot
 /public/storage

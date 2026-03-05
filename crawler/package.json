@@ -1,0 +1,28 @@
+{
+    "name": "carbonbasedigital-a11y-crawler",
+    "version": "1.0.0",
+    "description": "Headless axe-core accessibility crawler for Laravel queue jobs",
+    "main": "scan.js",
+    "scripts": {
+        "scan": "node scan.js",
+        "test": "jest",
+        "test:watch": "jest --watch"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "testMatch": [
+            "**/__tests__/**/*.test.js"
+        ],
+        "clearMocks": true
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "axe-core": "^4.10.0",
+        "puppeteer": "^24.15.0"
+    },
+    "devDependencies": {
+        "jest": "^30.2.0"
+    }
+}
