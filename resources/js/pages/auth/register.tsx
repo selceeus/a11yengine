@@ -26,13 +26,27 @@ export default function Register() {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="agency_name">Agency name</Label>
                                 <Input
-                                    id="name"
+                                    id="agency_name"
                                     type="text"
                                     required
                                     autoFocus
                                     tabIndex={1}
+                                    autoComplete="organization"
+                                    name="agency_name"
+                                    placeholder="Acme Digital"
+                                />
+                                <InputError message={errors.agency_name} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Your name</Label>
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    required
+                                    tabIndex={2}
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Full name"
@@ -49,7 +63,7 @@ export default function Register() {
                                     id="email"
                                     type="email"
                                     required
-                                    tabIndex={2}
+                                    tabIndex={3}
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
@@ -63,7 +77,7 @@ export default function Register() {
                                     id="password"
                                     type="password"
                                     required
-                                    tabIndex={3}
+                                    tabIndex={4}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
