@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\ScanController;
@@ -35,6 +36,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
     Route::patch('properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
     Route::delete('properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
+
+    Route::get('issues', [IssueController::class, 'index'])->name('issues.index');
+    Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
+    Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
+
+    Route::get('issues', [IssueController::class, 'index'])->name('issues.index');
+    Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
+    Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
 
     Route::get('scans', [ScanController::class, 'index'])->name('scans.index');
     Route::post('scans', [ScanController::class, 'store'])->name('scans.store');
