@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
+import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
@@ -34,9 +35,18 @@ export default function Dashboard() {
                             )}
                         </CardContent>
                     </Card>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
+                    <Card className="col-span-full md:col-span-1">
+                        <CardHeader>
+                            <CardTitle>Scan Activity</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {auth.agencyId ? (
+                                <ScanActivityChart agencyId={auth.agencyId} />
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No agency assigned.</p>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
                     <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcceptInvitationController;
 use App\Http\Controllers\Api\AgencyIssueSummaryController;
+use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
@@ -55,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/agencies/{agency}/issues/summary', AgencyIssueSummaryController::class)
         ->name('api.agencies.issues.summary');
+
+    Route::get('api/agencies/{agency}/scans/activity', AgencyScanActivityController::class)
+        ->name('api.agencies.scans.activity');
 });
 
 Route::middleware('guest')->group(function (): void {
