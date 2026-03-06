@@ -60,7 +60,7 @@ class IssueController extends Controller
 
         $issue->update([
             'status' => $newStatus,
-            'resolved_at' => $newStatus === IssueStatus::Resolved ? now() : null,
+            'resolved_at' => $newStatus->isTerminal() ? ($issue->resolved_at ?? now()) : null,
         ]);
 
         return redirect()->route('issues.show', $issue);

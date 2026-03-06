@@ -36,10 +36,15 @@ class Finding extends Model
         });
 
         static::created(function (self $finding): void {
+            $activeStatuses = array_map(
+                fn (IssueStatus $s) => $s->value,
+                IssueStatus::activeStatuses()
+            );
+
             Issue::withoutGlobalScope(TenantScope::class)
                 ->where('property_id', $finding->property_id)
                 ->where('rule_key', $finding->rule_key)
-                ->whereNot('status', IssueStatus::Resolved->value)
+                ->whereIn('status', $activeStatuses)
                 ->each(fn (Issue $issue) => $issue->incrementOccurrence());
         });
     }

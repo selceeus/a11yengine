@@ -113,11 +113,12 @@ it('severity enum has expected cases', function (): void {
 });
 
 it('status enum has expected cases', function (): void {
-    expect(IssueStatus::cases())->toHaveCount(4)
+    expect(IssueStatus::cases())->toHaveCount(5)
         ->and(IssueStatus::Open->value)->toBe('open')
         ->and(IssueStatus::InProgress->value)->toBe('in_progress')
         ->and(IssueStatus::Resolved->value)->toBe('resolved')
-        ->and(IssueStatus::AcceptedRisk->value)->toBe('accepted_risk');
+        ->and(IssueStatus::Ignored->value)->toBe('ignored')
+        ->and(IssueStatus::FalsePositive->value)->toBe('false_positive');
 });
 
 it('applies tenant scope to only return issues for the authenticated users agency', function (): void {
@@ -357,4 +358,82 @@ it('does not increment occurrence_count when rule_key does not match', function 
     ]);
 
     expect($issue->fresh()->occurrence_count)->toBe(1);
+});
+
+it('does not increment occurrence_count for ignored issues', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $scan = Scan::factory()->for($agency)->for($organization)->for($property)->create();
+
+    $issue = Issue::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'organization_id' => $organization->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'page_url' => 'https://example.com',
+        'severity' => 'critical',
+        'status' => IssueStatus::Ignored,
+        'occurrence_count' => 3,
+        'risk_weight' => 0,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    Finding::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'scan_id' => $scan->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'severity' => 'critical',
+        'element_identifier' => null,
+        'page_url' => 'https://example.com',
+        'message' => 'Missing alt text.',
+        'detected_at' => now(),
+    ]);
+
+    expect($issue->fresh()->occurrence_count)->toBe(3);
+});
+
+it('does not increment occurrence_count for false_positive issues', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $scan = Scan::factory()->for($agency)->for($organization)->for($property)->create();
+
+    $issue = Issue::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'organization_id' => $organization->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'page_url' => 'https://example.com',
+        'severity' => 'critical',
+        'status' => IssueStatus::FalsePositive,
+        'occurrence_count' => 2,
+        'risk_weight' => 0,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    Finding::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'scan_id' => $scan->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'severity' => 'critical',
+        'element_identifier' => null,
+        'page_url' => 'https://example.com',
+        'message' => 'Missing alt text.',
+        'detected_at' => now(),
+    ]);
+
+    expect($issue->fresh()->occurrence_count)->toBe(2);
+});
+
+it('isTerminal returns true for resolved, ignored, and false_positive', function (): void {
+    expect(IssueStatus::Resolved->isTerminal())->toBeTrue()
+        ->and(IssueStatus::Ignored->isTerminal())->toBeTrue()
+        ->and(IssueStatus::FalsePositive->isTerminal())->toBeTrue()
+        ->and(IssueStatus::Open->isTerminal())->toBeFalse()
+        ->and(IssueStatus::InProgress->isTerminal())->toBeFalse();
 });
