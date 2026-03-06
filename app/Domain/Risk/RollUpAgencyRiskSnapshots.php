@@ -6,7 +6,7 @@ use App\Models\Agency;
 use App\Models\Property;
 use App\Models\PropertyRiskSnapshot;
 use App\Models\Scopes\TenantScope;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class RollUpAgencyRiskSnapshots
@@ -24,7 +24,7 @@ class RollUpAgencyRiskSnapshots
      *     properties: Collection<int, array{property_id: int, risk_score: int, open_issue_count: int}>
      * }
      */
-    public function handle(Agency|int $agency, ?Carbon $asOf = null): array
+    public function handle(Agency|int $agency, ?CarbonInterface $asOf = null): array
     {
         $agencyId = $agency instanceof Agency ? $agency->id : $agency;
         $asOf ??= now();
