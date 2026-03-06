@@ -166,3 +166,173 @@ it('isSuperUser returns false when user does not have super_user role', function
 
     expect($user->isSuperUser())->toBeFalse();
 });
+
+it('canManageAgency returns true for AgencyAdmin scoped to that agency', function (): void {
+    $agency = Agency::factory()->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::AgencyAdmin,
+        'agency_id' => $agency->id,
+    ]);
+
+    expect($user->canManageAgency($agency->id))->toBeTrue();
+});
+
+it('canManageAgency returns false for AgencyAdmin scoped to a different agency', function (): void {
+    $agency = Agency::factory()->create();
+    $other = Agency::factory()->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::AgencyAdmin,
+        'agency_id' => $agency->id,
+    ]);
+
+    expect($user->canManageAgency($other->id))->toBeFalse();
+});
+
+it('canManageAgency returns true for SuperUser', function (): void {
+    $agency = Agency::factory()->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::SuperUser,
+    ]);
+
+    expect($user->canManageAgency($agency->id))->toBeTrue();
+});
+
+it('canManageOrg returns true for OrgAdmin scoped to that org', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::OrgAdmin,
+        'organization_id' => $organization->id,
+    ]);
+
+    expect($user->canManageOrg($organization->id))->toBeTrue();
+});
+
+it('canManageOrg returns true for AgencyAdmin of the org agency', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::AgencyAdmin,
+        'agency_id' => $agency->id,
+    ]);
+
+    expect($user->canManageOrg($organization->id))->toBeTrue();
+});
+
+it('canManageOrg returns false for OrgAdmin scoped to a different org', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $other = Organization::factory()->create(['agency_id' => $agency->id]);
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::OrgAdmin,
+        'organization_id' => $other->id,
+    ]);
+
+    expect($user->canManageOrg($organization->id))->toBeFalse();
+});
+
+it('canManageOrg returns true for SuperUser', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::SuperUser,
+    ]);
+
+    expect($user->canManageOrg($organization->id))->toBeTrue();
+});
+
+it('canManageProperty returns true for PropAdmin scoped to that property', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::PropAdmin,
+        'property_id' => $property->id,
+    ]);
+
+    expect($user->canManageProperty($property->id))->toBeTrue();
+});
+
+it('canManageProperty returns true for OrgAdmin of the property org', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::OrgAdmin,
+        'organization_id' => $organization->id,
+    ]);
+
+    expect($user->canManageProperty($property->id))->toBeTrue();
+});
+
+it('canManageProperty returns true for AgencyAdmin of the property agency', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::AgencyAdmin,
+        'agency_id' => $agency->id,
+    ]);
+
+    expect($user->canManageProperty($property->id))->toBeTrue();
+});
+
+it('canManageProperty returns false for PropAdmin scoped to a different property', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $other = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::PropAdmin,
+        'property_id' => $other->id,
+    ]);
+
+    expect($user->canManageProperty($property->id))->toBeFalse();
+});
+
+it('canManageProperty returns true for SuperUser', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    UserRole::factory()->create([
+        'user_id' => $user->id,
+        'role' => UserRoleEnum::SuperUser,
+    ]);
+
+    expect($user->canManageProperty($property->id))->toBeTrue();
+});

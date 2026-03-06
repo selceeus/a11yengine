@@ -57,6 +57,45 @@ class User extends Authenticatable
         return $this->roles()->where('role', UserRoleEnum::SuperUser->value)->exists();
     }
 
+    public function canManageAgency(int $agencyId): bool
+    {
+        return $this->isSuperUser()
+            || $this->roles()
+                ->where('role', UserRoleEnum::AgencyAdmin->value)
+                ->where('agency_id', $agencyId)
+                ->exists();
+    }
+
+    public function canManageOrg(int $orgId): bool
+    {
+        if ($this->isSuperUser()) {
+            return true;
+        }
+
+        if ($this->roles()->where('role', UserRoleEnum::OrgAdmin->value)->where('organization_id', $orgId)->exists()) {
+            return true;
+        }
+
+        $agencyId = Organization::withoutGlobalScopes()->where('id', $orgId)->value('agency_id');
+
+        return $agencyId !== null && $this->canManageAgency($agencyId);
+    }
+
+    public function canManageProperty(int $propertyId): bool
+    {
+        if ($this->isSuperUser()) {
+            return true;
+        }
+
+        if ($this->roles()->where('role', UserRoleEnum::PropAdmin->value)->where('property_id', $propertyId)->exists()) {
+            return true;
+        }
+
+        $orgId = Property::withoutGlobalScopes()->where('id', $propertyId)->value('organization_id');
+
+        return $orgId !== null && $this->canManageOrg($orgId);
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
