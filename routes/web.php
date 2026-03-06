@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\Api\AgencyGovernanceReportController;
 use App\Http\Controllers\Api\AgencyIssueSummaryController;
 use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/agencies/{agency}/properties/top-risk', AgencyTopRiskPropertiesController::class)
         ->name('api.agencies.properties.top-risk');
+
+    Route::get('api/agencies/{agency}/governance-report', AgencyGovernanceReportController::class)
+        ->name('api.agencies.governance-report');
 });
 
 Route::middleware('guest')->group(function (): void {
