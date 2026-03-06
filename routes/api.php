@@ -11,6 +11,7 @@ Route::post('organizations/{organizationId}/risk-snapshot', OrganizationRiskCont
     ->name('api.organizations.risk-snapshot');
 
 Route::get('organizations/{organizationId}/risk-summary', OrganizationRiskSummaryController::class)
+    ->middleware('auth')
     ->name('api.organizations.risk-summary');
 
 Route::get('organizations/{organizationId}/governance-summary', OrganizationGovernanceReportController::class)
