@@ -4,6 +4,7 @@ use App\Http\Controllers\AcceptInvitationController;
 use App\Http\Controllers\Api\AgencyIssueSummaryController;
 use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
+use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
@@ -63,6 +64,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/agencies/{agency}/organizations/risk-trends', AgencyOrgRiskTrendsController::class)
         ->name('api.agencies.organizations.risk-trends');
+
+    Route::get('api/agencies/{agency}/properties/top-risk', AgencyTopRiskPropertiesController::class)
+        ->name('api.agencies.properties.top-risk');
 });
 
 Route::middleware('guest')->group(function (): void {

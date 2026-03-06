@@ -44,4 +44,9 @@ class Property extends Model
     {
         return $this->hasMany(Finding::class);
     }
+
+    public function issues(): HasMany
+    {
+        return $this->hasMany(Issue::class);
+    }
 }

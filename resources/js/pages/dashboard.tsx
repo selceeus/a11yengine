@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
 import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
 import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
+import { TopAtRiskProperties } from '@/components/charts/TopAtRiskProperties';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
@@ -56,6 +57,20 @@ export default function Dashboard() {
                         <CardContent>
                             {auth.agencyId ? (
                                 <OrgRiskTrendsChart agencyId={auth.agencyId} />
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No agency assigned.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                    <Card className="col-span-full">
+                        <CardHeader>
+                            <CardTitle>Top At-Risk Properties</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {auth.agencyId ? (
+                                <TopAtRiskProperties agencyId={auth.agencyId} />
                             ) : (
                                 <p className="text-sm text-muted-foreground">No agency assigned.</p>
                             )}
