@@ -12,6 +12,7 @@ export type User = {
 
 export type Auth = {
     user: User;
+    agencyId: number | null;
 };
 
 export type TwoFactorSetupData = {

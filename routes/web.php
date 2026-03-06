@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\Api\AgencyIssueSummaryController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
@@ -51,6 +52,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroyInvitation'])->name('team.invitations.destroy');
 
     Route::post('invitations', SendInvitationController::class)->name('invitations.send');
+
+    Route::get('api/agencies/{agency}/issues/summary', AgencyIssueSummaryController::class)
+        ->name('api.agencies.issues.summary');
 });
 
 Route::middleware('guest')->group(function (): void {
