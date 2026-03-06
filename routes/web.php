@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcceptInvitationController;
 use App\Http\Controllers\Api\AgencyIssueSummaryController;
+use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
@@ -59,6 +60,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/agencies/{agency}/scans/activity', AgencyScanActivityController::class)
         ->name('api.agencies.scans.activity');
+
+    Route::get('api/agencies/{agency}/organizations/risk-trends', AgencyOrgRiskTrendsController::class)
+        ->name('api.agencies.organizations.risk-trends');
 });
 
 Route::middleware('guest')->group(function (): void {

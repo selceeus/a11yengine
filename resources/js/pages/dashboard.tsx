@@ -1,8 +1,8 @@
 import { Head } from '@inertiajs/react';
 import { usePage } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
+import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
 import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -48,8 +48,19 @@ export default function Dashboard() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                    <Card className="col-span-full">
+                        <CardHeader>
+                            <CardTitle>Organisation Risk Trends</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {auth.agencyId ? (
+                                <OrgRiskTrendsChart agencyId={auth.agencyId} />
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No agency assigned.</p>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </AppLayout>
