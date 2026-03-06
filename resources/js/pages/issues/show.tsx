@@ -3,6 +3,7 @@ import * as IssueController from '@/actions/App/Http/Controllers/IssueController
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import IssueAssigner, { type AssignableUser } from '@/components/IssueAssigner';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -29,6 +30,8 @@ type Issue = {
     first_detected_at: string;
     last_detected_at: string;
     resolved_at: string | null;
+    assigned_user_id: number | null;
+    assigned_user: { id: number; name: string; email: string } | null;
     property: Property | null;
     organization: Organization | null;
     findings: Finding[];
@@ -57,7 +60,7 @@ function StatCard({ label, value, capitalize }: { label: string; value: string; 
     );
 }
 
-export default function Show({ issue }: { issue: Issue }) {
+export default function Show({ issue, assignableUsers }: { issue: Issue; assignableUsers: AssignableUser[] }) {
     const { data, setData, patch, processing } = useForm({ status: issue.status });
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -105,6 +108,8 @@ export default function Show({ issue }: { issue: Issue }) {
                                 <SelectItem value="accepted_risk">Accepted risk</SelectItem>
                             </SelectContent>
                         </Select>
+
+                        <IssueAssigner issue={issue} users={assignableUsers} canAssign={true} />
                     </div>
                 </div>
 

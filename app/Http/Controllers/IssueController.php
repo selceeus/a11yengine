@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\IssueStatus;
 use App\Http\Requests\UpdateIssueRequest;
 use App\Models\Issue;
+use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -44,11 +45,19 @@ class IssueController extends Controller
         $issue->load([
             'property:id,name,base_url',
             'organization:id,name',
+            'assignedUser:id,name,email',
             'findings' => fn ($q) => $q->latest('detected_at')->limit(50),
         ]);
 
+        $assignableUsers = User::query()
+            ->where('agency_id', $issue->agency_id)
+            ->select(['id', 'name', 'email'])
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('issues/show', [
             'issue' => $issue,
+            'assignableUsers' => $assignableUsers,
         ]);
     }
 
