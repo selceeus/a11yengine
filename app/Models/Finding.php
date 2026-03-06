@@ -18,6 +18,7 @@ class Finding extends Model
         'scan_id',
         'property_id',
         'rule_key',
+        'fingerprint',
         'severity',
         'element_identifier',
         'page_url',
@@ -28,6 +29,17 @@ class Finding extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope);
+
+        static::saving(function (self $finding): void {
+            $finding->fingerprint ??= $finding->computeFingerprint();
+        });
+    }
+
+    public function computeFingerprint(): string
+    {
+        return sha1(
+            $this->rule_key.'|'.($this->element_identifier ?? '').'|'.$this->page_url
+        );
     }
 
     protected function casts(): array
