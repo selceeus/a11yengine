@@ -27,6 +27,8 @@ class Issue extends Model
         'first_detected_at',
         'last_detected_at',
         'resolved_at',
+        'assigned_user_id',
+        'resolution_notes',
     ];
 
     protected static function booted(): void
@@ -63,5 +65,34 @@ class Issue extends Model
     public function findings(): HasMany
     {
         return $this->hasMany(Finding::class);
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function assignToUser(User $user): void
+    {
+        $this->assigned_user_id = $user->id;
+
+        if ($this->status === IssueStatus::Open) {
+            $this->status = IssueStatus::InProgress;
+        }
+
+        $this->save();
+    }
+
+    public function markResolved(?string $notes = null): void
+    {
+        $this->status = IssueStatus::Resolved;
+        $this->resolved_at = now();
+        $this->resolution_notes = $notes;
+        $this->save();
+    }
+
+    public function incrementOccurrence(): void
+    {
+        $this->increment('occurrence_count');
     }
 }

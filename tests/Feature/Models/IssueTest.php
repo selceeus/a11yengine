@@ -169,3 +169,192 @@ it('tenant scope does not return issues from another agency', function (): void 
 
     expect(Issue::query()->count())->toBe(0);
 });
+
+it('can be assigned to a user and transitions status to in_progress', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    $issue = Issue::factory()->for($agency)->for($organization)->for($property)->create([
+        'status' => IssueStatus::Open,
+    ]);
+
+    $issue->assignToUser($user);
+
+    $issue->refresh();
+
+    expect($issue->assigned_user_id)->toBe($user->id)
+        ->and($issue->status)->toBe(IssueStatus::InProgress);
+});
+
+it('assignToUser does not change status when already in_progress or resolved', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    $issue = Issue::factory()->for($agency)->for($organization)->for($property)->create([
+        'status' => IssueStatus::Resolved,
+    ]);
+
+    $issue->assignToUser($user);
+
+    $issue->refresh();
+
+    expect($issue->status)->toBe(IssueStatus::Resolved);
+});
+
+it('belongs to assigned user', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $user = User::factory()->create(['agency_id' => $agency->id]);
+
+    $issue = Issue::factory()->for($agency)->for($organization)->for($property)->create([
+        'assigned_user_id' => $user->id,
+    ]);
+
+    expect($issue->assignedUser)->toBeInstanceOf(User::class)
+        ->and($issue->assignedUser->is($user))->toBeTrue();
+});
+
+it('markResolved sets status, resolved_at, and resolution_notes', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+
+    $issue = Issue::factory()->for($agency)->for($organization)->for($property)->create([
+        'status' => IssueStatus::InProgress,
+        'resolved_at' => null,
+    ]);
+
+    $issue->markResolved('Fixed by updating alt attributes.');
+
+    $issue->refresh();
+
+    expect($issue->status)->toBe(IssueStatus::Resolved)
+        ->and($issue->resolved_at)->not->toBeNull()
+        ->and($issue->resolution_notes)->toBe('Fixed by updating alt attributes.');
+});
+
+it('markResolved works without resolution notes', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+
+    $issue = Issue::factory()->for($agency)->for($organization)->for($property)->create();
+
+    $issue->markResolved();
+
+    $issue->refresh();
+
+    expect($issue->status)->toBe(IssueStatus::Resolved)
+        ->and($issue->resolution_notes)->toBeNull();
+});
+
+it('increments occurrence_count when a matching finding is created', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $scan = Scan::factory()->for($agency)->for($organization)->for($property)->create();
+
+    $issue = Issue::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'organization_id' => $organization->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'page_url' => 'https://example.com',
+        'severity' => 'critical',
+        'status' => IssueStatus::Open,
+        'occurrence_count' => 1,
+        'risk_weight' => 0,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    Finding::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'scan_id' => $scan->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'severity' => 'critical',
+        'element_identifier' => 'img.logo',
+        'page_url' => 'https://example.com',
+        'message' => 'Missing alt text.',
+        'detected_at' => now(),
+    ]);
+
+    expect($issue->fresh()->occurrence_count)->toBe(2);
+});
+
+it('does not increment occurrence_count for resolved issues', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $scan = Scan::factory()->for($agency)->for($organization)->for($property)->create();
+
+    $issue = Issue::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'organization_id' => $organization->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'page_url' => 'https://example.com',
+        'severity' => 'critical',
+        'status' => IssueStatus::Resolved,
+        'occurrence_count' => 5,
+        'risk_weight' => 0,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+        'resolved_at' => now(),
+    ]);
+
+    Finding::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'scan_id' => $scan->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'severity' => 'critical',
+        'element_identifier' => null,
+        'page_url' => 'https://example.com',
+        'message' => 'Missing alt text.',
+        'detected_at' => now(),
+    ]);
+
+    expect($issue->fresh()->occurrence_count)->toBe(5);
+});
+
+it('does not increment occurrence_count when rule_key does not match', function (): void {
+    $agency = Agency::factory()->create();
+    $organization = Organization::factory()->create(['agency_id' => $agency->id]);
+    $property = Property::factory()->for($agency)->for($organization)->create();
+    $scan = Scan::factory()->for($agency)->for($organization)->for($property)->create();
+
+    $issue = Issue::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'organization_id' => $organization->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-1.1.1',
+        'page_url' => 'https://example.com',
+        'severity' => 'critical',
+        'status' => IssueStatus::Open,
+        'occurrence_count' => 1,
+        'risk_weight' => 0,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    Finding::withoutGlobalScope(TenantScope::class)->create([
+        'agency_id' => $agency->id,
+        'scan_id' => $scan->id,
+        'property_id' => $property->id,
+        'rule_key' => 'wcag-2.1.1',
+        'severity' => 'critical',
+        'element_identifier' => null,
+        'page_url' => 'https://example.com',
+        'message' => 'Keyboard trap.',
+        'detected_at' => now(),
+    ]);
+
+    expect($issue->fresh()->occurrence_count)->toBe(1);
+});
