@@ -3,8 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole as UserRoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -29,6 +31,30 @@ class User extends Authenticatable
     public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    public function roles(): HasMany
+    {
+        return $this->hasMany(UserRole::class);
+    }
+
+    public function hasRole(string|UserRoleEnum $role, ?int $scopeId = null): bool
+    {
+        $roleValue = $role instanceof UserRoleEnum ? $role->value : $role;
+
+        return $this->roles()
+            ->where('role', $roleValue)
+            ->when($scopeId !== null, fn ($q) => $q->where(function ($q) use ($scopeId) {
+                $q->where('agency_id', $scopeId)
+                    ->orWhere('organization_id', $scopeId)
+                    ->orWhere('property_id', $scopeId);
+            }))
+            ->exists();
+    }
+
+    public function isSuperUser(): bool
+    {
+        return $this->roles()->where('role', UserRoleEnum::SuperUser->value)->exists();
     }
 
     /**
