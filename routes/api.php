@@ -21,3 +21,31 @@ Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBrea
 
 Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactController::class)
     ->name('api.organizations.user-impact');
+
+// ---------------------------------------------------------------------------
+// Tenant-scoped routes
+// ---------------------------------------------------------------------------
+// The `tenant` middleware resolves the Agency from the {tenant} slug in the
+// URL (or from the X-Tenant request header) and binds it to the container.
+// Use these routes when you need per-agency context without authentication,
+// e.g. public dashboards or machine-to-machine API clients.
+//
+// Controller injection example:
+//
+//   use App\Models\Agency;
+//
+//   public function __invoke(Agency $agency): JsonResponse
+//   {
+//       return response()->json([
+//           'agency' => $agency->name,
+//           'organizations' => $agency->organizations()->count(),
+//       ]);
+//   }
+// ---------------------------------------------------------------------------
+// Route::prefix('{tenant}')
+//     ->middleware('tenant')
+//     ->name('tenant.')
+//     ->group(function (): void {
+//         Route::get('risk-summary', AgencyRiskSummaryController::class)
+//             ->name('risk-summary');
+//     });
