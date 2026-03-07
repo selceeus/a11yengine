@@ -167,3 +167,34 @@ it('can retrieve the page via the relationship', function (): void {
     expect($metric->page)->toBeInstanceOf(ScanPage::class)
         ->and($metric->page->id)->toBe($this->page->id);
 });
+
+// ─── Null page_id (scan-level metrics) ───────────────────────────────────────
+
+it('accepts a null page and stores page_id as null', function (): void {
+    $this->service->record($this->scan, null, ['accessibility_risk_score' => 95.5], 'axe');
+
+    $metric = ScanMetric::withoutGlobalScopes()->first();
+
+    expect($metric->page_id)->toBeNull();
+});
+
+it('resolves a null page relationship to null', function (): void {
+    $this->service->record($this->scan, null, ['accessibility_risk_score' => 95.5], 'axe');
+
+    $metric = ScanMetric::withoutGlobalScopes()->with('page')->first();
+
+    expect($metric->page)->toBeNull();
+});
+
+it('inserts multiple scan-level metrics when page is null', function (): void {
+    $this->service->record($this->scan, null, [
+        'accessibility_risk_score' => 95.5,
+        'total_issue_count' => 3,
+    ], 'axe');
+
+    expect(ScanMetric::withoutGlobalScopes()->count())->toBe(2);
+
+    ScanMetric::withoutGlobalScopes()->each(function ($m): void {
+        expect($m->page_id)->toBeNull();
+    });
+});

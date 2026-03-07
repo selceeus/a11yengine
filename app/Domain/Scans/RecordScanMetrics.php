@@ -19,7 +19,7 @@ class RecordScanMetrics
      * @param  array<string, int|float>  $metrics  Keyed by metric name, e.g.:
      *                                             ['accessibility_issue_count' => 14, 'lighthouse_performance' => 82]
      */
-    public function record(Scan $scan, ScanPage $page, array $metrics, string $source): void
+    public function record(Scan $scan, ?ScanPage $page, array $metrics, string $source): void
     {
         if (empty($metrics)) {
             return;
@@ -30,7 +30,7 @@ class RecordScanMetrics
         $rows = collect($metrics)->map(fn (int|float $value, string $name) => [
             'agency_id' => $scan->agency_id,
             'scan_id' => $scan->id,
-            'page_id' => $page->id,
+            'page_id' => $page?->id,
             'metric_name' => $name,
             'metric_value' => $value,
             'metric_source' => $source,

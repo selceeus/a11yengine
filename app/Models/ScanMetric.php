@@ -61,7 +61,7 @@ class ScanMetric extends Model
      *
      * @param  array<string, int|float>  $metrics  Keyed by metric name, e.g. ['accessibility_issue_count' => 14]
      */
-    public static function recordBulk(Scan $scan, ScanPage $page, array $metrics, string $source): void
+    public static function recordBulk(Scan $scan, ?ScanPage $page, array $metrics, string $source): void
     {
         app(RecordScanMetrics::class)->record($scan, $page, $metrics, $source);
     }

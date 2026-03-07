@@ -181,3 +181,19 @@ it('sums violations_count across all Scanned pages', function (): void {
 
     expect($this->scan->fresh()->total_violations)->toBe(3);
 });
+
+// ─── Metrics calculation after batch ─────────────────────────────────────────
+
+it('stores scan-level metrics after the batch completes', function (): void {
+    config(['lighthouse.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    expect(\App\Models\ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $this->scan->id)
+        ->whereNull('page_id')
+        ->count()
+    )->toBeGreaterThan(0);
+});

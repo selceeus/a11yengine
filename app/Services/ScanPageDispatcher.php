@@ -71,6 +71,8 @@ class ScanPageDispatcher
                     ->get();
 
                 (new ScanDomain)->complete($scan, $pages->count(), $pages->sum('violations_count'));
+
+                app(CalculateScanMetrics::class)->handle($scan->fresh() ?? $scan);
             })
             ->dispatch();
     }
