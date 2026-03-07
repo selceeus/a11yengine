@@ -93,7 +93,6 @@ class ProcessHtmlScan
                 ->first();
 
             if ($issue) {
-                $issue->increment('occurrence_count');
                 $issue->update(['last_detected_at' => $finding->detected_at]);
 
                 $finding->update(['issue_id' => $issue->id]);

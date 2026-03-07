@@ -128,6 +128,9 @@ it('buckets issues correctly by age', function (): void {
 });
 
 it('returns correct data via the API endpoint', function (): void {
+    $admin = User::factory()->create(['agency_id' => $this->agency->id]);
+    $admin->roles()->create(['role' => 'agency_admin', 'agency_id' => $this->agency->id]);
+
     Issue::factory()->for($this->agency)->for($this->organization)->create([
         'status' => IssueStatus::Open,
         'risk_weight' => 20,
@@ -137,7 +140,7 @@ it('returns correct data via the API endpoint', function (): void {
         'last_detected_at' => now(),
     ]);
 
-    $this->withoutMiddleware()
+    $this->actingAs($admin)
         ->getJson("/api/organizations/{$this->organization->id}/risk-summary")
         ->assertOk()
         ->assertJsonStructure([

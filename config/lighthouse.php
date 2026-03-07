@@ -31,16 +31,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Max Pages Per Scan
+    | Enable Lighthouse Scanning
     |--------------------------------------------------------------------------
     |
-    | Maximum number of discovered pages that will receive a Lighthouse job.
-    | Jobs are dispatched for the first N pages returned by the crawler.
-    | Set to 0 to disable Lighthouse scanning entirely.
-    | Override via LIGHTHOUSE_MAX_PAGES in your .env file.
+    | When enabled, a RunLighthouseScanJob is dispatched for every page
+    | discovered during a scan. Set to false (or LIGHTHOUSE_ENABLED=false)
+    | to disable Lighthouse scanning entirely, e.g. in CI environments
+    | without Chromium.
     |
     */
 
-    'max_pages' => (int) env('LIGHTHOUSE_MAX_PAGES', 10),
+    'enabled' => (bool) env('LIGHTHOUSE_ENABLED', true),
 
 ];

@@ -2,12 +2,12 @@
 
 namespace App\Jobs;
 
-use App\Domain\Issues\ProcessHtmlScan;
 use App\Domain\Scans\Scan as ScanDomain;
 use App\Enums\ScanStatus;
 use App\Exceptions\ScanProcessException;
 use App\Models\Scan;
 use App\Services\CrawlerRunner;
+use App\Services\ScanPageDispatcher;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -39,12 +39,14 @@ class RunScanJob implements ShouldQueue
     /**
      * Execute the job.
      *
-     * Orchestrates the full scan lifecycle:
+     * Orchestrates the scan lifecycle:
      *  1. Transition scan to Running.
      *  2. Invoke the Node.js axe-core crawler for the property's base URL.
-     *  3. Pass each page result through ProcessHtmlScan, which persists
-     *     Findings, deduplicates Issues, and records risk snapshots.
-     *  4. Transition scan to Completed with aggregated page/violation counts.
+     *  3. Delegate to ScanPageDispatcher which creates per-page stubs and
+     *     dispatches a Bus::batch() of RunAxeScanPageJob + RunLighthouseScanJob
+     *     for each discovered page.
+     *  4. The batch then() callback transitions the scan to Completed once
+     *     all per-page jobs finish.
      *
      * If the crawler process fails the scan is immediately transitioned to
      * Failed, and the exception is re-thrown so the queue worker can apply
@@ -52,7 +54,7 @@ class RunScanJob implements ShouldQueue
      */
     public function handle(
         ScanDomain $scanDomain,
-        ProcessHtmlScan $processHtmlScan,
+        ScanPageDispatcher $dispatcher,
         CrawlerRunner $crawlerRunner,
     ): void {
         $scanDomain->start($this->scan);
@@ -67,29 +69,7 @@ class RunScanJob implements ShouldQueue
             throw $e;
         }
 
-        $maxLighthousePages = config('lighthouse.max_pages', 10);
-
-        if ($maxLighthousePages > 0) {
-            foreach (array_slice($pageResults, 0, $maxLighthousePages) as $pageResult) {
-                RunLighthouseScanJob::dispatch($this->scan, $pageResult['url']);
-            }
-        }
-
-        $pagesScanned = 0;
-        $totalViolations = 0;
-
-        foreach ($pageResults as $pageResult) {
-            $scanPage = $processHtmlScan->handle($this->scan, $pageResult);
-
-            $pagesScanned++;
-            $totalViolations += $scanPage->violations_count;
-        }
-
-        $scanDomain->complete(
-            $this->scan,
-            pagesScanned: $pagesScanned,
-            totalViolations: $totalViolations,
-        );
+        $dispatcher->dispatch($this->scan, $pageResults);
     }
 
     /**

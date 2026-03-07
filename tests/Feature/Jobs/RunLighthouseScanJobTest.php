@@ -1,20 +1,16 @@
 <?php
 
-use App\Domain\Issues\ProcessHtmlScan;
-use App\Domain\Scans\Scan as ScanDomain;
 use App\Exceptions\ScanProcessException;
 use App\Jobs\RunLighthouseScanJob;
-use App\Jobs\RunScanJob;
 use App\Models\Agency;
 use App\Models\LighthouseResult;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Scan;
+use App\Models\ScanPage;
 use App\Models\User;
-use App\Services\CrawlerRunner;
 use App\Services\LighthouseRunner;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 
 // ─── Setup ───────────────────────────────────────────────────────────────────
@@ -35,6 +31,16 @@ beforeEach(function (): void {
         ->for($this->organization)
         ->for($this->property)
         ->create();
+    // Pre-create a ScanPage stub as ScanPageDispatcher would
+    $this->stub = ScanPage::withoutGlobalScopes()->create([
+        'agency_id' => $this->agency->id,
+        'scan_id' => $this->scan->id,
+        'url' => 'https://example.com/',
+        'violations_count' => 0,
+        'status' => \App\Enums\ScanPageStatus::Pending,
+        'axe_completed' => false,
+        'lighthouse_completed' => false,
+    ]);
 });
 
 // ─── Queue dispatching ────────────────────────────────────────────────────────
@@ -173,50 +179,42 @@ it('does not throw when the runner fails', function (): void {
         ->not->toThrow(Exception::class);
 });
 
-// ─── RunScanJob ceiling dispatch ──────────────────────────────────────────────
+// ─── lighthouse_completed tracking ───────────────────────────────────────────
 
-it('dispatches at most max_pages Lighthouse jobs from RunScanJob', function (): void {
-    Queue::fake();
+it('sets lighthouse_completed=true on the ScanPage after a successful run', function (): void {
+    $runner = Mockery::mock(LighthouseRunner::class);
+    $runner->expects('run')->once()->andReturn([
+        'url' => 'https://example.com/',
+        'performance_score' => 90,
+        'accessibility_score' => 80,
+        'best_practices_score' => 85,
+        'seo_score' => 95,
+        'first_contentful_paint' => 1000.0,
+        'largest_contentful_paint' => 2000.0,
+        'total_blocking_time' => 100.0,
+        'cumulative_layout_shift' => 0.01,
+        'raw_metrics' => [],
+    ]);
 
-    config(['lighthouse.max_pages' => 2]);
+    (new RunLighthouseScanJob($this->scan, 'https://example.com/'))->handle($runner);
 
-    Process::fake(['*' => Process::result(json_encode([
-        ['url' => 'https://example.com/', 'violations' => []],
-        ['url' => 'https://example.com/about', 'violations' => []],
-        ['url' => 'https://example.com/contact', 'violations' => []],
-    ]))]);
-
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
-
-    Queue::assertPushed(RunLighthouseScanJob::class, 2);
+    expect($this->stub->fresh()->lighthouse_completed)->toBeTrue();
 });
 
-it('dispatches no Lighthouse jobs when max_pages is 0', function (): void {
-    Queue::fake();
+it('sets lighthouse_completed=true on the ScanPage even when the runner fails', function (): void {
+    $runner = Mockery::mock(LighthouseRunner::class);
+    $runner->expects('run')->once()->andThrow(new ScanProcessException('Chrome unavailable'));
 
-    config(['lighthouse.max_pages' => 0]);
+    (new RunLighthouseScanJob($this->scan, 'https://example.com/'))->handle($runner);
 
-    Process::fake(['*' => Process::result(json_encode([
-        ['url' => 'https://example.com/', 'violations' => []],
-    ]))]);
-
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
-
-    Queue::assertNothingPushed();
+    expect($this->stub->fresh()->lighthouse_completed)->toBeTrue();
 });
 
-it('dispatches one Lighthouse job per page up to the ceiling', function (): void {
-    Queue::fake();
+it('does nothing to lighthouse_completed when no matching ScanPage exists', function (): void {
+    $runner = Mockery::mock(LighthouseRunner::class);
+    $runner->expects('run')->once()->andThrow(new ScanProcessException('Chrome unavailable'));
 
-    config(['lighthouse.max_pages' => 3]);
-
-    Process::fake(['*' => Process::result(json_encode([
-        ['url' => 'https://example.com/', 'violations' => []],
-        ['url' => 'https://example.com/about', 'violations' => []],
-    ]))]);
-
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
-
-    // Only 2 pages crawled — ceiling of 3 does not inflate the count
-    Queue::assertPushed(RunLighthouseScanJob::class, 2);
+    // Running against a URL with no matching stub should not throw
+    expect(fn () => (new RunLighthouseScanJob($this->scan, 'https://example.com/no-stub'))->handle($runner))
+        ->not->toThrow(Exception::class);
 });

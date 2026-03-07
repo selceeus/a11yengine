@@ -18,6 +18,8 @@ class ScanPage extends Model
         'url',
         'violations_count',
         'status',
+        'axe_completed',
+        'lighthouse_completed',
     ];
 
     protected static function booted(): void
@@ -30,6 +32,8 @@ class ScanPage extends Model
         return [
             'status' => ScanPageStatus::class,
             'violations_count' => 'integer',
+            'axe_completed' => 'boolean',
+            'lighthouse_completed' => 'boolean',
         ];
     }
 

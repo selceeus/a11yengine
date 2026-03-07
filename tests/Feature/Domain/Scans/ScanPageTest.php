@@ -30,6 +30,7 @@ it('records a successfully scanned page', function (): void {
         ->and($page->url)->toBe('https://example.com/page')
         ->and($page->violations_count)->toBe(3)
         ->and($page->status)->toBe(ScanPageStatus::Scanned)
+        ->and($page->axe_completed)->toBeTrue()
         ->and($page->scan_id)->toBe($this->scan->id)
         ->and($page->agency_id)->toBe($this->agency->id);
 });
@@ -55,6 +56,7 @@ it('records a failed page', function (): void {
         ->and($page->url)->toBe('https://example.com/error')
         ->and($page->violations_count)->toBe(0)
         ->and($page->status)->toBe(ScanPageStatus::Failed)
+        ->and($page->axe_completed)->toBeTrue()
         ->and($page->scan_id)->toBe($this->scan->id)
         ->and($page->agency_id)->toBe($this->agency->id);
 });
@@ -77,4 +79,21 @@ it('associates pages with the correct scan via the relationship', function (): v
     $this->domain->record($this->scan, 'https://example.com/b', 0);
 
     expect($this->scan->scanPages()->count())->toBe(2);
+});
+
+it('updates an existing Pending stub rather than creating a duplicate', function (): void {
+    ScanPage::withoutGlobalScopes()->create([
+        'agency_id' => $this->agency->id,
+        'scan_id' => $this->scan->id,
+        'url' => 'https://example.com/stub',
+        'violations_count' => 0,
+        'status' => ScanPageStatus::Pending,
+        'axe_completed' => false,
+    ]);
+
+    $this->domain->record($this->scan, 'https://example.com/stub', 4);
+
+    expect(ScanPage::withoutGlobalScopes()->where('scan_id', $this->scan->id)->where('url', 'https://example.com/stub')->count())->toBe(1)
+        ->and(ScanPage::withoutGlobalScopes()->where('url', 'https://example.com/stub')->first()->status)->toBe(ScanPageStatus::Scanned)
+        ->and(ScanPage::withoutGlobalScopes()->where('url', 'https://example.com/stub')->first()->violations_count)->toBe(4);
 });

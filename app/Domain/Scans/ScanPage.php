@@ -12,26 +12,20 @@ class ScanPage
     {
         $scan = $this->resolveScan($scan);
 
-        return ScanPageModel::query()->create([
-            'agency_id' => $scan->agency_id,
-            'scan_id' => $scan->id,
-            'url' => $url,
-            'violations_count' => $violationsCount,
-            'status' => ScanPageStatus::Scanned,
-        ]);
+        return ScanPageModel::withoutGlobalScopes()->updateOrCreate(
+            ['agency_id' => $scan->agency_id, 'scan_id' => $scan->id, 'url' => $url],
+            ['violations_count' => $violationsCount, 'status' => ScanPageStatus::Scanned, 'axe_completed' => true],
+        );
     }
 
     public function fail(ScanModel|int $scan, string $url): ScanPageModel
     {
         $scan = $this->resolveScan($scan);
 
-        return ScanPageModel::query()->create([
-            'agency_id' => $scan->agency_id,
-            'scan_id' => $scan->id,
-            'url' => $url,
-            'violations_count' => 0,
-            'status' => ScanPageStatus::Failed,
-        ]);
+        return ScanPageModel::withoutGlobalScopes()->updateOrCreate(
+            ['agency_id' => $scan->agency_id, 'scan_id' => $scan->id, 'url' => $url],
+            ['violations_count' => 0, 'status' => ScanPageStatus::Failed, 'axe_completed' => true],
+        );
     }
 
     private function resolveScan(ScanModel|int $scan): ScanModel

@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Issues\ProcessHtmlScan;
 use App\Domain\Scans\Scan as ScanDomain;
 use App\Enums\ScanStatus;
 use App\Exceptions\ScanProcessException;
@@ -12,6 +11,7 @@ use App\Models\Property;
 use App\Models\Scan;
 use App\Models\User;
 use App\Services\CrawlerRunner;
+use App\Services\ScanPageDispatcher;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 
@@ -71,6 +71,9 @@ beforeEach(function (): void {
         ->for($this->organization)
         ->for($this->property)
         ->create();
+
+    // Disable Lighthouse so only axe jobs run — keeps tests focused on the crawl pipeline
+    config(['lighthouse.enabled' => false]);
 });
 
 // ─── Queue dispatching ────────────────────────────────────────────────────────
@@ -88,7 +91,7 @@ it('can be dispatched to the queue', function (): void {
 it('records started_at when the crawl begins', function (): void {
     fakeCrawler();
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     expect($this->scan->fresh()->started_at)->not->toBeNull();
 });
@@ -96,7 +99,7 @@ it('records started_at when the crawl begins', function (): void {
 it('transitions the scan to completed after a successful crawl', function (): void {
     fakeCrawler([crawlerPage()]);
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     expect($this->scan->fresh()->status)->toBe(ScanStatus::Completed);
 });
@@ -108,7 +111,7 @@ it('sets pages_scanned to the number of pages in the crawler output', function (
         crawlerPage('https://example.com/contact'),
     ]);
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     expect($this->scan->fresh()->pages_scanned)->toBe(3);
 });
@@ -123,7 +126,7 @@ it('sets total_violations to the sum of violations across all pages', function (
         ]),
     ]);
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     // 2 nodes on page 1 + 1 node on page 2 = 3 total violation findings
     expect($this->scan->fresh()->total_violations)->toBe(3);
@@ -132,7 +135,7 @@ it('sets total_violations to the sum of violations across all pages', function (
 it('completes without findings when the crawler returns no violations', function (): void {
     fakeCrawler([crawlerPage('https://example.com/')]);
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     expect($this->scan->fresh()->status)->toBe(ScanStatus::Completed)
         ->and(Finding::query()->count())->toBe(0);
@@ -143,7 +146,7 @@ it('completes without findings when the crawler returns no violations', function
 it('invokes the crawler with the property base_url', function (): void {
     fakeCrawler();
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     Process::assertRan(fn ($process) => str_contains(implode(' ', (array) $process->command), 'https://example.com'));
 });
@@ -160,7 +163,7 @@ it('persists a finding for every violation node across all pages', function (): 
         ]),
     ]);
 
-    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ProcessHtmlScan::class), app(CrawlerRunner::class));
+    (new RunScanJob($this->scan))->handle(new ScanDomain, app(ScanPageDispatcher::class), app(CrawlerRunner::class));
 
     expect(Finding::query()->count())->toBe(3);
 });
@@ -172,7 +175,7 @@ it('transitions scan to failed when the crawler exits with a non-zero code', fun
 
     expect(fn () => (new RunScanJob($this->scan))->handle(
         new ScanDomain,
-        app(ProcessHtmlScan::class),
+        app(ScanPageDispatcher::class),
         app(CrawlerRunner::class),
     ))->toThrow(ScanProcessException::class);
 
@@ -184,7 +187,7 @@ it('transitions scan to failed when the crawler returns invalid json', function 
 
     expect(fn () => (new RunScanJob($this->scan))->handle(
         new ScanDomain,
-        app(ProcessHtmlScan::class),
+        app(ScanPageDispatcher::class),
         app(CrawlerRunner::class),
     ))->toThrow(ScanProcessException::class);
 

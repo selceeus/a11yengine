@@ -5,14 +5,16 @@ namespace App\Jobs;
 use App\Exceptions\ScanProcessException;
 use App\Models\LighthouseResult;
 use App\Models\Scan;
+use App\Models\ScanPage;
 use App\Services\LighthouseRunner;
+use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 class RunLighthouseScanJob implements ShouldQueue
 {
-    use Queueable;
+    use Batchable, Queueable;
 
     /**
      * Maximum seconds this job may run before being killed by the queue worker.
@@ -61,5 +63,11 @@ class RunLighthouseScanJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+
+        ScanPage::withoutGlobalScopes()
+            ->where('scan_id', $this->scan->id)
+            ->where('url', $this->pageUrl)
+            ->first()
+            ?->update(['lighthouse_completed' => true]);
     }
 }

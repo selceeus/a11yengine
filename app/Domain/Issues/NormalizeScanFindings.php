@@ -32,7 +32,6 @@ class NormalizeScanFindings
             ->first();
 
         if ($issue) {
-            $issue->increment('occurrence_count');
             $issue->update(['last_detected_at' => $finding->detected_at]);
 
             return;

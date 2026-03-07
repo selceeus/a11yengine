@@ -345,8 +345,10 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
     });
 
     it('does not create a duplicate Issue when the same rule fires on the same page twice', function (): void {
-        // Two separate pages worth of crawled output but same rule+url in both — simulates
-        // a second scan run encountering an already-open issue.
+        // Simulates a second scan run encountering an already-open issue. Each scan
+        // has its own ID so fingerprints don't collide within a single scan.
+        $scan2 = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->create();
+
         $pageData = pageResult('https://example.com/', [violation('color-contrast', 'serious')]);
 
         crawlerOutput([$pageData]);
@@ -357,7 +359,7 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
         // Second scan against the same page — issue should be incremented, not duplicated
         crawlerOutput([$pageData]);
         foreach ($this->runner->run($this->property->base_url, 60) as $page) {
-            $this->processHtmlScan->handle($this->scan, $page);
+            $this->processHtmlScan->handle($scan2, $page);
         }
 
         expect(Issue::query()->count())->toBe(1)
