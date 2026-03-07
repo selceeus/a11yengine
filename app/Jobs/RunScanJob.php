@@ -67,6 +67,14 @@ class RunScanJob implements ShouldQueue
             throw $e;
         }
 
+        $maxLighthousePages = config('lighthouse.max_pages', 10);
+
+        if ($maxLighthousePages > 0) {
+            foreach (array_slice($pageResults, 0, $maxLighthousePages) as $pageResult) {
+                RunLighthouseScanJob::dispatch($this->scan, $pageResult['url']);
+            }
+        }
+
         $pagesScanned = 0;
         $totalViolations = 0;
 
