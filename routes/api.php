@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
 use App\Http\Controllers\Api\OrganizationUserImpactController;
+use App\Http\Controllers\Api\RiskDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('issues/{issue}/assign', AssignIssueController::class)
@@ -27,6 +28,10 @@ Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBrea
 
 Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactController::class)
     ->name('api.organizations.user-impact');
+
+Route::get('sites/{site}/risk-dashboard', RiskDashboardController::class)
+    ->middleware('auth')
+    ->name('api.sites.risk-dashboard');
 
 // ---------------------------------------------------------------------------
 // Tenant-scoped routes
