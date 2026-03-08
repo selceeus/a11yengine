@@ -16,8 +16,21 @@ class CalculateScanMetrics
 
     public function handle(Scan $scan): void
     {
+        $priorScanId = $this->resolvePriorScanId($scan);
+
         $axeMetrics = $this->computeAxeMetrics($scan);
         $lighthouseMetrics = $this->computeLighthouseMetrics($scan);
+
+        if ($priorScanId !== null) {
+            $axeMetrics['risk_trend'] = $this->computeRiskTrend($axeMetrics['accessibility_risk_score'], $priorScanId);
+            $axeMetrics = array_merge($axeMetrics, $this->computeIssueDeltaMetrics($scan, $priorScanId));
+
+            $lighthouseDeltaMetrics = $this->computeLighthouseDeltaMetrics($priorScanId, $lighthouseMetrics);
+
+            if (! empty($lighthouseDeltaMetrics)) {
+                $lighthouseMetrics = array_merge($lighthouseMetrics, $lighthouseDeltaMetrics);
+            }
+        }
 
         $this->recorder->record($scan, null, $axeMetrics, 'axe');
 
@@ -59,19 +72,11 @@ class CalculateScanMetrics
             ->distinct('findings.issue_id')
             ->count('findings.issue_id');
 
-        $metrics = [
+        return [
             'accessibility_risk_score' => $score,
             'total_issue_count' => $totalIssueCount,
             'critical_issue_count' => $criticalIssueCount,
         ];
-
-        $riskTrend = $this->computeRiskTrend($scan, $score);
-
-        if ($riskTrend !== null) {
-            $metrics['risk_trend'] = $riskTrend;
-        }
-
-        return $metrics;
     }
 
     /**
@@ -97,20 +102,83 @@ class CalculateScanMetrics
         ];
     }
 
-    private function computeRiskTrend(Scan $scan, float $currentScore): ?float
+    private function resolvePriorScanId(Scan $scan): ?int
     {
-        $priorScore = ScanMetric::withoutGlobalScopes()
+        $id = ScanMetric::withoutGlobalScopes()
             ->join('scans', 'scans.id', '=', 'scan_metrics.scan_id')
             ->where('scans.property_id', $scan->property_id)
             ->where('scan_metrics.metric_name', 'accessibility_risk_score')
             ->where('scan_metrics.scan_id', '<', $scan->id)
             ->orderByDesc('scan_metrics.scan_id')
-            ->value('scan_metrics.metric_value');
+            ->value('scan_metrics.scan_id');
 
-        if ($priorScore === null) {
-            return null;
+        return $id !== null ? (int) $id : null;
+    }
+
+    private function computeRiskTrend(float $currentScore, int $priorScanId): float
+    {
+        $priorScore = (float) ScanMetric::withoutGlobalScopes()
+            ->where('scan_id', $priorScanId)
+            ->where('metric_name', 'accessibility_risk_score')
+            ->value('metric_value');
+
+        return round($currentScore - $priorScore, 4);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function computeIssueDeltaMetrics(Scan $scan, int $priorScanId): array
+    {
+        $current = Finding::withoutGlobalScopes()
+            ->where('scan_id', $scan->id)
+            ->whereNotNull('issue_id')
+            ->distinct()
+            ->pluck('issue_id');
+
+        $prior = Finding::withoutGlobalScopes()
+            ->where('scan_id', $priorScanId)
+            ->whereNotNull('issue_id')
+            ->distinct()
+            ->pluck('issue_id');
+
+        return [
+            'resolved_issue_count' => $prior->diff($current)->count(),
+            'new_issue_count' => $current->diff($prior)->count(),
+        ];
+    }
+
+    /**
+     * @param  array<string, int|float>  $currentLighthouseMetrics
+     * @return array<string, float>
+     */
+    private function computeLighthouseDeltaMetrics(int $priorScanId, array $currentLighthouseMetrics): array
+    {
+        if (empty($currentLighthouseMetrics)) {
+            return [];
         }
 
-        return round($currentScore - (float) $priorScore, 4);
+        $priorMetrics = ScanMetric::withoutGlobalScopes()
+            ->where('scan_id', $priorScanId)
+            ->whereIn('metric_name', ['lighthouse_accessibility_avg', 'lighthouse_performance_avg'])
+            ->pluck('metric_value', 'metric_name');
+
+        $deltas = [];
+
+        if (isset($currentLighthouseMetrics['lighthouse_accessibility_avg']) && $priorMetrics->has('lighthouse_accessibility_avg')) {
+            $deltas['lighthouse_accessibility_delta'] = round(
+                $currentLighthouseMetrics['lighthouse_accessibility_avg'] - (float) $priorMetrics['lighthouse_accessibility_avg'],
+                4
+            );
+        }
+
+        if (isset($currentLighthouseMetrics['lighthouse_performance_avg']) && $priorMetrics->has('lighthouse_performance_avg')) {
+            $deltas['lighthouse_performance_delta'] = round(
+                $currentLighthouseMetrics['lighthouse_performance_avg'] - (float) $priorMetrics['lighthouse_performance_avg'],
+                4
+            );
+        }
+
+        return $deltas;
     }
 }
