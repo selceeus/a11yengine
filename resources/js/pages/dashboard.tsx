@@ -1,12 +1,13 @@
 import { Head } from '@inertiajs/react';
 import { usePage } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DashboardRiskMap } from '@/components/charts/DashboardRiskMap';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
 import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
 import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
 import { TopAtRiskProperties } from '@/components/charts/TopAtRiskProperties';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
+import type { Auth, BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -17,7 +18,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard() {
-    const { auth } = usePage().props;
+    const { auth, defaultPropertyId } = usePage().props as { auth: Auth; defaultPropertyId: number | null };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -74,6 +75,16 @@ export default function Dashboard() {
                             ) : (
                                 <p className="text-sm text-muted-foreground">No agency assigned.</p>
                             )}
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                    <Card className="col-span-full">
+                        <CardHeader>
+                            <CardTitle>Accessibility Risk Landscape</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <DashboardRiskMap siteId={defaultPropertyId} />
                         </CardContent>
                     </Card>
                 </div>
