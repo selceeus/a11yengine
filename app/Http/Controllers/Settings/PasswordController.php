@@ -25,6 +25,7 @@ class PasswordController extends Controller
     {
         $request->user()->update([
             'password' => $request->password,
+            'must_change_password' => false,
         ]);
 
         return back();

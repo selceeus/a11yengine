@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforcePasswordChange;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetCurrentAgency;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             SetCurrentAgency::class,
+            EnforcePasswordChange::class,
         ]);
 
         $middleware->alias([

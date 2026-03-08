@@ -51,6 +51,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
 
     Route::get('team', [TeamController::class, 'index'])->name('team.index');
+    Route::get('team/members/create', [TeamController::class, 'create'])->name('team.members.create');
+    Route::post('team/members', [TeamController::class, 'store'])->name('team.members.store');
+    Route::get('team/members/{user}/edit', [TeamController::class, 'edit'])->name('team.members.edit');
+    Route::patch('team/members/{user}', [TeamController::class, 'update'])->name('team.members.update');
+    Route::patch('team/members/{user}/password', [TeamController::class, 'updatePassword'])->name('team.members.password');
+    Route::patch('team/members/{user}/role', [TeamController::class, 'updateRole'])->name('team.members.role');
     Route::delete('team/members/{user}', [TeamController::class, 'destroyMember'])->name('team.members.destroy');
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroyInvitation'])->name('team.invitations.destroy');
 

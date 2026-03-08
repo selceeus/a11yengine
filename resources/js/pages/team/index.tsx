@@ -1,4 +1,4 @@
-import { Form, Head, usePage, useForm } from '@inertiajs/react';
+import { Form, Head, Link, usePage, useForm } from '@inertiajs/react';
 import SendInvitationController from '@/actions/App/Http/Controllers/SendInvitationController';
 import * as TeamController from '@/actions/App/Http/Controllers/TeamController';
 import InputError from '@/components/input-error';
@@ -33,9 +33,11 @@ function formatDate(iso: string): string {
 export default function Index({
     members,
     invitations,
+    canManageTeam,
 }: {
     members: Member[];
     invitations: Invitation[];
+    canManageTeam: boolean;
 }) {
     const { flash, auth } = usePage().props;
 
@@ -44,7 +46,14 @@ export default function Index({
             <Head title="Team" />
 
             <div className="flex flex-col gap-8 p-6">
-                <h1 className="text-xl font-semibold">Team</h1>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-xl font-semibold">Team</h1>
+                    {canManageTeam && (
+                        <Button asChild size="sm">
+                            <Link href={TeamController.create().url}>Add member</Link>
+                        </Button>
+                    )}
+                </div>
 
                 {flash.status && (
                     <Alert>
@@ -74,7 +83,17 @@ export default function Index({
                                         <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
                                         <td className="px-4 py-3 text-muted-foreground">{formatDate(member.created_at)}</td>
                                         <td className="px-4 py-3 text-right">
-                                            {member.id !== auth.user.id && (
+                                            {canManageTeam && (
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <Link href={TeamController.edit({ user: member.id }).url}>Edit</Link>
+                                                    </Button>
+                                                    {member.id !== auth.user.id && (
+                                                        <RemoveMemberButton member={member} />
+                                                    )}
+                                                </div>
+                                            )}
+                                            {!canManageTeam && member.id !== auth.user.id && (
                                                 <RemoveMemberButton member={member} />
                                             )}
                                         </td>
