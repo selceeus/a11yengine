@@ -151,12 +151,12 @@ export default function Edit({
                                 <>
                                     <div className="grid gap-2">
                                         <Label htmlFor="role">Role</Label>
-                                        <Select name="role" defaultValue={currentRole ?? ''}>
+                                        <Select name="role" defaultValue={currentRole ?? 'no-role'}>
                                             <SelectTrigger id="role">
                                                 <SelectValue placeholder="No role assigned" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">No role</SelectItem>
+                                                <SelectItem value="no-role">No role</SelectItem>
                                                 {availableRoles.map((role) => (
                                                     <SelectItem key={role.value} value={role.value}>
                                                         {role.label}

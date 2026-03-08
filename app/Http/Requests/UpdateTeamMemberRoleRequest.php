@@ -13,6 +13,13 @@ class UpdateTeamMemberRoleRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('role') === 'no-role') {
+            $this->merge(['role' => null]);
+        }
+    }
+
     /**
      * @return array<string, array<int, mixed>>
      */

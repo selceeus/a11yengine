@@ -79,7 +79,7 @@ export default function Dashboard() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                <div className="relative min-h-scrren flex-1 overflow-hidden rounded-xl md:min-h-min">
                     <Card className="col-span-full">
                         <CardHeader>
                             <CardTitle>Accessibility Risk Landscape</CardTitle>
@@ -92,7 +92,7 @@ export default function Dashboard() {
                 <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
                     <Card className="col-span-full">
                         <CardHeader>
-                            <CardTitle>Living Accessibility Planet</CardTitle>
+                            <CardTitle>Accessibility Risk Sphere</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <DashboardRiskGlobe siteId={defaultPropertyId} />
