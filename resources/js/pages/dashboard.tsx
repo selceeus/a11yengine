@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { usePage } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DashboardRiskGlobe } from '@/components/charts/DashboardRiskGlobe';
 import { DashboardRiskMap } from '@/components/charts/DashboardRiskMap';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
 import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
@@ -85,6 +86,16 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                             <DashboardRiskMap siteId={defaultPropertyId} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
+                    <Card className="col-span-full">
+                        <CardHeader>
+                            <CardTitle>Living Accessibility Planet</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <DashboardRiskGlobe siteId={defaultPropertyId} />
                         </CardContent>
                     </Card>
                 </div>
