@@ -7,6 +7,7 @@ use App\Http\Requests\StoreScanRequest;
 use App\Jobs\RunScanJob;
 use App\Models\Agency;
 use App\Models\Finding;
+use App\Models\LighthouseResult;
 use App\Models\Property;
 use App\Models\Scan;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -87,10 +88,26 @@ class ScanController extends Controller
             ->limit(10)
             ->pluck('count', 'rule_key');
 
+        $lighthouseResults = LighthouseResult::query()
+            ->where('scan_id', $scan->id)
+            ->select([
+                'url',
+                'performance_score',
+                'accessibility_score',
+                'best_practices_score',
+                'seo_score',
+                'largest_contentful_paint',
+                'first_contentful_paint',
+                'total_blocking_time',
+                'cumulative_layout_shift',
+            ])
+            ->get();
+
         return Inertia::render('scans/show', [
             'scan' => $scan,
             'severityBreakdown' => $severityBreakdown,
             'topRules' => $topRules,
+            'lighthouseResults' => $lighthouseResults,
         ]);
     }
 }

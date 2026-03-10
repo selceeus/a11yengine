@@ -35,6 +35,18 @@ type Scan = {
     scan_pages: ScanPage[];
 };
 
+type LighthouseResult = {
+    url: string;
+    performance_score: number | null;
+    accessibility_score: number | null;
+    best_practices_score: number | null;
+    seo_score: number | null;
+    largest_contentful_paint: number | null;
+    first_contentful_paint: number | null;
+    total_blocking_time: number | null;
+    cumulative_layout_shift: number | null;
+};
+
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
     serious: 'bg-orange-500',
@@ -64,10 +76,12 @@ export default function Show({
     scan,
     severityBreakdown,
     topRules,
+    lighthouseResults,
 }: {
     scan: Scan;
     severityBreakdown: SeverityRow[];
     topRules: Record<string, number>;
+    lighthouseResults: LighthouseResult[];
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
@@ -129,53 +143,7 @@ export default function Show({
                     </div>
                 )}
 
-                {/* Pages table */}
-                {scan.scan_pages.length > 0 && (
-                    <div className="rounded-xl border">
-                        <table className="w-full text-sm">
-                            <thead className="border-b bg-muted/50">
-                                <tr className="text-xs text-muted-foreground">
-                                    <th className="px-4 py-3 text-left font-medium">Page URL</th>
-                                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-right font-medium">Violations</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {scan.scan_pages.map((page) => (
-                                    <tr key={page.id} className="transition-colors hover:bg-muted/30">
-                                        <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
-                                            <a
-                                                href={page.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="hover:underline"
-                                            >
-                                                {page.url}
-                                            </a>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Badge variant={pageStatusVariant(page.status)}>
-                                                {page.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-right tabular-nums">
-                                            {page.violations_count}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* Empty completed state */}
-                {scan.status === 'completed' && scan.scan_pages.length === 0 && (
-                    <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
-                        No pages were recorded for this scan.
-                    </div>
-                )}
-
-                {/* Breakdown — only show once completed */}
+                 {/* Breakdown — only show once completed */}
                 {scan.status === 'completed' && severityBreakdown.length > 0 && (
                     <div className="grid gap-4 sm:grid-cols-2">
                         {/* Severity breakdown */}
@@ -223,6 +191,113 @@ export default function Show({
                     </div>
                 )}
 
+                {/* Pages table */}
+                {scan.scan_pages.length > 0 && (
+                    <div className="rounded-xl border">
+                        <table className="w-full text-sm">
+                            <thead className="border-b bg-muted/50">
+                                <tr className="text-xs text-muted-foreground">
+                                    <th className="px-4 py-3 text-left font-medium">Page URL</th>
+                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                    <th className="px-4 py-3 text-right font-medium">Violations</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {scan.scan_pages.map((page) => (
+                                    <tr key={page.id} className="transition-colors hover:bg-muted/30">
+                                        <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
+                                            <a
+                                                href={page.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="hover:underline"
+                                            >
+                                                {page.url}
+                                            </a>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <Badge variant={pageStatusVariant(page.status)}>
+                                                {page.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-right tabular-nums">
+                                            {page.violations_count}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* Lighthouse results */}
+                {lighthouseResults.length > 0 && (
+                    <div className="rounded-xl border">
+                        <div className="border-b bg-muted/50 px-4 py-3">
+                            <h2 className="text-sm font-semibold">Lighthouse scores</h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="border-b bg-muted/50">
+                                    <tr className="text-xs text-muted-foreground">
+                                        <th className="px-4 py-3 text-left font-medium">Page URL</th>
+                                        <th className="px-4 py-3 text-right font-medium">Perf</th>
+                                        <th className="px-4 py-3 text-right font-medium">A11y</th>
+                                        <th className="px-4 py-3 text-right font-medium">Best Practices</th>
+                                        <th className="px-4 py-3 text-right font-medium">SEO</th>
+                                        <th className="px-4 py-3 text-right font-medium">LCP (ms)</th>
+                                        <th className="px-4 py-3 text-right font-medium">FCP (ms)</th>
+                                        <th className="px-4 py-3 text-right font-medium">TBT (ms)</th>
+                                        <th className="px-4 py-3 text-right font-medium">CLS</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {lighthouseResults.map((result) => (
+                                        <tr key={result.url} className="transition-colors hover:bg-muted/30">
+                                            <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
+                                                <a href={result.url} target="_blank" rel="noreferrer" className="hover:underline">
+                                                    {result.url}
+                                                </a>
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <ScoreChip score={result.performance_score} />
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <ScoreChip score={result.accessibility_score} />
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <ScoreChip score={result.best_practices_score} />
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <ScoreChip score={result.seo_score} />
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                {result.largest_contentful_paint?.toFixed(0) ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                {result.first_contentful_paint?.toFixed(0) ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                {result.total_blocking_time?.toFixed(0) ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                {result.cumulative_layout_shift?.toFixed(3) ?? '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Empty completed state */}
+                {scan.status === 'completed' && scan.scan_pages.length === 0 && (
+                    <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                        No pages were recorded for this scan.
+                    </div>
+                )}
+
                 <div className="text-sm">
                     <Link href={ScanController.index().url} className="text-primary hover:underline">
                         ← Back to scans
@@ -231,6 +306,17 @@ export default function Show({
             </div>
         </AppLayout>
     );
+}
+
+function ScoreChip({ score }: { score: number | null }) {
+    if (score === null) return <span className="text-muted-foreground">—</span>;
+
+    const colour =
+        score >= 90 ? 'text-green-600' :
+        score >= 50 ? 'text-orange-500' :
+        'text-red-600';
+
+    return <span className={`font-semibold tabular-nums ${colour}`}>{score}</span>;
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
