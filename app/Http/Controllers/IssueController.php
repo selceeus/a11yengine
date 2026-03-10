@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\IssueStatus;
 use App\Http\Requests\UpdateIssueRequest;
+use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -15,15 +16,14 @@ class IssueController extends Controller
 {
     use AuthorizesRequests;
 
+    public function __construct(private readonly Agency $agency) {}
+
     public function index(): Response
     {
         $this->authorize('viewAny', Issue::class);
 
         $issues = Issue::query()
-            ->with([
-                'property:id,name',
-                'organization:id,name',
-            ])
+            ->with(['property:id,name', 'organization:id,name'])
             ->when(request('status'), fn ($q, $status) => $q->where('status', $status))
             ->when(request('severity'), fn ($q, $severity) => $q->where('severity', $severity))
             ->when(request('property_id'), fn ($q, $propertyId) => $q->where('property_id', $propertyId))
@@ -31,10 +31,16 @@ class IssueController extends Controller
             ->paginate(50)
             ->withQueryString();
 
+        $properties = $this->agency->properties()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('issues/index', [
             'issues' => $issues,
             'filters' => request()->only(['status', 'severity', 'property_id']),
             'statuses' => IssueStatus::cases(),
+            'properties' => $properties,
         ]);
     }
 

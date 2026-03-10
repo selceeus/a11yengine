@@ -14,6 +14,7 @@ type Issue = {
     severity: string;
     status: string;
     occurrence_count: number;
+    risk_weight: number | null;
     last_detected_at: string;
     property: Property | null;
     organization: Organization | null;
@@ -32,6 +33,17 @@ type Filters = {
     severity?: string;
     property_id?: string;
 };
+
+// in the component props:
+export default function Index({
+    issues,
+    filters,
+    properties,
+}: {
+    issues: PaginatedIssues;
+    filters: Filters;
+    properties: Property[];
+}) {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Issues', href: IssueController.index().url },
@@ -58,13 +70,6 @@ function filter(patch: Partial<Filters>, current: Filters) {
     router.get(IssueController.index().url, next as Record<string, string>, { preserveState: true, replace: true });
 }
 
-export default function Index({
-    issues,
-    filters,
-}: {
-    issues: PaginatedIssues;
-    filters: Filters;
-}) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Issues" />
@@ -76,6 +81,22 @@ export default function Index({
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3">
+                    <Select
+                        value={filters.property_id ?? 'all'}
+                        onValueChange={(v) => filter({ property_id: v === 'all' ? '' : v }, filters)}
+                    >
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="All properties" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All properties</SelectItem>
+                            {properties.map((p) => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                    {p.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Select
                         value={filters.status ?? 'all'}
                         onValueChange={(v) => filter({ status: v === 'all' ? '' : v }, filters)}
@@ -119,6 +140,7 @@ export default function Index({
                                 <th className="px-4 py-3 text-left font-medium">Severity</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
                                 <th className="px-4 py-3 text-left font-medium">Occurrences</th>
+                                <th className="px-4 py-3 text-right font-medium">Risk weight</th>
                                 <th className="px-4 py-3 text-left font-medium">Last detected</th>
                                 <th className="px-4 py-3"></th>
                             </tr>
@@ -126,7 +148,7 @@ export default function Index({
                         <tbody className="divide-y">
                             {issues.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
                                         No issues found.
                                     </td>
                                 </tr>
@@ -144,6 +166,7 @@ export default function Index({
                                             {statusLabels[issue.status] ?? issue.status}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">{issue.occurrence_count}</td>
+                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {new Date(issue.last_detected_at).toLocaleDateString()}
                                         </td>
@@ -180,3 +203,4 @@ export default function Index({
         </AppLayout>
     );
 }
+
