@@ -65,6 +65,7 @@ class ProcessHtmlScan
                     'property_id' => $scan->property_id,
                     'rule_key' => $violation['id'],
                     'severity' => $severity,
+                    'wcag_category' => $this->resolveWcagCategory($violation['tags'] ?? []),
                     'element_identifier' => isset($node['target'][0]) ? $node['target'][0] : null,
                     'page_url' => $url,
                     'message' => $node['failureSummary'] ?? '',
@@ -107,6 +108,7 @@ class ProcessHtmlScan
                 'rule_key' => $finding->rule_key,
                 'page_url' => $finding->page_url,
                 'severity' => $this->mapSeverityToIssue($finding->severity),
+                'wcag_category' => $finding->wcag_category,
                 'status' => IssueStatus::Open,
                 'occurrence_count' => 1,
                 'risk_weight' => $this->resolveRiskWeight($finding->severity),
@@ -149,5 +151,28 @@ class ProcessHtmlScan
             FindingSeverity::MINOR => 25,
             FindingSeverity::INFO => 10,
         };
+    }
+
+    /**
+     * @param  list<string>  $tags
+     */
+    private function resolveWcagCategory(array $tags): string
+    {
+        $prefixes = [
+            'wcag1' => 'perceivable',
+            'wcag2' => 'operable',
+            'wcag3' => 'understandable',
+            'wcag4' => 'robust',
+        ];
+
+        foreach ($tags as $tag) {
+            foreach ($prefixes as $prefix => $category) {
+                if (str_starts_with($tag, $prefix)) {
+                    return $category;
+                }
+            }
+        }
+
+        return 'best-practice';
     }
 }

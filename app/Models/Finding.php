@@ -21,6 +21,7 @@ class Finding extends Model
         'rule_key',
         'fingerprint',
         'severity',
+        'wcag_category',
         'element_identifier',
         'page_url',
         'message',

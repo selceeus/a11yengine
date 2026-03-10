@@ -15,6 +15,7 @@ type Issue = {
     status: string;
     occurrence_count: number;
     risk_weight: number | null;
+    wcag_category: string | null;
     last_detected_at: string;
     property: Property | null;
     organization: Organization | null;
@@ -138,6 +139,7 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                 <th className="px-4 py-3 text-left font-medium">Rule</th>
                                 <th className="px-4 py-3 text-left font-medium">Property</th>
                                 <th className="px-4 py-3 text-left font-medium">Severity</th>
+                                <th className="px-4 py-3 text-left font-medium">WCAG category</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
                                 <th className="px-4 py-3 text-left font-medium">Occurrences</th>
                                 <th className="px-4 py-3 text-right font-medium">Risk weight</th>
@@ -148,7 +150,7 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         <tbody className="divide-y">
                             {issues.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                    <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
                                         No issues found.
                                     </td>
                                 </tr>
@@ -161,6 +163,9 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                             <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
                                                 {issue.severity}
                                             </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground capitalize">
+                                            {issue.wcag_category?.replace('-', ' ') ?? '—'}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {statusLabels[issue.status] ?? issue.status}

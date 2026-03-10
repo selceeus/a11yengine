@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AgencyIssueSummaryController;
 use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
+use App\Http\Controllers\Api\RiskDashboardController;
+use App\Http\Controllers\Api\RiskMapController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
@@ -45,6 +47,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('issues', [IssueController::class, 'index'])->name('issues.index');
     Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
+
+    Route::get('/api/sites/{site}/risk-dashboard', RiskDashboardController::class)
+        ->middleware('auth')
+        ->name('api.sites.risk-dashboard');
+
+    Route::get('/api/sites/{site}/risk-map', RiskMapController::class)
+        ->middleware('auth')
+        ->name('api.sites.risk-map');
 
     Route::get('scans', [ScanController::class, 'index'])->name('scans.index');
     Route::post('scans', [ScanController::class, 'store'])->name('scans.store');

@@ -21,6 +21,7 @@ class Issue extends Model
         'rule_key',
         'page_url',
         'severity',
+        'wcag_category',
         'status',
         'occurrence_count',
         'risk_weight',

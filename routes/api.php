@@ -30,14 +30,6 @@ Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBrea
 Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactController::class)
     ->name('api.organizations.user-impact');
 
-Route::get('sites/{site}/risk-dashboard', RiskDashboardController::class)
-    ->middleware('auth')
-    ->name('api.sites.risk-dashboard');
-
-Route::get('sites/{site}/risk-map', RiskMapController::class)
-    ->middleware('auth')
-    ->name('api.sites.risk-map');
-
 // ---------------------------------------------------------------------------
 // Tenant-scoped routes
 // ---------------------------------------------------------------------------
