@@ -1,12 +1,11 @@
 import { Head } from '@inertiajs/react';
 import { usePage } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DashboardRiskGlobe } from '@/components/charts/DashboardRiskGlobe';
-import { DashboardRiskMap } from '@/components/charts/DashboardRiskMap';
+import { AccessibilityRiskLandscapeBarChart } from '@/components/charts/AccessibilityRiskLandscapeBarChart';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
 import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
 import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
-import { TopAtRiskProperties } from '@/components/charts/TopAtRiskProperties';
+import { TopAtRiskPropertiesBarChart } from '@/components/charts/TopAtRiskPropertiesBarChart';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth, BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
@@ -72,30 +71,20 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                             {auth.agencyId ? (
-                                <TopAtRiskProperties agencyId={auth.agencyId} />
+                                <TopAtRiskPropertiesBarChart agencyId={auth.agencyId} />
                             ) : (
                                 <p className="text-sm text-muted-foreground">No agency assigned.</p>
                             )}
                         </CardContent>
                     </Card>
                 </div>
-                <div className="relative min-h-scrren flex-1 overflow-hidden rounded-xl md:min-h-min">
+                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
                     <Card className="col-span-full">
                         <CardHeader>
                             <CardTitle>Accessibility Risk Landscape</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <DashboardRiskMap siteId={defaultPropertyId} />
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
-                    <Card className="col-span-full">
-                        <CardHeader>
-                            <CardTitle>Accessibility Risk Sphere</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <DashboardRiskGlobe siteId={defaultPropertyId} />
+                            <AccessibilityRiskLandscapeBarChart siteId={defaultPropertyId} />
                         </CardContent>
                     </Card>
                 </div>

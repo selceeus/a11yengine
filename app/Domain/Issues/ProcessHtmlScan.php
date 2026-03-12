@@ -97,7 +97,11 @@ class ProcessHtmlScan
                 ->first();
 
             if ($issue) {
-                $issue->update(['last_detected_at' => $finding->detected_at]);
+                $issue->update([
+                    'last_detected_at' => $finding->detected_at,
+                    'wcag_criteria' => $issue->wcag_criteria ?? $finding->wcag_criteria,
+                    'description' => $issue->description ?? $finding->description,
+                ]);
 
                 $finding->update(['issue_id' => $issue->id]);
 
