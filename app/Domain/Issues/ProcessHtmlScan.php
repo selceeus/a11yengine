@@ -27,7 +27,7 @@ class ProcessHtmlScan
      * Process a single axe-core page result, persisting findings and issues
      * then triggering risk and governance recalculation.
      *
-     * @param  array{url: string, violations: array<int, array{id: string, impact: string|null, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>}  $pageResult
+     * @param  array{url: string, violations: array<int, array{id: string, impact: string|null, description?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>}  $pageResult
      */
     public function handle(Scan $scan, array $pageResult): ScanPage
     {
@@ -48,7 +48,7 @@ class ProcessHtmlScan
     }
 
     /**
-     * @param  array<int, array{id: string, impact: string|null, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>  $violations
+     * @param  array<int, array{id: string, impact: string|null, description?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>  $violations
      * @return Collection<int, Finding>
      */
     private function persistFindings(Scan $scan, string $url, array $violations, \DateTimeInterface $detectedAt): Collection
@@ -57,6 +57,7 @@ class ProcessHtmlScan
 
         foreach ($violations as $violation) {
             $severity = $this->mapImpact($violation['impact'] ?? null);
+            $tags = $violation['tags'] ?? [];
 
             foreach ($violation['nodes'] as $node) {
                 $finding = Finding::query()->create([
@@ -65,7 +66,9 @@ class ProcessHtmlScan
                     'property_id' => $scan->property_id,
                     'rule_key' => $violation['id'],
                     'severity' => $severity,
-                    'wcag_category' => $this->resolveWcagCategory($violation['tags'] ?? []),
+                    'wcag_category' => $this->resolveWcagCategory($tags),
+                    'wcag_criteria' => $this->resolveWcagCriteria($tags),
+                    'description' => $violation['description'] ?? null,
                     'element_identifier' => isset($node['target'][0]) ? $node['target'][0] : null,
                     'page_url' => $url,
                     'message' => $node['failureSummary'] ?? '',
@@ -109,6 +112,8 @@ class ProcessHtmlScan
                 'page_url' => $finding->page_url,
                 'severity' => $this->mapSeverityToIssue($finding->severity),
                 'wcag_category' => $finding->wcag_category,
+                'wcag_criteria' => $finding->wcag_criteria,
+                'description' => $finding->description,
                 'status' => IssueStatus::Open,
                 'occurrence_count' => 1,
                 'risk_weight' => $this->resolveRiskWeight($finding->severity),
@@ -151,6 +156,49 @@ class ProcessHtmlScan
             FindingSeverity::MINOR => 25,
             FindingSeverity::INFO => 10,
         };
+    }
+
+    /**
+     * Extracts the WCAG success criterion and conformance level from axe tags.
+     * e.g. tags ['wcag2aa', 'wcag143'] → '1.4.3 AA'
+     *
+     * @param  list<string>  $tags
+     */
+    private function resolveWcagCriteria(array $tags): ?string
+    {
+        $criterion = null;
+
+        foreach ($tags as $tag) {
+            if (preg_match('/^wcag(\d)(\d)(\d+)$/', $tag, $matches)) {
+                $criterion = $matches[1].'.'.$matches[2].'.'.$matches[3];
+                break;
+            }
+        }
+
+        if ($criterion === null) {
+            return null;
+        }
+
+        $level = null;
+
+        foreach ($tags as $tag) {
+            if (preg_match('/^wcag\d+aaa$/i', $tag)) {
+                $level = 'AAA';
+                break;
+            }
+
+            if (preg_match('/^wcag\d+aa$/i', $tag)) {
+                $level = 'AA';
+                break;
+            }
+
+            if (preg_match('/^wcag\d+a$/i', $tag)) {
+                $level = 'A';
+                break;
+            }
+        }
+
+        return $level !== null ? $criterion.' '.$level : $criterion;
     }
 
     /**

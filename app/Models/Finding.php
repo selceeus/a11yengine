@@ -22,6 +22,8 @@ class Finding extends Model
         'fingerprint',
         'severity',
         'wcag_category',
+        'wcag_criteria',
+        'description',
         'element_identifier',
         'page_url',
         'message',
