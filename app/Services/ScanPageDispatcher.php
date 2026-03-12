@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Risk\RecordPropertyRiskSnapshot;
 use App\Domain\Scans\Scan as ScanDomain;
 use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
@@ -73,6 +74,7 @@ class ScanPageDispatcher
                 (new ScanDomain)->complete($scan, $pages->count(), $pages->sum('violations_count'));
 
                 app(CalculateScanMetrics::class)->handle($scan->fresh() ?? $scan);
+                app(RecordPropertyRiskSnapshot::class)->handle($scan->property_id);
             })
             ->dispatch();
     }

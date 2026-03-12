@@ -191,9 +191,8 @@ it('stores scan-level metrics after the batch completes', function (): void {
         ['url' => 'https://example.com/', 'violations' => []],
     ]);
 
-    expect(\App\Models\ScanMetric::withoutGlobalScopes()
-        ->where('scan_id', $this->scan->id)
-        ->whereNull('page_id')
+    expect(\App\Models\PropertyRiskSnapshot::withoutGlobalScopes()
+        ->where('property_id', $this->property->id)
         ->count()
-    )->toBeGreaterThan(0);
+    )->toBe(1);
 });
