@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -16,6 +18,7 @@ type Issue = {
     occurrence_count: number;
     risk_weight: number | null;
     wcag_category: string | null;
+    wcag_criteria: string | null;
     last_detected_at: string;
     property: Property | null;
     organization: Organization | null;
@@ -33,6 +36,9 @@ type Filters = {
     status?: string;
     severity?: string;
     property_id?: string;
+    wcag_category?: string;
+    date_from?: string;
+    date_to?: string;
 };
 
 // in the component props:
@@ -80,24 +86,23 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     <h1 className="text-xl font-semibold">Issues</h1>
                 </div>
 
+                {/* Property tabs */}
+                <Tabs
+                    value={filters.property_id ?? 'all'}
+                    onValueChange={(v) => filter({ property_id: v === 'all' ? '' : v }, filters)}
+                >
+                    <TabsList>
+                        <TabsTrigger value="all">All properties</TabsTrigger>
+                        {properties.map((p) => (
+                            <TabsTrigger key={p.id} value={String(p.id)}>
+                                {p.name}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3">
-                    <Select
-                        value={filters.property_id ?? 'all'}
-                        onValueChange={(v) => filter({ property_id: v === 'all' ? '' : v }, filters)}
-                    >
-                        <SelectTrigger className="w-48">
-                            <SelectValue placeholder="All properties" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All properties</SelectItem>
-                            {properties.map((p) => (
-                                <SelectItem key={p.id} value={String(p.id)}>
-                                    {p.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                     <Select
                         value={filters.status ?? 'all'}
                         onValueChange={(v) => filter({ status: v === 'all' ? '' : v }, filters)}
@@ -129,6 +134,38 @@ function filter(patch: Partial<Filters>, current: Filters) {
                             <SelectItem value="low">Low</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <Select
+                        value={filters.wcag_category ?? 'all'}
+                        onValueChange={(v) => filter({ wcag_category: v === 'all' ? '' : v }, filters)}
+                    >
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="All WCAG principles" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All WCAG principles</SelectItem>
+                            <SelectItem value="perceivable">Perceivable</SelectItem>
+                            <SelectItem value="operable">Operable</SelectItem>
+                            <SelectItem value="understandable">Understandable</SelectItem>
+                            <SelectItem value="robust">Robust</SelectItem>
+                            <SelectItem value="best-practice">Best practice</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Input
+                        type="date"
+                        className="w-40"
+                        value={filters.date_from ?? ''}
+                        onChange={(e) => filter({ date_from: e.target.value }, filters)}
+                        aria-label="Detected from"
+                    />
+                    <Input
+                        type="date"
+                        className="w-40"
+                        value={filters.date_to ?? ''}
+                        onChange={(e) => filter({ date_to: e.target.value }, filters)}
+                        aria-label="Detected to"
+                    />
                 </div>
 
                 {/* Table */}
@@ -137,9 +174,9 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">
                                 <th className="px-4 py-3 text-left font-medium">Rule</th>
-                                <th className="px-4 py-3 text-left font-medium">Property</th>
+                                {!filters.property_id && <th className="px-4 py-3 text-left font-medium">Property</th>}
                                 <th className="px-4 py-3 text-left font-medium">Severity</th>
-                                <th className="px-4 py-3 text-left font-medium">WCAG category</th>
+                                <th className="px-4 py-3 text-left font-medium">WCAG</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
                                 <th className="px-4 py-3 text-left font-medium">Occurrences</th>
                                 <th className="px-4 py-3 text-right font-medium">Risk weight</th>
@@ -150,7 +187,7 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         <tbody className="divide-y">
                             {issues.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                    <td colSpan={filters.property_id ? 8 : 9} className="px-4 py-10 text-center text-sm text-muted-foreground">
                                         No issues found.
                                     </td>
                                 </tr>
@@ -158,14 +195,16 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                 issues.data.map((issue) => (
                                     <tr key={issue.id} className="transition-colors hover:bg-muted/30">
                                         <td className="px-4 py-3 font-mono text-xs">{issue.rule_key}</td>
-                                        <td className="px-4 py-3 text-muted-foreground">{issue.property?.name ?? '—'}</td>
+                                        {!filters.property_id && <td className="px-4 py-3 text-muted-foreground">{issue.property?.name ?? '—'}</td>}
                                         <td className="px-4 py-3">
                                             <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
                                                 {issue.severity}
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground capitalize">
-                                            {issue.wcag_category?.replace('-', ' ') ?? '—'}
+                                            {issue.wcag_criteria
+                                                ? <span title={issue.wcag_category?.replace('-', ' ') ?? undefined}>{issue.wcag_criteria}</span>
+                                                : (issue.wcag_category?.replace('-', ' ') ?? '—')}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {statusLabels[issue.status] ?? issue.status}

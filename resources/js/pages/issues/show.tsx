@@ -13,6 +13,8 @@ type Finding = {
     id: number;
     rule_key: string;
     severity: string;
+    wcag_criteria: string | null;
+    description: string | null;
     element_identifier: string | null;
     page_url: string;
     message: string | null;
@@ -25,6 +27,9 @@ type Issue = {
     page_url: string;
     severity: string;
     status: string;
+    wcag_category: string | null;
+    wcag_criteria: string | null;
+    description: string | null;
     occurrence_count: number;
     risk_weight: number;
     first_detected_at: string;
@@ -82,6 +87,9 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                 <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
                         <h1 className="font-mono text-xl font-semibold">{issue.rule_key}</h1>
+                        {issue.description && (
+                            <p className="text-sm text-foreground">{issue.description}</p>
+                        )}
                         <a
                             href={issue.page_url}
                             target="_blank"
@@ -121,6 +129,17 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                     <StatCard label="Risk weight" value={String(issue.risk_weight)} />
                 </dl>
 
+                {(issue.wcag_criteria || issue.wcag_category) && (
+                    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        {issue.wcag_criteria && (
+                            <StatCard label="WCAG criterion" value={issue.wcag_criteria} />
+                        )}
+                        {issue.wcag_category && (
+                            <StatCard label="WCAG principle" value={issue.wcag_category.replace('-', ' ')} capitalize />
+                        )}
+                    </dl>
+                )}
+
                 <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <StatCard label="First detected" value={new Date(issue.first_detected_at).toLocaleDateString()} />
                     <StatCard label="Last detected" value={new Date(issue.last_detected_at).toLocaleDateString()} />
@@ -138,6 +157,7 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                                 <tr className="text-xs text-muted-foreground">
                                     <th className="px-4 py-3 text-left font-medium">Page</th>
                                     <th className="px-4 py-3 text-left font-medium">Element</th>
+                                    <th className="px-4 py-3 text-left font-medium">WCAG</th>
                                     <th className="px-4 py-3 text-left font-medium">Severity</th>
                                     <th className="px-4 py-3 text-left font-medium">Detected</th>
                                 </tr>
@@ -145,7 +165,7 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                             <tbody className="divide-y">
                                 {issue.findings.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                                             No findings.
                                         </td>
                                     </tr>
@@ -159,6 +179,11 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                                             </td>
                                             <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                                 {finding.element_identifier ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-xs text-muted-foreground">
+                                                {finding.wcag_criteria
+                                                    ? <span title={finding.description ?? undefined}>{finding.wcag_criteria}</span>
+                                                    : '—'}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <Badge variant={severityVariant[finding.severity] ?? 'outline'} className="capitalize">

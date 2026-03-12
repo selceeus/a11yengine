@@ -27,6 +27,9 @@ class IssueController extends Controller
             ->when(request('status'), fn ($q, $status) => $q->where('status', $status))
             ->when(request('severity'), fn ($q, $severity) => $q->where('severity', $severity))
             ->when(request('property_id'), fn ($q, $propertyId) => $q->where('property_id', $propertyId))
+            ->when(request('wcag_category'), fn ($q, $category) => $q->where('wcag_category', $category))
+            ->when(request('date_from'), fn ($q, $date) => $q->whereDate('last_detected_at', '>=', $date))
+            ->when(request('date_to'), fn ($q, $date) => $q->whereDate('last_detected_at', '<=', $date))
             ->latest('last_detected_at')
             ->paginate(50)
             ->withQueryString();
@@ -38,7 +41,7 @@ class IssueController extends Controller
 
         return Inertia::render('issues/index', [
             'issues' => $issues,
-            'filters' => request()->only(['status', 'severity', 'property_id']),
+            'filters' => request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to']),
             'statuses' => IssueStatus::cases(),
             'properties' => $properties,
         ]);
