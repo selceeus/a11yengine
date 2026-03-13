@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+ import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
