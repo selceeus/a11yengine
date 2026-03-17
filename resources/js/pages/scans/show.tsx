@@ -145,6 +145,25 @@ export default function Show({
                     </div>
                 )}
 
+                {/* Lighthouse averages — only show once completed */}
+                {scan.status === 'completed' && lighthouseResults.length > 0 && (() => {
+                    const avg = (pick: (r: LighthouseResult) => number | null) => {
+                        const vals = lighthouseResults.map(pick).filter((v): v is number => v !== null);
+                        return vals.length > 0 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
+                    };
+                    return (
+                        <div>
+                            <h2 className="mb-3 text-sm font-semibold">Lighthouse averages</h2>
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                <ScoreCard label="Performance" score={avg((r) => r.performance_score)} />
+                                <ScoreCard label="Accessibility" score={avg((r) => r.accessibility_score)} />
+                                <ScoreCard label="Best Practices" score={avg((r) => r.best_practices_score)} />
+                                <ScoreCard label="SEO" score={avg((r) => r.seo_score)} />
+                            </div>
+                        </div>
+                    );
+                })()}
+
                  {/* Breakdown — only show once completed */}
                 {scan.status === 'completed' && severityBreakdown.length > 0 && (
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -380,6 +399,22 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
         <div className="rounded-xl border bg-card p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+        </div>
+    );
+}
+
+function ScoreCard({ label, score }: { label: string; score: number | null }) {
+    const colour =
+        score === null ? 'text-muted-foreground' :
+        score >= 90 ? 'text-green-600' :
+        score >= 50 ? 'text-orange-500' :
+        'text-red-600';
+    return (
+        <div className="rounded-xl border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={`mt-1 text-xl font-semibold tabular-nums ${colour}`}>
+                {score ?? '—'}
+            </p>
         </div>
     );
 }
