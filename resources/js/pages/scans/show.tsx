@@ -155,10 +155,10 @@ export default function Show({
                         <div>
                             <h2 className="mb-3 text-sm font-semibold">Lighthouse averages</h2>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                                <ScoreCard label="Performance" score={avg((r) => r.performance_score)} />
-                                <ScoreCard label="Accessibility" score={avg((r) => r.accessibility_score)} />
-                                <ScoreCard label="Best Practices" score={avg((r) => r.best_practices_score)} />
-                                <ScoreCard label="SEO" score={avg((r) => r.seo_score)} />
+                                <GaugeCard label="Performance" score={avg((r) => r.performance_score)} />
+                                <GaugeCard label="Accessibility" score={avg((r) => r.accessibility_score)} />
+                                <GaugeCard label="Best Practices" score={avg((r) => r.best_practices_score)} />
+                                <GaugeCard label="SEO" score={avg((r) => r.seo_score)} />
                             </div>
                         </div>
                     );
@@ -403,18 +403,49 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
     );
 }
 
-function ScoreCard({ label, score }: { label: string; score: number | null }) {
-    const colour =
+function GaugeCard({ label, score }: { label: string; score: number | null }) {
+    const r = 40;
+    const cx = 50;
+    const cy = 50;
+    const startX = cx - r;
+    const startY = cy;
+    const endX = cx + r;
+
+    const bgArc = `M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${startY}`;
+
+    const pct = score !== null ? Math.max(0, Math.min(100, score)) / 100 : 0;
+    const angle = Math.PI * pct;
+    const fillX = cx + r * Math.cos(Math.PI - angle);
+    const fillY = cy - r * Math.sin(angle);
+    const largeArc = pct > 0.5 ? 1 : 0;
+    const fillArc = pct > 0
+        ? `M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${fillX} ${fillY}`
+        : null;
+
+    const strokeColour =
+        score === null ? '#94a3b8' :
+        score >= 90 ? '#16a34a' :
+        score >= 50 ? '#f97316' :
+        '#dc2626';
+
+    const textColour =
         score === null ? 'text-muted-foreground' :
         score >= 90 ? 'text-green-600' :
         score >= 50 ? 'text-orange-500' :
         'text-red-600';
+
     return (
-        <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className={`mt-1 text-xl font-semibold tabular-nums ${colour}`}>
+        <div className="rounded-xl border bg-card p-4 flex flex-col items-center">
+            <svg viewBox="0 0 100 56" className="w-full max-w-30" aria-hidden="true">
+                <path d={bgArc} fill="none" stroke="#e2e8f0" strokeWidth={10} strokeLinecap="round" />
+                {fillArc && (
+                    <path d={fillArc} fill="none" stroke={strokeColour} strokeWidth={10} strokeLinecap="round" />
+                )}
+            </svg>
+            <p className={`-mt-2 text-2xl font-bold tabular-nums leading-none ${textColour}`}>
                 {score ?? '—'}
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">{label}</p>
         </div>
     );
 }
