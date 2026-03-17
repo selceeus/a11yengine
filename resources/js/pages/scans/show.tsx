@@ -404,29 +404,13 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 function GaugeCard({ label, score }: { label: string; score: number | null }) {
-    const r = 40;
-    const cx = 50;
-    const cy = 50;
-    const startX = cx - r;
-    const startY = cy;
-    const endX = cx + r;
+    const pct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
 
-    const bgArc = `M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${startY}`;
-
-    const pct = score !== null ? Math.max(0, Math.min(100, score)) / 100 : 0;
-    const angle = Math.PI * pct;
-    const fillX = cx + r * Math.cos(Math.PI - angle);
-    const fillY = cy - r * Math.sin(angle);
-    const largeArc = pct > 0.5 ? 1 : 0;
-    const fillArc = pct > 0
-        ? `M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${fillX} ${fillY}`
-        : null;
-
-    const strokeColour =
-        score === null ? '#94a3b8' :
-        score >= 90 ? '#16a34a' :
-        score >= 50 ? '#f97316' :
-        '#dc2626';
+    const barColour =
+        score === null ? 'bg-slate-300' :
+        score >= 90 ? 'bg-green-500' :
+        score >= 50 ? 'bg-orange-500' :
+        'bg-red-500';
 
     const textColour =
         score === null ? 'text-muted-foreground' :
@@ -435,17 +419,17 @@ function GaugeCard({ label, score }: { label: string; score: number | null }) {
         'text-red-600';
 
     return (
-        <div className="rounded-xl border bg-card p-4 flex flex-col items-center">
-            <svg viewBox="0 0 100 56" className="w-full max-w-30" aria-hidden="true">
-                <path d={bgArc} fill="none" stroke="#e2e8f0" strokeWidth={10} strokeLinecap="round" />
-                {fillArc && (
-                    <path d={fillArc} fill="none" stroke={strokeColour} strokeWidth={10} strokeLinecap="round" />
-                )}
-            </svg>
-            <p className={`-mt-2 text-2xl font-bold tabular-nums leading-none ${textColour}`}>
+        <div className="rounded-xl border bg-card p-4 flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
                 {score ?? '—'}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                    className={`h-2 rounded-full transition-all ${barColour}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
         </div>
     );
 }
