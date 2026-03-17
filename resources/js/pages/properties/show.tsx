@@ -37,6 +37,19 @@ type LighthouseAverages = {
     seo_score: number;
 } | null;
 
+type SeverityRow = {
+    severity: 'critical' | 'serious' | 'moderate' | 'minor' | 'info';
+    count: number;
+};
+
+const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
+    critical: 'bg-red-500',
+    serious: 'bg-orange-500',
+    moderate: 'bg-yellow-500',
+    minor: 'bg-blue-400',
+    info: 'bg-slate-400',
+};
+
 function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destructive' | 'outline' {
     switch (status) {
         case 'completed':
@@ -54,10 +67,14 @@ export default function Show({
     property,
     recentScans,
     lighthouseAverages,
+    severityBreakdown,
+    topRules,
 }: {
     property: Property;
     recentScans: Scan[];
     lighthouseAverages: LighthouseAverages;
+    severityBreakdown: SeverityRow[];
+    topRules: Record<string, number>;
 }) {
     const { delete: destroy, processing } = useForm();
 
@@ -119,6 +136,51 @@ export default function Show({
                             <GaugeCard label="Accessibility" score={lighthouseAverages.accessibility_score} />
                             <GaugeCard label="Best Practices" score={lighthouseAverages.best_practices_score} />
                             <GaugeCard label="SEO" score={lighthouseAverages.seo_score} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Violations by severity & top rules */}
+                {severityBreakdown.length > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-xl border p-4">
+                            <h2 className="mb-3 text-sm font-semibold">Violations by Severity (Avg)</h2>
+                            <div className="space-y-2">
+                                {severityBreakdown.map((row) => {
+                                    const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
+                                    const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                                    return (
+                                        <div key={row.severity}>
+                                            <div className="mb-1 flex justify-between text-xs">
+                                                <span className="capitalize">{row.severity}</span>
+                                                <span className="tabular-nums text-muted-foreground">
+                                                    {row.count} ({pct}%)
+                                                </span>
+                                            </div>
+                                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="rounded-xl border p-4">
+                            <h2 className="mb-3 text-sm font-semibold">Top Violated Rules (Avg)</h2>
+                            <ol className="space-y-1.5">
+                                {Object.entries(topRules).map(([rule, count], i) => (
+                                    <li key={rule} className="flex items-center gap-2 text-xs">
+                                        <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">
+                                            {i + 1}.
+                                        </span>
+                                        <span className="flex-1 truncate font-mono">{rule}</span>
+                                        <span className="tabular-nums font-medium">{count}</span>
+                                    </li>
+                                ))}
+                            </ol>
                         </div>
                     </div>
                 )}

@@ -167,7 +167,7 @@ export default function Show({
                  {/* Breakdown — only show once completed */}
                 {scan.status === 'completed' && severityBreakdown.length > 0 && (
                     <div>
-                        <h3 className="mb-3 text-sm font-semibold">WCAG Rresults</h3>
+                        <h3 className="mb-3 text-sm font-semibold">WCAG Results</h3>
                         <div className="grid gap-4 sm:grid-cols-2">
                             {/* Severity breakdown */}
                             <div className="rounded-xl border p-4">

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FindingSeverity;
 use App\Enums\ScanStatus;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
 use App\Models\Agency;
+use App\Models\Finding;
 use App\Models\LighthouseResult;
 use App\Models\Property;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -99,10 +101,47 @@ class PropertyController extends Controller
             }
         }
 
+        $severityBreakdown = [];
+        $topRules = [];
+
+        if ($scanIds->isNotEmpty()) {
+            $severities = Finding::query()
+                ->whereIn('scan_id', $scanIds)
+                ->selectRaw('severity, COUNT(*) as count')
+                ->groupBy('severity')
+                ->get();
+
+            $order = array_flip(array_map(
+                fn (FindingSeverity $s) => $s->value,
+                FindingSeverity::cases(),
+            ));
+
+            $severityBreakdown = $severities
+                ->sortBy(fn ($row) => $order[$row->severity->value] ?? 99)
+                ->map(fn ($row) => [
+                    'severity' => $row->severity->value,
+                    'count' => (int) $row->count,
+                ])
+                ->values()
+                ->toArray();
+
+            $topRules = Finding::query()
+                ->whereIn('scan_id', $scanIds)
+                ->selectRaw('rule_key, COUNT(*) as count')
+                ->groupBy('rule_key')
+                ->orderByDesc('count')
+                ->limit(10)
+                ->pluck('count', 'rule_key')
+                ->map(fn ($c) => (int) $c)
+                ->toArray();
+        }
+
         return Inertia::render('properties/show', [
             'property' => $property,
             'recentScans' => $recentScans,
             'lighthouseAverages' => $lighthouseAverages,
+            'severityBreakdown' => $severityBreakdown,
+            'topRules' => $topRules,
         ]);
     }
 
