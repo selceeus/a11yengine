@@ -36,11 +36,14 @@ function axePage(string $url, array $violations = []): array
     return ['url' => $url, 'violations' => $violations];
 }
 
-function axeViolation(string $id, string $impact, array $nodes = []): array
+function axeViolation(string $id, string $impact, array $nodes = [], array $tags = ['wcag2aa', 'wcag143'], string $helpUrl = 'https://dequeuniversity.com/rules/axe/4.x/color-contrast', string $description = 'Ensures adequate contrast'): array
 {
     return [
         'id' => $id,
         'impact' => $impact,
+        'description' => $description,
+        'helpUrl' => $helpUrl,
+        'tags' => $tags,
         'nodes' => empty($nodes) ? [axeNode('#default')] : $nodes,
     ];
 }
@@ -244,4 +247,90 @@ it('reflects open issues in the risk snapshot score', function (): void {
     $snapshot = RiskSnapshot::query()->where('organization_id', $this->organization->id)->first();
 
     expect($snapshot->total_risk_score)->toBe(75);
+});
+
+// ─── New fields: tags, help_url, element_html, description ───────────────────
+
+it('stores tags and help_url on findings from axe violation', function (): void {
+    $violation = axeViolation(
+        'color-contrast',
+        'serious',
+        [axeNode('#header')],
+        ['wcag2aa', 'wcag143', 'cat.color'],
+        'https://dequeuniversity.com/rules/axe/color-contrast',
+    );
+
+    $this->service->handle($this->scan, axePage('https://example.com', [$violation]));
+
+    $finding = Finding::query()->first();
+
+    expect($finding->tags)->toBe(['wcag2aa', 'wcag143', 'color'])
+        ->and($finding->help_url)->toBe('https://dequeuniversity.com/rules/axe/color-contrast');
+});
+
+it('stores element_html from the node on the finding', function (): void {
+    $node = [
+        'target' => ['#logo'],
+        'html' => '<img src="logo.png">',
+        'failureSummary' => 'Add alt text',
+    ];
+
+    $this->service->handle($this->scan, axePage('https://example.com', [
+        ['id' => 'image-alt', 'impact' => 'critical', 'tags' => ['wcag2a'], 'nodes' => [$node]],
+    ]));
+
+    expect(Finding::query()->first()->element_html)->toBe('<img src="logo.png">');
+});
+
+it('stores description on the finding', function (): void {
+    $this->service->handle($this->scan, axePage('https://example.com', [
+        axeViolation('color-contrast', 'serious', [], ['wcag2aa'], 'https://example.com', 'Ensures contrast ratio meets WCAG AA'),
+    ]));
+
+    expect(Finding::query()->first()->description)->toBe('Ensures contrast ratio meets WCAG AA');
+});
+
+it('propagates tags and help_url to a newly created issue', function (): void {
+    $violation = axeViolation(
+        'color-contrast',
+        'serious',
+        [axeNode('#btn')],
+        ['wcag2aa', 'wcag143'],
+        'https://dequeuniversity.com/rules/axe/color-contrast',
+    );
+
+    $this->service->handle($this->scan, axePage('https://example.com', [$violation]));
+
+    $issue = Issue::query()->first();
+
+    expect($issue->tags)->toBe(['wcag2aa', 'wcag143'])
+        ->and($issue->help_url)->toBe('https://dequeuniversity.com/rules/axe/color-contrast');
+});
+
+it('backfills tags and help_url on an existing issue that had none', function (): void {
+    Issue::factory()->for($this->agency)->for($this->organization)->for($this->property)->create([
+        'rule_key' => 'color-contrast',
+        'page_url' => 'https://example.com',
+        'status' => IssueStatus::Open,
+        'tags' => null,
+        'help_url' => null,
+        'occurrence_count' => 1,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    $violation = axeViolation(
+        'color-contrast',
+        'serious',
+        [axeNode('#btn')],
+        ['wcag2aa', 'wcag143'],
+        'https://dequeuniversity.com/rules/axe/color-contrast',
+    );
+
+    $this->service->handle($this->scan, axePage('https://example.com', [$violation]));
+
+    $issue = Issue::query()->first();
+
+    expect($issue->tags)->toBe(['wcag2aa', 'wcag143'])
+        ->and($issue->help_url)->toBe('https://dequeuniversity.com/rules/axe/color-contrast');
 });

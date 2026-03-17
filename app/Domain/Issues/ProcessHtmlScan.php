@@ -27,7 +27,7 @@ class ProcessHtmlScan
      * Process a single axe-core page result, persisting findings and issues
      * then triggering risk and governance recalculation.
      *
-     * @param  array{url: string, violations: array<int, array{id: string, impact: string|null, description?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>}  $pageResult
+     * @param  array{url: string, violations: array<int, array{id: string, impact: string|null, description?: string, helpUrl?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>}  $pageResult
      */
     public function handle(Scan $scan, array $pageResult): ScanPage
     {
@@ -48,7 +48,7 @@ class ProcessHtmlScan
     }
 
     /**
-     * @param  array<int, array{id: string, impact: string|null, description?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>  $violations
+     * @param  array<int, array{id: string, impact: string|null, description?: string, helpUrl?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>  $violations
      * @return Collection<int, Finding>
      */
     private function persistFindings(Scan $scan, string $url, array $violations, \DateTimeInterface $detectedAt): Collection
@@ -57,7 +57,10 @@ class ProcessHtmlScan
 
         foreach ($violations as $violation) {
             $severity = $this->mapImpact($violation['impact'] ?? null);
-            $tags = $violation['tags'] ?? [];
+            $tags = array_map(
+                fn (string $tag) => str_starts_with($tag, 'cat.') ? substr($tag, 4) : $tag,
+                $violation['tags'] ?? [],
+            );
 
             foreach ($violation['nodes'] as $node) {
                 $finding = Finding::query()->create([
@@ -69,7 +72,10 @@ class ProcessHtmlScan
                     'wcag_category' => $this->resolveWcagCategory($tags),
                     'wcag_criteria' => $this->resolveWcagCriteria($tags),
                     'description' => $violation['description'] ?? null,
-                    'element_identifier' => isset($node['target'][0]) ? $node['target'][0] : null,
+                    'tags' => $tags ?: null,
+                    'help_url' => $violation['helpUrl'] ?? null,
+                    'element_identifier' => $node['target'][0] ?? null,
+                    'element_html' => $node['html'] ?? null,
                     'page_url' => $url,
                     'message' => $node['failureSummary'] ?? '',
                     'detected_at' => $detectedAt,
@@ -101,6 +107,8 @@ class ProcessHtmlScan
                     'last_detected_at' => $finding->detected_at,
                     'wcag_criteria' => $issue->wcag_criteria ?? $finding->wcag_criteria,
                     'description' => $issue->description ?? $finding->description,
+                    'tags' => $issue->tags ?? $finding->tags,
+                    'help_url' => $issue->help_url ?? $finding->help_url,
                 ]);
 
                 $finding->update(['issue_id' => $issue->id]);
@@ -118,6 +126,8 @@ class ProcessHtmlScan
                 'wcag_category' => $finding->wcag_category,
                 'wcag_criteria' => $finding->wcag_criteria,
                 'description' => $finding->description,
+                'tags' => $finding->tags,
+                'help_url' => $finding->help_url,
                 'status' => IssueStatus::Open,
                 'occurrence_count' => 1,
                 'risk_weight' => $this->resolveRiskWeight($finding->severity),

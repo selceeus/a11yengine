@@ -25,6 +25,8 @@ class IssueFactory extends Factory
             'rule_key' => 'wcag-'.fake()->numerify('#.#.#'),
             'page_url' => fake()->url(),
             'severity' => fake()->randomElement(IssueSeverity::cases()),
+            'tags' => fake()->optional()->randomElements(['wcag2aa', 'wcag143', 'color', 'best-practice'], 2),
+            'help_url' => fake()->optional()->url(),
             'status' => IssueStatus::Open,
             'occurrence_count' => fake()->numberBetween(1, 50),
             'risk_weight' => fake()->numberBetween(0, 100),

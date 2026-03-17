@@ -15,7 +15,10 @@ type Finding = {
     severity: string;
     wcag_criteria: string | null;
     description: string | null;
+    tags: string[] | null;
+    help_url: string | null;
     element_identifier: string | null;
+    element_html: string | null;
     page_url: string;
     message: string | null;
     detected_at: string;
@@ -30,6 +33,8 @@ type Issue = {
     wcag_category: string | null;
     wcag_criteria: string | null;
     description: string | null;
+    tags: string[] | null;
+    help_url: string | null;
     occurrence_count: number;
     risk_weight: number;
     first_detected_at: string;
@@ -90,6 +95,16 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                         {issue.description && (
                             <p className="text-sm text-foreground">{issue.description}</p>
                         )}
+                        {issue.help_url && (
+                            <a
+                                href={issue.help_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sm text-primary hover:underline"
+                            >
+                                Learn more about this rule ↗
+                            </a>
+                        )}
                         <a
                             href={issue.page_url}
                             target="_blank"
@@ -98,6 +113,15 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                         >
                             {issue.page_url}
                         </a>
+                        {issue.tags && issue.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                                {issue.tags.map((tag) => (
+                                    <Badge key={tag} variant="outline" className="text-xs">
+                                        {tag}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
@@ -157,6 +181,7 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                                 <tr className="text-xs text-muted-foreground">
                                     <th className="px-4 py-3 text-left font-medium">Page</th>
                                     <th className="px-4 py-3 text-left font-medium">Element</th>
+                                    <th className="px-4 py-3 text-left font-medium">HTML</th>
                                     <th className="px-4 py-3 text-left font-medium">WCAG</th>
                                     <th className="px-4 py-3 text-left font-medium">Severity</th>
                                     <th className="px-4 py-3 text-left font-medium">Detected</th>
@@ -165,7 +190,7 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                             <tbody className="divide-y">
                                 {issue.findings.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                                             No findings.
                                         </td>
                                     </tr>
@@ -179,6 +204,13 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                                             </td>
                                             <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                                 {finding.element_identifier ?? '—'}
+                                            </td>
+                                            <td className="max-w-xs px-4 py-3">
+                                                {finding.element_html ? (
+                                                    <code className="block truncate font-mono text-xs text-muted-foreground" title={finding.element_html}>
+                                                        {finding.element_html}
+                                                    </code>
+                                                ) : '—'}
                                             </td>
                                             <td className="px-4 py-3 text-xs text-muted-foreground">
                                                 {finding.wcag_criteria

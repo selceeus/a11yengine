@@ -24,6 +24,8 @@ class Issue extends Model
         'wcag_category',
         'wcag_criteria',
         'description',
+        'tags',
+        'help_url',
         'status',
         'occurrence_count',
         'risk_weight',
@@ -47,6 +49,7 @@ class Issue extends Model
             'first_detected_at' => 'datetime',
             'last_detected_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'tags' => 'array',
         ];
     }
 

@@ -24,7 +24,10 @@ class Finding extends Model
         'wcag_category',
         'wcag_criteria',
         'description',
+        'tags',
+        'help_url',
         'element_identifier',
+        'element_html',
         'page_url',
         'message',
         'detected_at',
@@ -64,6 +67,7 @@ class Finding extends Model
         return [
             'severity' => FindingSeverity::class,
             'detected_at' => 'datetime',
+            'tags' => 'array',
         ];
     }
 
