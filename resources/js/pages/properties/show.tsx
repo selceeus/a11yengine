@@ -79,7 +79,7 @@ export default function Show({
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-xl font-semibold">{property.name}</h1>
+                        <h1 className="text-2xl font-semibold pb-2">{property.name}</h1>
                         <a
                             href={property.base_url}
                             target="_blank"

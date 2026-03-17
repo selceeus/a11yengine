@@ -108,7 +108,7 @@ export default function Show({
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-xl font-semibold">
+                        <h1 className="text-2xl font-semibold pb-2">
                             {scan.property?.name ?? `Scan #${scan.id}`}
                         </h1>
                         {scan.property && (

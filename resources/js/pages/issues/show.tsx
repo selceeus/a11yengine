@@ -91,9 +91,19 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                        <h1 className="font-mono text-xl font-semibold">{issue.rule_key}</h1>
+                        <h1 className="font-mono text-2xl font-semibold pb-4">{issue.rule_key}</h1>
                         {issue.description && (
-                            <p className="text-sm text-foreground">{issue.description}</p>
+                            <p className="text-md text-foreground">{issue.description}</p>
+                        )}
+                        {issue.tags && issue.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-4 pb-4">
+                            <h5>Tags:</h5>
+                                {issue.tags.map((tag) => (
+                                    <Badge key={tag} variant="outline" className="text-xs">
+                                        {tag}
+                                    </Badge>
+                                ))}
+                            </div>
                         )}
                         {issue.help_url && (
                             <a
@@ -104,23 +114,6 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                             >
                                 Learn more about this rule ↗
                             </a>
-                        )}
-                        <a
-                            href={issue.page_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm text-muted-foreground hover:underline"
-                        >
-                            {issue.page_url}
-                        </a>
-                        {issue.tags && issue.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 pt-1">
-                                {issue.tags.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                            </div>
                         )}
                     </div>
 
