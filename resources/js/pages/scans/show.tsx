@@ -153,7 +153,7 @@ export default function Show({
                     };
                     return (
                         <div>
-                            <h2 className="mb-3 text-sm font-semibold">Lighthouse averages</h2>
+                            <h3 className="mb-3 text-sm font-semibold">Lighthouse Averages</h3>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                                 <GaugeCard label="Performance" score={avg((r) => r.performance_score)} />
                                 <GaugeCard label="Accessibility" score={avg((r) => r.accessibility_score)} />
@@ -166,48 +166,51 @@ export default function Show({
 
                  {/* Breakdown — only show once completed */}
                 {scan.status === 'completed' && severityBreakdown.length > 0 && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        {/* Severity breakdown */}
-                        <div className="rounded-xl border p-4">
-                            <h2 className="mb-3 text-sm font-semibold">Violations by severity</h2>
-                            <div className="space-y-2">
-                                {severityBreakdown.map((row) => {
-                                    const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
-                                    const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
-                                    return (
-                                        <div key={row.severity}>
-                                            <div className="mb-1 flex justify-between text-xs">
-                                                <span className="capitalize">{row.severity}</span>
-                                                <span className="tabular-nums text-muted-foreground">
-                                                    {row.count} ({pct}%)
-                                                </span>
+                    <div>
+                        <h3 className="mb-3 text-sm font-semibold">WCAG Rresults</h3>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {/* Severity breakdown */}
+                            <div className="rounded-xl border p-4">
+                                <h3 className="mb-3 text-sm font-semibold">Violations by severity</h3>
+                                <div className="space-y-2">
+                                    {severityBreakdown.map((row) => {
+                                        const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
+                                        const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                                        return (
+                                            <div key={row.severity}>
+                                                <div className="mb-1 flex justify-between text-xs">
+                                                    <span className="capitalize">{row.severity}</span>
+                                                    <span className="tabular-nums text-muted-foreground">
+                                                        {row.count} ({pct}%)
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                    <div
+                                                        className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                                                <div
-                                                    className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
-                                                    style={{ width: `${pct}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Top rules */}
-                        <div className="rounded-xl border p-4">
-                            <h2 className="mb-3 text-sm font-semibold">Top violated rules</h2>
-                            <ol className="space-y-1.5">
-                                {Object.entries(topRules).map(([rule, count], i) => (
-                                    <li key={rule} className="flex items-center gap-2 text-xs">
-                                        <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">
-                                            {i + 1}.
-                                        </span>
-                                        <span className="flex-1 truncate font-mono">{rule}</span>
-                                        <span className="tabular-nums font-medium">{count}</span>
-                                    </li>
-                                ))}
-                            </ol>
+                            {/* Top rules */}
+                            <div className="rounded-xl border p-4">
+                                <h2 className="mb-3 text-sm font-semibold">Top violated rules</h2>
+                                <ol className="space-y-1.5">
+                                    {Object.entries(topRules).map(([rule, count], i) => (
+                                        <li key={rule} className="flex items-center gap-2 text-xs">
+                                            <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">
+                                                {i + 1}.
+                                            </span>
+                                            <span className="flex-1 truncate font-mono">{rule}</span>
+                                            <span className="tabular-nums font-medium">{count}</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -3,6 +3,9 @@ import * as PropertyController from '@/actions/App/Http/Controllers/PropertyCont
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PropertyRiskTrendsChart } from '@/components/charts/PropertyRiskTrendsChart';
+import { PropertyScanActivityChart } from '@/components/charts/PropertyScanActivityChart';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -27,6 +30,13 @@ type Scan = {
     created_at: string;
 };
 
+type LighthouseAverages = {
+    performance_score: number;
+    accessibility_score: number;
+    best_practices_score: number;
+    seo_score: number;
+} | null;
+
 function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destructive' | 'outline' {
     switch (status) {
         case 'completed':
@@ -43,9 +53,11 @@ function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destr
 export default function Show({
     property,
     recentScans,
+    lighthouseAverages,
 }: {
     property: Property;
     recentScans: Scan[];
+    lighthouseAverages: LighthouseAverages;
 }) {
     const { delete: destroy, processing } = useForm();
 
@@ -97,6 +109,39 @@ export default function Show({
                     <StatCard label="Organization" value={property.organization?.name ?? '—'} />
                     <StatCard label="Status" value={property.status} capitalize />
                 </dl>
+
+                {/* Lighthouse averages */}
+                {lighthouseAverages && (
+                    <div>
+                        <h2 className="mb-3 text-sm font-semibold">Lighthouse averages (all scans)</h2>
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                            <GaugeCard label="Performance" score={lighthouseAverages.performance_score} />
+                            <GaugeCard label="Accessibility" score={lighthouseAverages.accessibility_score} />
+                            <GaugeCard label="Best Practices" score={lighthouseAverages.best_practices_score} />
+                            <GaugeCard label="SEO" score={lighthouseAverages.seo_score} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Charts */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Scan Activity</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <PropertyScanActivityChart propertyId={property.id} />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Property Risk Trends</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <PropertyRiskTrendsChart propertyId={property.id} />
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Recent scans */}
                 <div className="rounded-xl border">
@@ -189,6 +234,37 @@ function StatCard({
             <p className={`mt-1 text-base font-semibold ${capitalize ? 'capitalize' : ''}`}>
                 {value}
             </p>
+        </div>
+    );
+}
+
+function GaugeCard({ label, score }: { label: string; score: number | null }) {
+    const pct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
+
+    const barColour =
+        score === null ? 'bg-slate-300' :
+        score >= 90 ? 'bg-green-500' :
+        score >= 50 ? 'bg-orange-500' :
+        'bg-red-500';
+
+    const textColour =
+        score === null ? 'text-muted-foreground' :
+        score >= 90 ? 'text-green-600' :
+        score >= 50 ? 'text-orange-500' :
+        'text-red-600';
+
+    return (
+        <div className="flex flex-col gap-2 rounded-xl border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
+                {score ?? '—'}
+            </p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                    className={`h-2 rounded-full transition-all ${barColour}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
         </div>
     );
 }

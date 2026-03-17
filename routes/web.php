@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AgencyIssueSummaryController;
 use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
+use App\Http\Controllers\Api\PropertyRiskTrendsController;
+use App\Http\Controllers\Api\PropertyScanActivityController;
 use App\Http\Controllers\Api\RiskDashboardController;
 use App\Http\Controllers\Api\RiskMapController;
 use App\Http\Controllers\DashboardController;
@@ -86,6 +88,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/agencies/{agency}/governance-report', AgencyGovernanceReportController::class)
         ->name('api.agencies.governance-report');
+
+    Route::get('api/properties/{property}/scans/activity', PropertyScanActivityController::class)
+        ->name('api.properties.scans.activity');
+
+    Route::get('api/properties/{property}/risk-trends', PropertyRiskTrendsController::class)
+        ->name('api.properties.risk-trends');
 });
 
 Route::middleware('guest')->group(function (): void {
