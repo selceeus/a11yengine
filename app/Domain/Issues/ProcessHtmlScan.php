@@ -13,6 +13,7 @@ use App\Models\Issue;
 use App\Models\Scan;
 use App\Models\ScanPage;
 use App\Models\Scopes\TenantScope;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -67,25 +68,32 @@ class ProcessHtmlScan
                 $elementIdentifier = $node['target'][0] ?? null;
                 $fingerprint = sha1($violation['id'].'|'.($elementIdentifier ?? '').'|'.$url);
 
-                $finding = Finding::withoutGlobalScope(TenantScope::class)->firstOrCreate(
-                    ['scan_id' => $scan->id, 'fingerprint' => $fingerprint],
-                    [
-                        'agency_id' => $scan->agency_id,
-                        'property_id' => $scan->property_id,
-                        'rule_key' => $violation['id'],
-                        'severity' => $severity,
-                        'wcag_category' => $this->resolveWcagCategory($tags),
-                        'wcag_criteria' => $this->resolveWcagCriteria($tags),
-                        'description' => $violation['description'] ?? null,
-                        'tags' => $tags ?: null,
-                        'help_url' => $violation['helpUrl'] ?? null,
-                        'element_identifier' => $elementIdentifier,
-                        'element_html' => $node['html'] ?? null,
-                        'page_url' => $url,
-                        'message' => $node['failureSummary'] ?? '',
-                        'detected_at' => $detectedAt,
-                    ]
-                );
+                try {
+                    $finding = Finding::withoutGlobalScope(TenantScope::class)->firstOrCreate(
+                        ['scan_id' => $scan->id, 'fingerprint' => $fingerprint],
+                        [
+                            'agency_id' => $scan->agency_id,
+                            'property_id' => $scan->property_id,
+                            'rule_key' => $violation['id'],
+                            'severity' => $severity,
+                            'wcag_category' => $this->resolveWcagCategory($tags),
+                            'wcag_criteria' => $this->resolveWcagCriteria($tags),
+                            'description' => $violation['description'] ?? null,
+                            'tags' => $tags ?: null,
+                            'help_url' => $violation['helpUrl'] ?? null,
+                            'element_identifier' => $elementIdentifier,
+                            'element_html' => $node['html'] ?? null,
+                            'page_url' => $url,
+                            'message' => $node['failureSummary'] ?? '',
+                            'detected_at' => $detectedAt,
+                        ]
+                    );
+                } catch (UniqueConstraintViolationException) {
+                    $finding = Finding::withoutGlobalScope(TenantScope::class)
+                        ->where('scan_id', $scan->id)
+                        ->where('fingerprint', $fingerprint)
+                        ->first();
+                }
 
                 $findings->push($finding);
             }
