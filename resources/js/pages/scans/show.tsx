@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, usePoll } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -85,6 +86,7 @@ export default function Show({
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
+    const [tab, setTab] = useState<'wcag' | 'lighthouse'>('wcag');
 
     useEffect(() => {
         if (isActive) {
@@ -191,8 +193,130 @@ export default function Show({
                     </div>
                 )}
 
-                {/* Pages table */}
-                {scan.scan_pages.length > 0 && (
+                {/* Tabbed results — only shown once completed */}
+                {scan.status === 'completed' && (
+                    <div className="flex flex-col gap-4">
+                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'lighthouse')}>
+                            <TabsList>
+                                <TabsTrigger value="wcag">WCAG Scores</TabsTrigger>
+                                <TabsTrigger value="lighthouse" disabled={lighthouseResults.length === 0}>
+                                    Lighthouse Scores
+                                    {lighthouseResults.length === 0 && (
+                                        <span className="ml-1.5 text-xs opacity-50">(none)</span>
+                                    )}
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+
+                        {/* WCAG tab */}
+                        {tab === 'wcag' && (
+                            scan.scan_pages.length > 0 ? (
+                                <div className="rounded-xl border">
+                                    <table className="w-full text-sm">
+                                        <caption className="px-4 py-3">WCAG Scoring Results</caption>
+                                        <thead className="border-b bg-muted/50">
+                                            <tr className="text-xs text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">Page URL</th>
+                                                <th className="px-4 py-3 text-left font-medium">Status</th>
+                                                <th className="px-4 py-3 text-right font-medium">Violations</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {scan.scan_pages.map((page) => (
+                                                <tr key={page.id} className="transition-colors hover:bg-muted/30">
+                                                    <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
+                                                        <a
+                                                            href={page.url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="hover:underline"
+                                                        >
+                                                            {page.url}
+                                                        </a>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge variant={pageStatusVariant(page.status)}>
+                                                            {page.status}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {page.violations_count}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                                    No pages were recorded for this scan.
+                                </div>
+                            )
+                        )}
+
+                        {/* Lighthouse tab */}
+                        {tab === 'lighthouse' && lighthouseResults.length > 0 && (
+                            <div className="rounded-xl border">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <caption className="px-4 py-3">Lighthouse Scoring Results</caption>
+                                        <thead className="border-b bg-muted/50">
+                                            <tr className="text-xs text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">Page URL</th>
+                                                <th className="px-4 py-3 text-right font-medium">Perf</th>
+                                                <th className="px-4 py-3 text-right font-medium">A11y</th>
+                                                <th className="px-4 py-3 text-right font-medium">Best Practices</th>
+                                                <th className="px-4 py-3 text-right font-medium">SEO</th>
+                                                <th className="px-4 py-3 text-right font-medium">LCP (ms)</th>
+                                                <th className="px-4 py-3 text-right font-medium">FCP (ms)</th>
+                                                <th className="px-4 py-3 text-right font-medium">TBT (ms)</th>
+                                                <th className="px-4 py-3 text-right font-medium">CLS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {lighthouseResults.map((result) => (
+                                                <tr key={result.url} className="transition-colors hover:bg-muted/30">
+                                                    <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
+                                                        <a href={result.url} target="_blank" rel="noreferrer" className="hover:underline">
+                                                            {result.url}
+                                                        </a>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        <ScoreChip score={result.performance_score} />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        <ScoreChip score={result.accessibility_score} />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        <ScoreChip score={result.best_practices_score} />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        <ScoreChip score={result.seo_score} />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                        {result.largest_contentful_paint?.toFixed(0) ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                        {result.first_contentful_paint?.toFixed(0) ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                        {result.total_blocking_time?.toFixed(0) ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                        {result.cumulative_layout_shift?.toFixed(3) ?? '—'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* In-progress pages list (shown during active scan) */}
+                {isActive && scan.scan_pages.length > 0 && (
                     <div className="rounded-xl border">
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50">
@@ -227,74 +351,6 @@ export default function Show({
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-                )}
-
-                {/* Lighthouse results */}
-                {lighthouseResults.length > 0 && (
-                    <div className="rounded-xl border">
-                        <div className="border-b bg-muted/50 px-4 py-3">
-                            <h2 className="text-sm font-semibold">Lighthouse scores</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="border-b bg-muted/50">
-                                    <tr className="text-xs text-muted-foreground">
-                                        <th className="px-4 py-3 text-left font-medium">Page URL</th>
-                                        <th className="px-4 py-3 text-right font-medium">Perf</th>
-                                        <th className="px-4 py-3 text-right font-medium">A11y</th>
-                                        <th className="px-4 py-3 text-right font-medium">Best Practices</th>
-                                        <th className="px-4 py-3 text-right font-medium">SEO</th>
-                                        <th className="px-4 py-3 text-right font-medium">LCP (ms)</th>
-                                        <th className="px-4 py-3 text-right font-medium">FCP (ms)</th>
-                                        <th className="px-4 py-3 text-right font-medium">TBT (ms)</th>
-                                        <th className="px-4 py-3 text-right font-medium">CLS</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {lighthouseResults.map((result) => (
-                                        <tr key={result.url} className="transition-colors hover:bg-muted/30">
-                                            <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
-                                                <a href={result.url} target="_blank" rel="noreferrer" className="hover:underline">
-                                                    {result.url}
-                                                </a>
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums">
-                                                <ScoreChip score={result.performance_score} />
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums">
-                                                <ScoreChip score={result.accessibility_score} />
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums">
-                                                <ScoreChip score={result.best_practices_score} />
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums">
-                                                <ScoreChip score={result.seo_score} />
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                {result.largest_contentful_paint?.toFixed(0) ?? '—'}
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                {result.first_contentful_paint?.toFixed(0) ?? '—'}
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                {result.total_blocking_time?.toFixed(0) ?? '—'}
-                                            </td>
-                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                {result.cumulative_layout_shift?.toFixed(3) ?? '—'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {/* Empty completed state */}
-                {scan.status === 'completed' && scan.scan_pages.length === 0 && (
-                    <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
-                        No pages were recorded for this scan.
                     </div>
                 )}
 
