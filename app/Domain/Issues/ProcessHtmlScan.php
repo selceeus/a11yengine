@@ -12,6 +12,7 @@ use App\Models\Finding;
 use App\Models\Issue;
 use App\Models\Scan;
 use App\Models\ScanPage;
+use App\Models\Scopes\TenantScope;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -63,23 +64,28 @@ class ProcessHtmlScan
             );
 
             foreach ($violation['nodes'] as $node) {
-                $finding = Finding::query()->create([
-                    'agency_id' => $scan->agency_id,
-                    'scan_id' => $scan->id,
-                    'property_id' => $scan->property_id,
-                    'rule_key' => $violation['id'],
-                    'severity' => $severity,
-                    'wcag_category' => $this->resolveWcagCategory($tags),
-                    'wcag_criteria' => $this->resolveWcagCriteria($tags),
-                    'description' => $violation['description'] ?? null,
-                    'tags' => $tags ?: null,
-                    'help_url' => $violation['helpUrl'] ?? null,
-                    'element_identifier' => $node['target'][0] ?? null,
-                    'element_html' => $node['html'] ?? null,
-                    'page_url' => $url,
-                    'message' => $node['failureSummary'] ?? '',
-                    'detected_at' => $detectedAt,
-                ]);
+                $elementIdentifier = $node['target'][0] ?? null;
+                $fingerprint = sha1($violation['id'].'|'.($elementIdentifier ?? '').'|'.$url);
+
+                $finding = Finding::withoutGlobalScope(TenantScope::class)->firstOrCreate(
+                    ['scan_id' => $scan->id, 'fingerprint' => $fingerprint],
+                    [
+                        'agency_id' => $scan->agency_id,
+                        'property_id' => $scan->property_id,
+                        'rule_key' => $violation['id'],
+                        'severity' => $severity,
+                        'wcag_category' => $this->resolveWcagCategory($tags),
+                        'wcag_criteria' => $this->resolveWcagCriteria($tags),
+                        'description' => $violation['description'] ?? null,
+                        'tags' => $tags ?: null,
+                        'help_url' => $violation['helpUrl'] ?? null,
+                        'element_identifier' => $elementIdentifier,
+                        'element_html' => $node['html'] ?? null,
+                        'page_url' => $url,
+                        'message' => $node['failureSummary'] ?? '',
+                        'detected_at' => $detectedAt,
+                    ]
+                );
 
                 $findings->push($finding);
             }
