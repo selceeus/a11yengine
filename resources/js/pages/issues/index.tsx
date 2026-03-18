@@ -22,6 +22,7 @@ type Issue = {
     last_detected_at: string;
     property: Property | null;
     organization: Organization | null;
+    assigned_user: { id: number; name: string } | null;
 };
 
 type PaginatedIssues = {
@@ -39,6 +40,7 @@ type Filters = {
     wcag_category?: string;
     date_from?: string;
     date_to?: string;
+    assigned_user_id?: string;
 };
 
 // in the component props:
@@ -46,10 +48,12 @@ export default function Index({
     issues,
     filters,
     properties,
+    teamMembers,
 }: {
     issues: PaginatedIssues;
     filters: Filters;
     properties: Property[];
+    teamMembers: { id: number; name: string }[];
 }) {
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -152,6 +156,21 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         </SelectContent>
                     </Select>
 
+                    <Select
+                        value={filters.assigned_user_id ?? 'all'}
+                        onValueChange={(v) => filter({ assigned_user_id: v === 'all' ? '' : v }, filters)}
+                    >
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder="All assignees" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All assignees</SelectItem>
+                            {teamMembers.map((m) => (
+                                <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <Input
                         type="date"
                         className="w-40"
@@ -178,16 +197,17 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                 <th className="px-4 py-3 text-left font-medium">Severity</th>
                                 <th className="px-4 py-3 text-left font-medium">WCAG</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
+                                <th className="px-4 py-3 text-left font-medium">Assigned to</th>
                                 <th className="px-4 py-3 text-left font-medium">Occurrences</th>
                                 <th className="px-4 py-3 text-right font-medium">Risk weight</th>
                                 <th className="px-4 py-3 text-left font-medium">Last detected</th>
-                                <th className="px-4 py-3"></th>
+                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
                             {issues.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={filters.property_id ? 8 : 9} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                    <td colSpan={filters.property_id ? 9 : 10} className="px-4 py-10 text-center text-sm text-muted-foreground">
                                         No issues found.
                                     </td>
                                 </tr>
@@ -208,6 +228,9 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {statusLabels[issue.status] ?? issue.status}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {issue.assigned_user?.name ?? '—'}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">{issue.occurrence_count}</td>
                                         <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>

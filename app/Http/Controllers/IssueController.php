@@ -23,13 +23,14 @@ class IssueController extends Controller
         $this->authorize('viewAny', Issue::class);
 
         $issues = Issue::query()
-            ->with(['property:id,name', 'organization:id,name'])
+            ->with(['property:id,name', 'organization:id,name', 'assignedUser:id,name'])
             ->when(request('status'), fn ($q, $status) => $q->where('status', $status))
             ->when(request('severity'), fn ($q, $severity) => $q->where('severity', $severity))
             ->when(request('property_id'), fn ($q, $propertyId) => $q->where('property_id', $propertyId))
             ->when(request('wcag_category'), fn ($q, $category) => $q->where('wcag_category', $category))
             ->when(request('date_from'), fn ($q, $date) => $q->whereDate('last_detected_at', '>=', $date))
             ->when(request('date_to'), fn ($q, $date) => $q->whereDate('last_detected_at', '<=', $date))
+            ->when(request('assigned_user_id'), fn ($q, $userId) => $q->where('assigned_user_id', $userId))
             ->latest('last_detected_at')
             ->paginate(50)
             ->withQueryString();
@@ -39,11 +40,17 @@ class IssueController extends Controller
             ->orderBy('name')
             ->get();
 
+        $teamMembers = $this->agency->users()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('issues/index', [
             'issues' => $issues,
-            'filters' => request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to']),
+            'filters' => request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to', 'assigned_user_id']),
             'statuses' => IssueStatus::cases(),
             'properties' => $properties,
+            'teamMembers' => $teamMembers,
         ]);
     }
 
