@@ -12,10 +12,15 @@ class AssignIssueController extends Controller
 {
     public function __invoke(AssignIssueRequest $request, Issue $issue): JsonResponse
     {
-        /** @var User $assignee */
-        $assignee = User::findOrFail($request->validated()['user_id']);
+        $userId = $request->validated()['user_id'];
 
-        $issue->assignToUser($assignee);
+        if ($userId === null) {
+            $issue->unassignUser();
+        } else {
+            /** @var User $assignee */
+            $assignee = User::findOrFail($userId);
+            $issue->assignToUser($assignee);
+        }
 
         return response()->json(
             $issue->fresh(['assignedUser:id,name,email']),

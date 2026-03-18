@@ -89,6 +89,12 @@ class Issue extends Model
         $this->save();
     }
 
+    public function unassignUser(): void
+    {
+        $this->assigned_user_id = null;
+        $this->save();
+    }
+
     public function markResolved(?string $notes = null): void
     {
         $this->status = IssueStatus::Resolved;

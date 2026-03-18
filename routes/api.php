@@ -1,18 +1,11 @@
 <?php
 
-use App\Http\Controllers\Api\AssignIssueController;
 use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
 use App\Http\Controllers\Api\OrganizationUserImpactController;
-use App\Http\Controllers\Api\RiskDashboardController;
-use App\Http\Controllers\Api\RiskMapController;
 use Illuminate\Support\Facades\Route;
-
-Route::post('issues/{issue}/assign', AssignIssueController::class)
-    ->middleware('auth')
-    ->name('api.issues.assign');
 
 Route::post('organizations/{organizationId}/risk-snapshot', OrganizationRiskController::class)
     ->name('api.organizations.risk-snapshot');

@@ -76,10 +76,6 @@ export default function IssueAssigner({ issue, users, canAssign, onAssigned }: I
             return;
         }
 
-        if (userId === null) {
-            return;
-        }
-
         setSubmitting(true);
         setAlert(null);
 
@@ -102,8 +98,8 @@ export default function IssueAssigner({ issue, users, canAssign, onAssigned }: I
 
             const updated = (await response.json()) as { assigned_user: AssignedUser | null; assigned_user_id: number | null };
             setAssignedUserId(updated.assigned_user_id);
-            const assignee = users.find((u) => u.id === userId) ?? null;
-            showAlert('success', assignee ? `Assigned to ${assignee.name}.` : 'Issue assigned.');
+            const assignee = userId !== null ? (users.find((u) => u.id === userId) ?? null) : null;
+            showAlert('success', assignee ? `Assigned to ${assignee.name}.` : 'Issue unassigned.');
             onAssigned?.(updated.assigned_user);
         } catch {
             showAlert('error', 'An unexpected error occurred.');

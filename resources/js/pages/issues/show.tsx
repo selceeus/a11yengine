@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,16 +71,13 @@ function StatCard({ label, value, capitalize }: { label: string; value: string; 
 }
 
 export default function Show({ issue, assignableUsers }: { issue: Issue; assignableUsers: AssignableUser[] }) {
-    const { data, setData, patch, processing } = useForm({ status: issue.status });
-
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Issues', href: IssueController.index().url },
         { title: issue.rule_key, href: IssueController.show(issue.id).url },
     ];
 
     function handleStatusChange(status: string) {
-        setData('status', status);
-        patch(IssueController.update(issue.id).url);
+        router.patch(IssueController.update(issue.id).url, { status });
     }
 
     return (
@@ -122,7 +119,7 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                             {issue.severity}
                         </Badge>
 
-                        <Select value={data.status} onValueChange={handleStatusChange} disabled={processing}>
+                        <Select value={issue.status} onValueChange={handleStatusChange}>
                             <SelectTrigger className="w-40">
                                 <SelectValue />
                             </SelectTrigger>

@@ -27,7 +27,7 @@ class AssignIssueRequest extends FormRequest
 
         return [
             'user_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('users', 'id')->where('agency_id', $issue->agency_id),
             ],
