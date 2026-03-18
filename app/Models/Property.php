@@ -40,6 +40,11 @@ class Property extends Model
         return $this->hasMany(Scan::class);
     }
 
+    public function scheduledScan(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ScheduledScan::class)->where('is_active', true)->latest();
+    }
+
     public function findings(): HasMany
     {
         return $this->hasMany(Finding::class);

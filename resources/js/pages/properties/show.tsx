@@ -1,11 +1,16 @@
+import { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PropertyRiskTrendsChart } from '@/components/charts/PropertyRiskTrendsChart';
 import { PropertyScanActivityChart } from '@/components/charts/PropertyScanActivityChart';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -42,6 +47,30 @@ type SeverityRow = {
     count: number;
 };
 
+type ScheduledScan = {
+    id: number;
+    type: 'once' | 'recurring';
+    frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | null;
+    scheduled_at: string | null;
+    next_run_at: string;
+};
+
+type ScheduleDialogState =
+    | { open: false }
+    | { open: true; mode: 'create' | 'edit' };
+
+type LighthouseOverviewAverages = {
+    performance: number | null;
+    accessibility: number | null;
+    best_practices: number | null;
+    seo: number | null;
+};
+
+type OverviewState =
+    | { open: false }
+    | { open: true; scanId: number; loading: true }
+    | { open: true; scanId: number; loading: false; severityBreakdown: SeverityRow[]; lighthouseAverages: LighthouseOverviewAverages | null };
+
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
     serious: 'bg-orange-500',
@@ -69,14 +98,97 @@ export default function Show({
     lighthouseAverages,
     severityBreakdown,
     topRules,
+    scheduledScan: initialScheduledScan,
 }: {
     property: Property;
     recentScans: Scan[];
     lighthouseAverages: LighthouseAverages;
     severityBreakdown: SeverityRow[];
     topRules: Record<string, number>;
+    scheduledScan: ScheduledScan | null;
 }) {
     const { delete: destroy, processing } = useForm();
+    const [overview, setOverview] = useState<OverviewState>({ open: false });
+    const [scheduledScan, setScheduledScan] = useState<ScheduledScan | null>(initialScheduledScan);
+    const [scheduleDialog, setScheduleDialog] = useState<ScheduleDialogState>({ open: false });
+    const [scheduleType, setScheduleType] = useState<'once' | 'recurring'>('recurring');
+    const [scheduleFrequency, setScheduleFrequency] = useState<string>('weekly');
+    const [scheduleAt, setScheduleAt] = useState<string>('');
+    const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+    const [scheduleError, setScheduleError] = useState<string | null>(null);
+
+    function openScheduleDialog(mode: 'create' | 'edit') {
+        if (mode === 'edit' && scheduledScan) {
+            setScheduleType(scheduledScan.type);
+            setScheduleFrequency(scheduledScan.frequency ?? 'weekly');
+            setScheduleAt(scheduledScan.scheduled_at ? scheduledScan.scheduled_at.slice(0, 16) : '');
+        } else {
+            setScheduleType('recurring');
+            setScheduleFrequency('weekly');
+            setScheduleAt('');
+        }
+        setScheduleError(null);
+        setScheduleDialog({ open: true, mode });
+    }
+
+    async function submitSchedule(e: React.FormEvent) {
+        e.preventDefault();
+        setScheduleSubmitting(true);
+        setScheduleError(null);
+
+        const isEdit = scheduleDialog.open && scheduleDialog.mode === 'edit' && scheduledScan;
+        const url = isEdit
+            ? `/api/properties/${property.id}/scheduled-scan/${scheduledScan!.id}`
+            : `/api/properties/${property.id}/scheduled-scan`;
+
+        const body: Record<string, string> = { type: scheduleType };
+        if (scheduleType === 'once') {
+            body.scheduled_at = scheduleAt;
+        } else {
+            body.frequency = scheduleFrequency;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        const res = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify(body),
+        });
+
+        setScheduleSubmitting(false);
+
+        if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            setScheduleError(json.message ?? 'Failed to save schedule.');
+            return;
+        }
+
+        const json = await res.json();
+        setScheduledScan(json.scheduledScan);
+        setScheduleDialog({ open: false });
+    }
+
+    async function openOverview(scan: Scan) {
+        setOverview({ open: true, scanId: scan.id, loading: true });
+
+        const res = await fetch(`/api/scans/${scan.id}/overview`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const json = await res.json();
+
+        setOverview({
+            open: true,
+            scanId: scan.id,
+            loading: false,
+            severityBreakdown: json.severityBreakdown,
+            lighthouseAverages: json.lighthouseAverages,
+        });
+    }
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Properties', href: PropertyController.index().url },
@@ -209,9 +321,34 @@ export default function Show({
                 <div className="rounded-xl border">
                     <div className="flex items-center justify-between border-b px-4 py-3">
                         <h2 className="text-sm font-semibold">Recent scans</h2>
-                        <Button size="sm" asChild>
-                            <Link href={ScanController.index().url}>Run scan</Link>
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            {scheduledScan ? (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <span>
+                                        Next:{' '}
+                                        <span className="font-medium text-foreground">
+                                            {new Date(scheduledScan.next_run_at).toLocaleString()}
+                                        </span>
+                                        {scheduledScan.frequency && (
+                                            <span className="ml-1 capitalize">· {scheduledScan.frequency}</span>
+                                        )}
+                                    </span>
+                                    <button
+                                        onClick={() => openScheduleDialog('edit')}
+                                        className="text-primary hover:underline"
+                                    >
+                                        Update
+                                    </button>
+                                </div>
+                            ) : (
+                                <Button size="sm" variant="outline" onClick={() => openScheduleDialog('create')}>
+                                    Schedule scan
+                                </Button>
+                            )}
+                            <Button size="sm" asChild>
+                                <Link href={ScanController.index().url}>Run scan</Link>
+                            </Button>
+                        </div>
                     </div>
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
@@ -254,12 +391,20 @@ export default function Show({
                                             {new Date(scan.created_at).toLocaleString()}
                                         </td>
                                         <td className="px-4 py-3 text-right">
-                                            <Link
-                                                href={ScanController.show(scan.id).url}
-                                                className="text-sm text-primary hover:underline"
-                                            >
-                                                View
-                                            </Link>
+                                            <div className="flex items-center justify-end gap-3">
+                                                <button
+                                                    onClick={() => openOverview(scan)}
+                                                    className="text-sm text-primary hover:underline"
+                                                >
+                                                    Overview
+                                                </button>
+                                                <Link
+                                                    href={ScanController.show(scan.id).url}
+                                                    className="text-sm text-primary hover:underline"
+                                                >
+                                                    View
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -277,6 +422,148 @@ export default function Show({
                     </Link>
                 </div>
             </div>
+
+            {/* Scan Overview Dialog */}
+            <Dialog open={overview.open} onOpenChange={(open) => { if (!open) setOverview({ open: false }); }}>
+                <DialogContent className="max-w-2xl sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Scan Overview</DialogTitle>
+                    </DialogHeader>
+
+                    {overview.open && overview.loading && (
+                        <div className="flex items-center justify-center py-10">
+                            <Spinner className="h-6 w-6" />
+                        </div>
+                    )}
+
+                    {overview.open && !overview.loading && (
+                        <div className="flex flex-col gap-6">
+                            <div>
+                                <h3 className="mb-3 text-sm font-semibold">Lighthouse Averages</h3>
+                                {overview.lighthouseAverages ? (
+                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                        <GaugeCard label="Performance" score={overview.lighthouseAverages.performance} />
+                                        <GaugeCard label="Accessibility" score={overview.lighthouseAverages.accessibility} />
+                                        <GaugeCard label="Best Practices" score={overview.lighthouseAverages.best_practices} />
+                                        <GaugeCard label="SEO" score={overview.lighthouseAverages.seo} />
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No Lighthouse data available.</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <h3 className="mb-3 text-sm font-semibold">WCAG Violations by Severity</h3>
+                                {overview.severityBreakdown.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {overview.severityBreakdown.map((row) => {
+                                            const total = overview.severityBreakdown.reduce((s, r) => s + r.count, 0);
+                                            const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                                            return (
+                                                <div key={row.severity}>
+                                                    <div className="mb-1 flex justify-between text-xs">
+                                                        <span className="capitalize">{row.severity}</span>
+                                                        <span className="tabular-nums text-muted-foreground">
+                                                            {row.count} ({pct}%)
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No violation data available.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Schedule Scan Dialog */}
+            <Dialog open={scheduleDialog.open} onOpenChange={(open) => { if (!open) setScheduleDialog({ open: false }); }}>
+                <DialogContent className="max-w-md sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {scheduleDialog.open && scheduleDialog.mode === 'edit' ? 'Update scheduled scan' : 'Schedule a scan'}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <form onSubmit={submitSchedule} className="flex flex-col gap-5 pt-1">
+                        {/* Type toggle */}
+                        <div className="flex flex-col gap-1.5">
+                            <Label>Scan type</Label>
+                            <div className="flex gap-4">
+                                {(['recurring', 'once'] as const).map((t) => (
+                                    <label key={t} className="flex cursor-pointer items-center gap-2 text-sm">
+                                        <input
+                                            type="radio"
+                                            name="type"
+                                            value={t}
+                                            checked={scheduleType === t}
+                                            onChange={() => setScheduleType(t)}
+                                            className="accent-primary"
+                                        />
+                                        <span className="capitalize">{t === 'once' ? 'One-time' : 'Recurring'}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Recurring: frequency */}
+                        {scheduleType === 'recurring' && (
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="frequency">Frequency</Label>
+                                <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
+                                    <SelectTrigger id="frequency">
+                                        <SelectValue placeholder="Select frequency…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="daily">Daily</SelectItem>
+                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
+                        {/* One-time: datetime */}
+                        {scheduleType === 'once' && (
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="scheduled_at">Date &amp; time</Label>
+                                <input
+                                    id="scheduled_at"
+                                    type="datetime-local"
+                                    value={scheduleAt}
+                                    onChange={(e) => setScheduleAt(e.target.value)}
+                                    required
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                />
+                            </div>
+                        )}
+
+                        {scheduleError && (
+                            <p className="text-xs text-destructive">{scheduleError}</p>
+                        )}
+
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={() => setScheduleDialog({ open: false })}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={scheduleSubmitting}>
+                                {scheduleSubmitting ? 'Saving…' : 'Save schedule'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

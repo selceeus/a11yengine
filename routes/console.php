@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('snapshots:agency-risk')->daily();
+Schedule::command('scans:run-scheduled')->everyMinute();

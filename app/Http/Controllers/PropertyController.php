@@ -68,7 +68,7 @@ class PropertyController extends Controller
     {
         $this->authorize('view', $property);
 
-        $property->load('organization:id,name');
+        $property->load(['organization:id,name', 'scheduledScan']);
 
         $recentScans = $property->scans()
             ->latest()
@@ -142,6 +142,13 @@ class PropertyController extends Controller
             'lighthouseAverages' => $lighthouseAverages,
             'severityBreakdown' => $severityBreakdown,
             'topRules' => $topRules,
+            'scheduledScan' => $property->scheduledScan ? [
+                'id' => $property->scheduledScan->id,
+                'type' => $property->scheduledScan->type,
+                'frequency' => $property->scheduledScan->frequency,
+                'scheduled_at' => $property->scheduledScan->scheduled_at?->toIso8601String(),
+                'next_run_at' => $property->scheduledScan->next_run_at->toIso8601String(),
+            ] : null,
         ]);
     }
 
