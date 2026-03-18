@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Issues\AiRemediationService;
 use App\Enums\IssueStatus;
 use App\Http\Requests\UpdateIssueRequest;
+use App\Jobs\GenerateIssueRemediationJob;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,7 +19,10 @@ class IssueController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private readonly Agency $agency) {}
+    public function __construct(
+        private readonly Agency $agency,
+        private readonly AiRemediationService $remediationService,
+    ) {}
 
     public function index(): Response
     {
@@ -87,6 +93,19 @@ class IssueController extends Controller
             'status' => $newStatus,
             'resolved_at' => $newStatus->isTerminal() ? ($issue->resolved_at ?? now()) : null,
         ]);
+
+        return redirect()->route('issues.show', $issue);
+    }
+
+    public function generateRemediation(Issue $issue): RedirectResponse
+    {
+        $this->authorize('update', $issue);
+
+        Cache::forget($this->remediationService->cacheKey($issue));
+
+        $issue->update(['ai_remediation_status' => 'pending']);
+
+        dispatch(new GenerateIssueRemediationJob($issue));
 
         return redirect()->route('issues.show', $issue);
     }

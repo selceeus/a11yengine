@@ -34,6 +34,8 @@ class Issue extends Model
         'resolved_at',
         'assigned_user_id',
         'resolution_notes',
+        'ai_remediation_status',
+        'ai_suggestions',
     ];
 
     protected static function booted(): void
@@ -50,6 +52,7 @@ class Issue extends Model
             'last_detected_at' => 'datetime',
             'resolved_at' => 'datetime',
             'tags' => 'array',
+            'ai_suggestions' => 'array',
         ];
     }
 

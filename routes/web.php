@@ -54,6 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('issues', [IssueController::class, 'index'])->name('issues.index');
     Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
+    Route::post('issues/{issue}/remediation', [IssueController::class, 'generateRemediation'])->name('issues.remediation.generate');
 
     Route::get('/api/sites/{site}/risk-dashboard', RiskDashboardController::class)
         ->middleware('auth')

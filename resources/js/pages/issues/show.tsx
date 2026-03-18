@@ -1,7 +1,10 @@
+import { useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
+import { AlertCircle, Bot, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import IssueAssigner, { type AssignableUser } from '@/components/IssueAssigner';
 import AppLayout from '@/layouts/app-layout';
@@ -22,6 +25,20 @@ type Finding = {
     page_url: string;
     message: string | null;
     detected_at: string;
+};
+
+type AiSuggestions = {
+    explanation: string;
+    wcag_reference: string;
+    wcag_level: string;
+    user_impact: string;
+    severity_rating: string;
+    code_fix: string | null;
+    aria_fix: string | null;
+    remediation_steps: string[];
+    testing_guidance: string;
+    estimated_effort: 'low' | 'medium' | 'high';
+    resources: { title: string; url: string }[];
 };
 
 type Issue = {
@@ -45,6 +62,8 @@ type Issue = {
     property: Property | null;
     organization: Organization | null;
     findings: Finding[];
+    ai_remediation_status: 'pending' | 'processing' | 'completed' | 'failed' | null;
+    ai_suggestions: AiSuggestions | null;
 };
 
 const severityVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -78,6 +97,18 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
 
     function handleStatusChange(status: string) {
         router.patch(IssueController.update(issue.id).url, { status });
+    }
+
+    const isProcessing = issue.ai_remediation_status === 'pending' || issue.ai_remediation_status === 'processing';
+
+    useEffect(() => {
+        if (!isProcessing) return;
+        const timer = setInterval(() => router.reload({ only: ['issue'] }), 5000);
+        return () => clearInterval(timer);
+    }, [isProcessing]);
+
+    function generateRemediation() {
+        router.post(IssueController.generateRemediation(issue.id).url);
     }
 
     return (
@@ -228,6 +259,179 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                {/* AI Remediation Guide */}
+                <div>
+                    <h2 className="mb-3 font-medium">AI Remediation Guide</h2>
+
+                    {/* Not yet generated */}
+                    {!issue.ai_remediation_status && (
+                        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed bg-muted/30 p-10 text-center">
+                            <Bot className="h-8 w-8 text-muted-foreground" />
+                            <div>
+                                <p className="font-medium">No AI remediation guide yet</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Generate an AI-powered fix explanation, code snippet, and step-by-step remediation guide for this issue.
+                                </p>
+                            </div>
+                            <Button onClick={generateRemediation} size="sm">
+                                <Bot className="mr-2 h-4 w-4" />
+                                Generate AI Remediation
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Pending / Processing */}
+                    {isProcessing && (
+                        <div className="flex flex-col items-center gap-4 rounded-xl border bg-card py-12 text-center">
+                            <Spinner className="h-7 w-7 text-primary" />
+                            <p className="font-medium">Generating AI remediation guide…</p>
+                            <p className="text-sm text-muted-foreground">This may take up to a minute.</p>
+                        </div>
+                    )}
+
+                    {/* Failed */}
+                    {issue.ai_remediation_status === 'failed' && (
+                        <div className="flex items-start gap-4 rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                            <div className="flex-1">
+                                <p className="font-medium text-destructive">Generation failed</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    The AI was unable to generate a remediation guide. Check your AI provider configuration and try again.
+                                </p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={generateRemediation}>
+                                <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                                Retry
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Completed */}
+                    {issue.ai_remediation_status === 'completed' && issue.ai_suggestions && (
+                        <div className="flex flex-col gap-4">
+                            {/* Explanation + WCAG */}
+                            <div className="rounded-xl border bg-card p-6">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <Badge variant="outline" className="font-mono text-xs">
+                                        WCAG {issue.ai_suggestions.wcag_reference}
+                                    </Badge>
+                                    <Badge
+                                        variant={
+                                            issue.ai_suggestions.wcag_level === 'A'
+                                                ? 'secondary'
+                                                : issue.ai_suggestions.wcag_level === 'AA'
+                                                  ? 'default'
+                                                  : 'outline'
+                                        }
+                                    >
+                                        Level {issue.ai_suggestions.wcag_level}
+                                    </Badge>
+                                </div>
+                                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Why this is a problem
+                                </h3>
+                                <p className="text-sm leading-relaxed">{issue.ai_suggestions.explanation}</p>
+                            </div>
+
+                            {/* User Impact */}
+                            <div className="rounded-xl border bg-card p-6">
+                                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">User Impact</h3>
+                                <p className="text-sm leading-relaxed">{issue.ai_suggestions.user_impact}</p>
+                                <div className="mt-3 flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Effort to fix:</span>
+                                    <Badge
+                                        variant={
+                                            issue.ai_suggestions.estimated_effort === 'low'
+                                                ? 'secondary'
+                                                : issue.ai_suggestions.estimated_effort === 'high'
+                                                  ? 'destructive'
+                                                  : 'default'
+                                        }
+                                        className="capitalize"
+                                    >
+                                        {issue.ai_suggestions.estimated_effort}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            {/* Code fix */}
+                            {issue.ai_suggestions.code_fix && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Suggested Code Fix
+                                    </h3>
+                                    <pre className="overflow-x-auto rounded-lg bg-muted px-4 py-3 text-xs leading-relaxed">
+                                        <code>{issue.ai_suggestions.code_fix}</code>
+                                    </pre>
+                                </div>
+                            )}
+
+                            {/* ARIA fix */}
+                            {issue.ai_suggestions.aria_fix && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ARIA Fix</h3>
+                                    <pre className="overflow-x-auto rounded-lg bg-muted px-4 py-3 text-xs leading-relaxed">
+                                        <code>{issue.ai_suggestions.aria_fix}</code>
+                                    </pre>
+                                </div>
+                            )}
+
+                            {/* Remediation Steps */}
+                            {issue.ai_suggestions.remediation_steps.length > 0 && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Remediation Steps
+                                    </h3>
+                                    <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed">
+                                        {issue.ai_suggestions.remediation_steps.map((step, i) => (
+                                            <li key={i}>{step}</li>
+                                        ))}
+                                    </ol>
+                                </div>
+                            )}
+
+                            {/* Testing Guidance */}
+                            <div className="rounded-xl border bg-card p-6">
+                                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Testing Guidance
+                                </h3>
+                                <p className="text-sm leading-relaxed">{issue.ai_suggestions.testing_guidance}</p>
+                            </div>
+
+                            {/* Resources */}
+                            {issue.ai_suggestions.resources.length > 0 && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Further Reading
+                                    </h3>
+                                    <ul className="space-y-2">
+                                        {issue.ai_suggestions.resources.map((r, i) => (
+                                            <li key={i}>
+                                                <a
+                                                    href={r.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-sm text-primary hover:underline"
+                                                >
+                                                    {r.title} ↗
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Regenerate */}
+                            <div className="flex justify-end">
+                                <Button variant="outline" size="sm" onClick={generateRemediation}>
+                                    <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                                    Regenerate
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div>

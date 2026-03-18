@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\IssueStatus;
+use App\Jobs\GenerateIssueRemediationJob;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\User;
+use Illuminate\Support\Facades\Queue;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -135,4 +137,32 @@ it('returns 404 when updating an issue from another agency', function (): void {
     $otherIssue = Issue::factory()->create();
 
     $this->patch(route('issues.update', $otherIssue), ['status' => 'open'])->assertNotFound();
+});
+
+// ─── generateRemediation ──────────────────────────────────────────────────────
+
+it('dispatches remediation job and marks issue pending', function (): void {
+    Queue::fake();
+
+    $this->post(route('issues.remediation.generate', $this->issue))
+        ->assertRedirect(route('issues.show', $this->issue));
+
+    expect($this->issue->fresh()->ai_remediation_status)->toBe('pending');
+    Queue::assertPushed(GenerateIssueRemediationJob::class);
+});
+
+it('returns 404 for remediation of a cross-agency issue', function (): void {
+    Queue::fake();
+
+    $otherIssue = Issue::factory()->create();
+
+    $this->post(route('issues.remediation.generate', $otherIssue))->assertNotFound();
+    Queue::assertNothingPushed();
+});
+
+it('redirects unauthenticated users from remediation', function (): void {
+    $this->post('/logout');
+
+    $this->post(route('issues.remediation.generate', $this->issue))
+        ->assertRedirect(route('login'));
 });
