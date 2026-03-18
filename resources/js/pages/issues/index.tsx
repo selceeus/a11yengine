@@ -1,8 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -73,6 +76,39 @@ const statusLabels: Record<string, string> = {
     resolved: 'Resolved',
     accepted_risk: 'Accepted risk',
 };
+
+type UserIssue = {
+    id: number;
+    rule_key: string;
+    severity: string;
+    status: string;
+    occurrence_count: number;
+    last_detected_at: string;
+    property: { id: number; name: string } | null;
+};
+
+type ModalState =
+    | { open: false }
+    | { open: true; userName: string; issues: UserIssue[]; loading: false }
+    | { open: true; userName: string; issues: []; loading: true };
+
+const [modal, setModal] = useState<ModalState>({ open: false });
+
+async function openUserModal(userId: number, userName: string) {
+    setModal({ open: true, userName, issues: [], loading: true });
+
+    const response = await fetch(`/api/users/${userId}/issues`, {
+        headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+        setModal({ open: false });
+        return;
+    }
+
+    const data = (await response.json()) as { issues: UserIssue[] };
+    setModal({ open: true, userName, issues: data.issues, loading: false });
+}
 
 function filter(patch: Partial<Filters>, current: Filters) {
     const next = { ...current, ...patch };
@@ -192,15 +228,15 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">
-                                <th className="px-4 py-3 text-left font-medium">Rule</th>
-                                {!filters.property_id && <th className="px-4 py-3 text-left font-medium">Property</th>}
-                                <th className="px-4 py-3 text-left font-medium">Severity</th>
-                                <th className="px-4 py-3 text-left font-medium">WCAG</th>
-                                <th className="px-4 py-3 text-left font-medium">Status</th>
-                                <th className="px-4 py-3 text-left font-medium">Assigned to</th>
-                                <th className="px-4 py-3 text-left font-medium">Occurrences</th>
-                                <th className="px-4 py-3 text-right font-medium">Risk weight</th>
-                                <th className="px-4 py-3 text-left font-medium">Last detected</th>
+                                <th className="px-4 py-3 text-center font-medium">Severity</th>
+                                <th className="px-4 py-3 text-center font-medium">Rule</th>
+                                <th className="px-4 py-3 text-center font-medium">WCAG</th>
+                                <th className="px-4 py-3 text-center font-medium">Occurrences</th>
+                                <th className="px-4 py-3 text-center font-medium">Risk weight</th>
+                                <th className="px-4 py-3 text-center font-medium">Last detected</th>
+                                {!filters.property_id && <th className="px-4 py-3 text-center font-medium">Property</th>}
+                                <th className="px-4 py-3 text-center font-medium">Status</th>
+                                <th className="px-4 py-3 text-center font-medium">Assigned to</th>
                                 <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                             </tr>
                         </thead>
@@ -214,28 +250,35 @@ function filter(patch: Partial<Filters>, current: Filters) {
                             ) : (
                                 issues.data.map((issue) => (
                                     <tr key={issue.id} className="transition-colors hover:bg-muted/30">
-                                        <td className="px-4 py-3 font-mono text-xs">{issue.rule_key}</td>
-                                        {!filters.property_id && <td className="px-4 py-3 text-muted-foreground">{issue.property?.name ?? '—'}</td>}
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-3 text-center">
                                             <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
                                                 {issue.severity}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-3 text-muted-foreground capitalize">
+                                        <td className="px-4 py-3 text-center font-mono text-xs">{issue.rule_key}</td>
+                                        <td className="px-4 py-3 text-center text-muted-foreground capitalize">
                                             {issue.wcag_criteria
                                                 ? <span title={issue.wcag_category?.replace('-', ' ') ?? undefined}>{issue.wcag_criteria}</span>
                                                 : (issue.wcag_category?.replace('-', ' ') ?? '—')}
                                         </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
+                                        <td className="px-4 py-3 text-center text-muted-foreground">{issue.occurrence_count}</td>
+                                        <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>
+                                        <td className="px-4 py-3 text-center text-muted-foreground">
+                                            {new Date(issue.last_detected_at).toLocaleDateString()}
+                                        </td>
+                                        {!filters.property_id && <td className="px-4 py-3 text-center text-muted-foreground">{issue.property?.name ?? '—'}</td>}
+                                        <td className="px-4 py-3 text-center text-muted-foreground">
                                             {statusLabels[issue.status] ?? issue.status}
                                         </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            {issue.assigned_user?.name ?? '—'}
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">{issue.occurrence_count}</td>
-                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            {new Date(issue.last_detected_at).toLocaleDateString()}
+                                        <td className="px-4 py-3 text-center text-muted-foreground">
+                                            {issue.assigned_user ? (
+                                                <button
+                                                    onClick={() => openUserModal(issue.assigned_user!.id, issue.assigned_user!.name)}
+                                                    className="text-primary hover:underline cursor-pointer"
+                                                >
+                                                    {issue.assigned_user.name}
+                                                </button>
+                                            ) : '—'}
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                             <Link
@@ -267,6 +310,71 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     </div>
                 )}
             </div>
+
+            <Dialog open={modal.open} onOpenChange={(open) => { if (!open) setModal({ open: false }); }}>
+                <DialogContent className="max-w-5xl">
+                    <DialogHeader>
+                        <DialogTitle>
+                            Issues assigned to {modal.open ? modal.userName : ''}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {modal.open && modal.loading && (
+                        <div className="flex items-center justify-center py-10">
+                            <Spinner className="h-6 w-6" />
+                        </div>
+                    )}
+
+                    {modal.open && !modal.loading && (
+                        modal.issues.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">No issues assigned.</p>
+                        ) : (
+                            <div className="rounded-lg border overflow-auto max-h-[60vh]">
+                                <table className="w-full text-sm">
+                                    <thead className="border-b bg-muted/50 sticky top-0">
+                                        <tr className="text-xs text-muted-foreground">
+                                            <th className="px-4 py-3 text-left font-medium">Severity</th>
+                                            <th className="px-4 py-3 text-left font-medium">Rule</th>
+                                            <th className="px-4 py-3 text-left font-medium">Occurrences</th>
+                                            <th className="px-4 py-3 text-left font-medium">Last detected</th>
+                                            <th className="px-4 py-3 text-left font-medium">Status</th>
+                                            <th className="px-4 py-3 text-left font-medium">Property</th>
+                                            <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {modal.issues.map((issue) => (
+                                            <tr key={issue.id} className="hover:bg-muted/30">
+                                                <td className="px-4 py-3">
+                                                    <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
+                                                        {issue.severity}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3 font-mono text-xs">{issue.rule_key}</td>
+
+                                                <td className="px-4 py-3 text-muted-foreground">{issue.occurrence_count}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {new Date(issue.last_detected_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground">{statusLabels[issue.status] ?? issue.status}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{issue.property?.name ?? '—'}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Link
+                                                        href={IssueController.show(issue.id).url}
+                                                        className="text-sm text-primary hover:underline"
+                                                    >
+                                                        View
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
