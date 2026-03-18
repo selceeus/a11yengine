@@ -148,6 +148,9 @@ class PropertyController extends Controller
                 'frequency' => $property->scheduledScan->frequency,
                 'scheduled_at' => $property->scheduledScan->scheduled_at?->toIso8601String(),
                 'next_run_at' => $property->scheduledScan->next_run_at->toIso8601String(),
+                'run_time' => $property->scheduledScan->run_time,
+                'run_day_of_week' => $property->scheduledScan->run_day_of_week,
+                'run_day_of_month' => $property->scheduledScan->run_day_of_month,
             ] : null,
         ]);
     }

@@ -113,6 +113,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::put('api/properties/{property}/scheduled-scan/{scheduledScan}', [ScheduledScanController::class, 'update'])
         ->name('api.properties.scheduled-scan.update');
+
+    Route::delete('api/properties/{property}/scheduled-scan/{scheduledScan}', [ScheduledScanController::class, 'destroy'])
+        ->name('api.properties.scheduled-scan.destroy');
 });
 
 Route::middleware('guest')->group(function (): void {

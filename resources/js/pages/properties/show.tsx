@@ -53,6 +53,9 @@ type ScheduledScan = {
     frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | null;
     scheduled_at: string | null;
     next_run_at: string;
+    run_time: string | null;
+    run_day_of_week: number | null;
+    run_day_of_month: number | null;
 };
 
 type ScheduleDialogState =
@@ -114,6 +117,11 @@ export default function Show({
     const [scheduleType, setScheduleType] = useState<'once' | 'recurring'>('recurring');
     const [scheduleFrequency, setScheduleFrequency] = useState<string>('weekly');
     const [scheduleAt, setScheduleAt] = useState<string>('');
+    const [scheduleTime, setScheduleTime] = useState<string>('09:00');
+    const [scheduleDayOfWeek, setScheduleDayOfWeek] = useState<string>('1');
+    const [scheduleDayOfMonth, setScheduleDayOfMonth] = useState<string>('1');
+    const [scheduleRemoveConfirm, setScheduleRemoveConfirm] = useState(false);
+    const [scheduleRemoving, setScheduleRemoving] = useState(false);
     const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
     const [scheduleError, setScheduleError] = useState<string | null>(null);
 
@@ -122,12 +130,19 @@ export default function Show({
             setScheduleType(scheduledScan.type);
             setScheduleFrequency(scheduledScan.frequency ?? 'weekly');
             setScheduleAt(scheduledScan.scheduled_at ? scheduledScan.scheduled_at.slice(0, 16) : '');
+            setScheduleTime(scheduledScan.run_time ?? '09:00');
+            setScheduleDayOfWeek(scheduledScan.run_day_of_week?.toString() ?? '1');
+            setScheduleDayOfMonth(scheduledScan.run_day_of_month?.toString() ?? '1');
         } else {
             setScheduleType('recurring');
             setScheduleFrequency('weekly');
             setScheduleAt('');
+            setScheduleTime('09:00');
+            setScheduleDayOfWeek('1');
+            setScheduleDayOfMonth('1');
         }
         setScheduleError(null);
+        setScheduleRemoveConfirm(false);
         setScheduleDialog({ open: true, mode });
     }
 
@@ -141,11 +156,18 @@ export default function Show({
             ? `/api/properties/${property.id}/scheduled-scan/${scheduledScan!.id}`
             : `/api/properties/${property.id}/scheduled-scan`;
 
-        const body: Record<string, string> = { type: scheduleType };
+        const body: Record<string, string | number> = { type: scheduleType };
         if (scheduleType === 'once') {
             body.scheduled_at = scheduleAt;
         } else {
             body.frequency = scheduleFrequency;
+            body.run_time = scheduleTime;
+            if (scheduleFrequency === 'weekly') {
+                body.run_day_of_week = Number(scheduleDayOfWeek);
+            }
+            if (scheduleFrequency === 'monthly' || scheduleFrequency === 'quarterly') {
+                body.run_day_of_month = Number(scheduleDayOfMonth);
+            }
         }
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
@@ -170,6 +192,33 @@ export default function Show({
 
         const json = await res.json();
         setScheduledScan(json.scheduledScan);
+        setScheduleDialog({ open: false });
+    }
+
+    async function removeSchedule() {
+        if (!scheduledScan) return;
+        setScheduleRemoving(true);
+        setScheduleError(null);
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        const res = await fetch(`/api/properties/${property.id}/scheduled-scan/${scheduledScan.id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        });
+
+        setScheduleRemoving(false);
+
+        if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            setScheduleError(json.message ?? 'Failed to remove schedule.');
+            return;
+        }
+
+        setScheduledScan(null);
         setScheduleDialog({ open: false });
     }
 
@@ -516,21 +565,75 @@ export default function Show({
                             </div>
                         </div>
 
-                        {/* Recurring: frequency */}
+                        {/* Recurring: frequency + day + time */}
                         {scheduleType === 'recurring' && (
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="frequency">Frequency</Label>
-                                <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
-                                    <SelectTrigger id="frequency">
-                                        <SelectValue placeholder="Select frequency…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="daily">Daily</SelectItem>
-                                        <SelectItem value="weekly">Weekly</SelectItem>
-                                        <SelectItem value="monthly">Monthly</SelectItem>
-                                        <SelectItem value="quarterly">Quarterly</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="frequency">Frequency</Label>
+                                    <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
+                                        <SelectTrigger id="frequency">
+                                            <SelectValue placeholder="Select frequency…" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="daily">Daily</SelectItem>
+                                            <SelectItem value="weekly">Weekly</SelectItem>
+                                            <SelectItem value="monthly">Monthly</SelectItem>
+                                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {scheduleFrequency === 'weekly' && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="run_day_of_week">Day of week</Label>
+                                        <Select value={scheduleDayOfWeek} onValueChange={setScheduleDayOfWeek}>
+                                            <SelectTrigger id="run_day_of_week">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0">Sunday</SelectItem>
+                                                <SelectItem value="1">Monday</SelectItem>
+                                                <SelectItem value="2">Tuesday</SelectItem>
+                                                <SelectItem value="3">Wednesday</SelectItem>
+                                                <SelectItem value="4">Thursday</SelectItem>
+                                                <SelectItem value="5">Friday</SelectItem>
+                                                <SelectItem value="6">Saturday</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                {(scheduleFrequency === 'monthly' || scheduleFrequency === 'quarterly') && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="run_day_of_month">
+                                            {scheduleFrequency === 'quarterly' ? 'Day of month (per quarter)' : 'Day of month'}
+                                        </Label>
+                                        <Select value={scheduleDayOfMonth} onValueChange={setScheduleDayOfMonth}>
+                                            <SelectTrigger id="run_day_of_month">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Array.from({ length: 28 }, (_, i) => (
+                                                    <SelectItem key={i + 1} value={String(i + 1)}>
+                                                        {i + 1}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="run_time">Time</Label>
+                                    <input
+                                        id="run_time"
+                                        type="time"
+                                        value={scheduleTime}
+                                        onChange={(e) => setScheduleTime(e.target.value)}
+                                        required
+                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    />
+                                </div>
                             </div>
                         )}
 
@@ -553,13 +656,52 @@ export default function Show({
                             <p className="text-xs text-destructive">{scheduleError}</p>
                         )}
 
-                        <div className="flex justify-end gap-2">
-                            <Button type="button" variant="outline" onClick={() => setScheduleDialog({ open: false })}>
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={scheduleSubmitting}>
-                                {scheduleSubmitting ? 'Saving…' : 'Save schedule'}
-                            </Button>
+                        <div className="flex items-center gap-2">
+                            {/* Remove button (edit mode only) */}
+                            {scheduleDialog.open && scheduleDialog.mode === 'edit' && (
+                                <div className="flex items-center gap-2">
+                                    {!scheduleRemoveConfirm ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            onClick={() => setScheduleRemoveConfirm(true)}
+                                        >
+                                            Remove
+                                        </Button>
+                                    ) : (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                disabled={scheduleRemoving}
+                                                onClick={removeSchedule}
+                                            >
+                                                {scheduleRemoving ? 'Removing…' : 'Confirm removal'}
+                                            </Button>
+                                            <button
+                                                type="button"
+                                                className="text-xs text-muted-foreground hover:text-foreground"
+                                                onClick={() => setScheduleRemoveConfirm(false)}
+                                            >
+                                                cancel
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Cancel + Save */}
+                            <div className="ml-auto flex gap-2">
+                                <Button type="button" variant="outline" onClick={() => setScheduleDialog({ open: false })}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={scheduleSubmitting}>
+                                    {scheduleSubmitting ? 'Saving…' : 'Save schedule'}
+                                </Button>
+                            </div>
                         </div>
                     </form>
                 </DialogContent>

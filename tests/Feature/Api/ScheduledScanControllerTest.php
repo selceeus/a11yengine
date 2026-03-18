@@ -155,3 +155,87 @@ it('returns 404 when property belongs to a different agency', function (): void 
         ])
         ->assertNotFound();
 });
+
+// ── destroy ────────────────────────────────────────────────────────────────────
+
+it('rejects unauthenticated destroy', function (): void {
+    $schedule = ScheduledScan::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+    ]);
+
+    $this->deleteJson(route('api.properties.scheduled-scan.destroy', [$this->property, $schedule]))
+        ->assertUnauthorized();
+});
+
+it('deactivates a schedule on destroy', function (): void {
+    $schedule = ScheduledScan::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+    ]);
+
+    $this->actingAs($this->actor)
+        ->deleteJson(route('api.properties.scheduled-scan.destroy', [$this->property, $schedule]))
+        ->assertOk()
+        ->assertJsonPath('success', true);
+
+    expect($schedule->fresh()->is_active)->toBeFalse();
+});
+
+// ── timing fields ─────────────────────────────────────────────────────────────
+
+it('stores run_time and run_day_of_week for weekly schedules', function (): void {
+    $this->actingAs($this->actor)
+        ->postJson(route('api.properties.scheduled-scan.store', $this->property), [
+            'type' => 'recurring',
+            'frequency' => 'weekly',
+            'run_time' => '14:30',
+            'run_day_of_week' => 3,
+        ])
+        ->assertOk()
+        ->assertJsonPath('scheduledScan.run_time', '14:30')
+        ->assertJsonPath('scheduledScan.run_day_of_week', 3);
+
+    $this->assertDatabaseHas('scheduled_scans', [
+        'property_id' => $this->property->id,
+        'run_time' => '14:30',
+        'run_day_of_week' => 3,
+    ]);
+});
+
+it('stores run_time and run_day_of_month for monthly schedules', function (): void {
+    $this->actingAs($this->actor)
+        ->postJson(route('api.properties.scheduled-scan.store', $this->property), [
+            'type' => 'recurring',
+            'frequency' => 'monthly',
+            'run_time' => '06:00',
+            'run_day_of_month' => 15,
+        ])
+        ->assertOk()
+        ->assertJsonPath('scheduledScan.run_time', '06:00')
+        ->assertJsonPath('scheduledScan.run_day_of_month', 15);
+});
+
+it('rejects an invalid run_time format', function (): void {
+    $this->actingAs($this->actor)
+        ->postJson(route('api.properties.scheduled-scan.store', $this->property), [
+            'type' => 'recurring',
+            'frequency' => 'daily',
+            'run_time' => '25:00',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['run_time']);
+});
+
+it('rejects a run_day_of_month out of range', function (): void {
+    $this->actingAs($this->actor)
+        ->postJson(route('api.properties.scheduled-scan.store', $this->property), [
+            'type' => 'recurring',
+            'frequency' => 'monthly',
+            'run_day_of_month' => 29,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['run_day_of_month']);
+});
