@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, CircleAlert, Folder, Globe, LayoutGrid, ScanSearch, Users } from 'lucide-react';
+import { BookOpen, Bot, Building2, CircleAlert, Folder, Globe, LayoutGrid, ScanSearch, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -52,6 +52,11 @@ const mainNavItems: NavItem[] = [
         href: TeamController.index(),
         icon: Users,
     },
+    {
+        title: 'AI Audits',
+        href: '/audits',
+        icon: Bot,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -87,7 +92,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                
+
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\RiskMapController;
 use App\Http\Controllers\Api\ScanOverviewController;
 use App\Http\Controllers\Api\ScheduledScanController;
 use App\Http\Controllers\Api\UserAssignedIssuesController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
@@ -116,6 +117,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::delete('api/properties/{property}/scheduled-scan/{scheduledScan}', [ScheduledScanController::class, 'destroy'])
         ->name('api.properties.scheduled-scan.destroy');
+
+    Route::get('audits', [AuditController::class, 'index'])->name('audits.index');
+    Route::post('audits', [AuditController::class, 'store'])->name('audits.store');
+    Route::get('audits/{audit}', [AuditController::class, 'show'])->name('audits.show');
+    Route::delete('audits/{audit}', [AuditController::class, 'destroy'])->name('audits.destroy');
+    Route::get('audits/{audit}/export/{format}', [AuditController::class, 'export'])
+        ->name('audits.export')
+        ->where('format', 'json|csv|pdf');
 });
 
 Route::middleware('guest')->group(function (): void {

@@ -75,6 +75,8 @@ class ScanPageDispatcher
 
                 app(CalculateScanMetrics::class)->handle($scan->fresh() ?? $scan);
                 app(RecordPropertyRiskSnapshot::class)->handle($scan->property_id);
+
+                event(new \App\Events\ScanCompleted($scan->fresh() ?? $scan));
             })
             ->dispatch();
     }
