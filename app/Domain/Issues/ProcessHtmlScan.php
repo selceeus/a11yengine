@@ -69,7 +69,7 @@ class ProcessHtmlScan
                 $fingerprint = sha1($violation['id'].'|'.($elementIdentifier ?? '').'|'.$url);
 
                 try {
-                    $finding = Finding::withoutGlobalScope(TenantScope::class)->firstOrCreate(
+                    $finding = Finding::withoutGlobalScope(TenantScope::class)->createOrFirst(
                         ['scan_id' => $scan->id, 'fingerprint' => $fingerprint],
                         [
                             'agency_id' => $scan->agency_id,
@@ -88,7 +88,11 @@ class ProcessHtmlScan
                             'detected_at' => $detectedAt,
                         ]
                     );
-                } catch (UniqueConstraintViolationException) {
+                } catch (UniqueConstraintViolationException|\PDOException $e) {
+                    if ($e instanceof \PDOException && ($e->errorInfo[1] ?? null) !== 1062) {
+                        throw $e;
+                    }
+
                     $finding = Finding::withoutGlobalScope(TenantScope::class)
                         ->where('scan_id', $scan->id)
                         ->where('fingerprint', $fingerprint)
