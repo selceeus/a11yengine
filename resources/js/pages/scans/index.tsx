@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -20,6 +23,31 @@ type Scan = {
     total_violations: number | null;
     created_at: string;
     property: Property | null;
+};
+
+type SeverityRow = {
+    severity: 'critical' | 'serious' | 'moderate' | 'minor' | 'info';
+    count: number;
+};
+
+type LighthouseAverages = {
+    performance: number | null;
+    accessibility: number | null;
+    best_practices: number | null;
+    seo: number | null;
+};
+
+type OverviewState =
+    | { open: false }
+    | { open: true; scanId: number; scanName: string; loading: true }
+    | { open: true; scanId: number; scanName: string; loading: false; severityBreakdown: SeverityRow[]; lighthouseAverages: LighthouseAverages | null };
+
+const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
+    critical: 'bg-red-500',
+    serious: 'bg-orange-500',
+    moderate: 'bg-yellow-500',
+    minor: 'bg-blue-400',
+    info: 'bg-slate-400',
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -41,10 +69,29 @@ function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destr
 
 export default function Index({ scans, properties }: { scans: Scan[]; properties: Property[] }) {
     const { data, setData, post, processing, errors } = useForm({ property_id: '' });
+    const [overview, setOverview] = useState<OverviewState>({ open: false });
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
         post(ScanController.store().url);
+    }
+
+    async function openOverview(scan: Scan) {
+        setOverview({ open: true, scanId: scan.id, scanName: scan.property?.name ?? `Scan #${scan.id}`, loading: true });
+
+        const res = await fetch(`/api/scans/${scan.id}/overview`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const json = await res.json();
+
+        setOverview({
+            open: true,
+            scanId: scan.id,
+            scanName: scan.property?.name ?? `Scan #${scan.id}`,
+            loading: false,
+            severityBreakdown: json.severityBreakdown,
+            lighthouseAverages: json.lighthouseAverages,
+        });
     }
 
     return (
@@ -126,12 +173,20 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                             {new Date(scan.created_at).toLocaleString()}
                                         </td>
                                         <td className="px-4 py-3 text-right">
-                                            <Link
-                                                href={ScanController.show(scan.id).url}
-                                                className="text-sm text-primary hover:underline"
-                                            >
-                                                View
-                                            </Link>
+                                            <div className="flex items-center justify-end gap-3">
+                                                <button
+                                                    onClick={() => openOverview(scan)}
+                                                    className="text-sm text-primary hover:underline"
+                                                >
+                                                    Overview
+                                                </button>
+                                                <Link
+                                                    href={ScanController.show(scan.id).url}
+                                                    className="text-sm text-primary hover:underline"
+                                                >
+                                                    View
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -140,6 +195,104 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                     </table>
                 </div>
             </div>
+
+            {/* Overview Dialog */}
+            <Dialog open={overview.open} onOpenChange={(open) => { if (!open) setOverview({ open: false }); }}>
+                <DialogContent className="max-w-2xl sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>
+                            Overview — {overview.open ? overview.scanName : ''}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {overview.open && overview.loading && (
+                        <div className="flex items-center justify-center py-10">
+                            <Spinner className="h-6 w-6" />
+                        </div>
+                    )}
+
+                    {overview.open && !overview.loading && (
+                        <div className="flex flex-col gap-6">
+                            {/* Lighthouse Averages */}
+                            <div>
+                                <h3 className="mb-3 text-sm font-semibold">Lighthouse Averages</h3>
+                                {overview.lighthouseAverages ? (
+                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                        <OverviewBarCard label="Performance" score={overview.lighthouseAverages.performance} />
+                                        <OverviewBarCard label="Accessibility" score={overview.lighthouseAverages.accessibility} />
+                                        <OverviewBarCard label="Best Practices" score={overview.lighthouseAverages.best_practices} />
+                                        <OverviewBarCard label="SEO" score={overview.lighthouseAverages.seo} />
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No Lighthouse data available.</p>
+                                )}
+                            </div>
+
+                            {/* WCAG Violations by Severity */}
+                            <div>
+                                <h3 className="mb-3 text-sm font-semibold">WCAG Violations by Severity</h3>
+                                {overview.severityBreakdown.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {overview.severityBreakdown.map((row) => {
+                                            const total = overview.severityBreakdown.reduce((s, r) => s + r.count, 0);
+                                            const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                                            return (
+                                                <div key={row.severity}>
+                                                    <div className="mb-1 flex justify-between text-xs">
+                                                        <span className="capitalize">{row.severity}</span>
+                                                        <span className="tabular-nums text-muted-foreground">
+                                                            {row.count} ({pct}%)
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No violation data available.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
+    );
+}
+
+function OverviewBarCard({ label, score }: { label: string; score: number | null }) {
+    const pct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
+
+    const barColour =
+        score === null ? 'bg-slate-300' :
+        score >= 90 ? 'bg-green-500' :
+        score >= 50 ? 'bg-orange-500' :
+        'bg-red-500';
+
+    const textColour =
+        score === null ? 'text-muted-foreground' :
+        score >= 90 ? 'text-green-600' :
+        score >= 50 ? 'text-orange-500' :
+        'text-red-600';
+
+    return (
+        <div className="rounded-xl border bg-card p-4 flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
+                {score ?? '—'}
+            </p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                    className={`h-2 rounded-full transition-all ${barColour}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+        </div>
     );
 }

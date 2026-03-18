@@ -157,6 +157,13 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                 <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <StatCard label="First detected" value={new Date(issue.first_detected_at).toLocaleDateString()} />
                     <StatCard label="Last detected" value={new Date(issue.last_detected_at).toLocaleDateString()} />
+                    <StatCard
+                        label="Days open"
+                        value={`${Math.floor(
+                            (new Date(issue.resolved_at ?? Date.now()).getTime() - new Date(issue.first_detected_at).getTime()) /
+                                (1000 * 60 * 60 * 24),
+                        )} days`}
+                    />
                     {issue.resolved_at && (
                         <StatCard label="Resolved" value={new Date(issue.resolved_at).toLocaleDateString()} />
                     )}

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PropertyRiskTrendsController;
 use App\Http\Controllers\Api\PropertyScanActivityController;
 use App\Http\Controllers\Api\RiskDashboardController;
 use App\Http\Controllers\Api\RiskMapController;
+use App\Http\Controllers\Api\ScanOverviewController;
 use App\Http\Controllers\Api\UserAssignedIssuesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueController;
@@ -102,6 +103,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/users/{user}/issues', UserAssignedIssuesController::class)
         ->name('api.users.issues');
+
+    Route::get('api/scans/{scan}/overview', ScanOverviewController::class)
+        ->name('api.scans.overview');
 });
 
 Route::middleware('guest')->group(function (): void {
