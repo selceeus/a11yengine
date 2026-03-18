@@ -1,11 +1,13 @@
-import { Head } from '@inertiajs/react';
-import { usePage } from '@inertiajs/react';
+import { Head, WhenVisible, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AccessibilityRiskLandscapeBarChart } from '@/components/charts/AccessibilityRiskLandscapeBarChart';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
 import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
 import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
 import { TopAtRiskPropertiesBarChart } from '@/components/charts/TopAtRiskPropertiesBarChart';
+import { AuditSummaryCards } from '@/components/AuditSummaryCards';
+import type { AuditSummary } from '@/components/AuditSummaryCards';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth, BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
@@ -18,7 +20,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard() {
-    const { auth, defaultPropertyId } = usePage().props as { auth: Auth; defaultPropertyId: number | null };
+    const { auth, defaultPropertyId, latestAudits } = usePage().props as {
+        auth: Auth;
+        defaultPropertyId: number | null;
+        latestAudits: AuditSummary[] | null;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -85,6 +91,30 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                             <AccessibilityRiskLandscapeBarChart siteId={defaultPropertyId} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                    <Card className="col-span-full">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Latest Audit Scores</CardTitle>
+                            <Link href="/audits/dashboard" className="text-sm text-primary hover:underline">
+                                View all
+                            </Link>
+                        </CardHeader>
+                        <CardContent>
+                            <WhenVisible
+                                data="latestAudits"
+                                fallback={
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        {[0, 1, 2].map((i) => (
+                                            <div key={i} className="h-24 animate-pulse rounded-xl border bg-muted" />
+                                        ))}
+                                    </div>
+                                }
+                            >
+                                <AuditSummaryCards audits={latestAudits ?? []} />
+                            </WhenVisible>
                         </CardContent>
                     </Card>
                 </div>

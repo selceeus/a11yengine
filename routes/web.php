@@ -118,8 +118,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('api/properties/{property}/scheduled-scan/{scheduledScan}', [ScheduledScanController::class, 'destroy'])
         ->name('api.properties.scheduled-scan.destroy');
 
+    Route::get('api/properties/{property}/audits/trend', \App\Http\Controllers\Api\AuditTrendController::class)
+        ->name('api.properties.audits.trend');
+
     Route::get('audits', [AuditController::class, 'index'])->name('audits.index');
     Route::post('audits', [AuditController::class, 'store'])->name('audits.store');
+    Route::get('audits/dashboard', [AuditController::class, 'dashboard'])->name('audits.dashboard');
     Route::get('audits/{audit}', [AuditController::class, 'show'])->name('audits.show');
     Route::delete('audits/{audit}', [AuditController::class, 'destroy'])->name('audits.destroy');
     Route::get('audits/{audit}/export/{format}', [AuditController::class, 'export'])

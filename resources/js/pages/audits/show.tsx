@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { AuditScoreTrendChart } from '@/components/charts/AuditScoreTrendChart';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -29,6 +30,14 @@ type Audit = {
     generated_at: string | null;
     created_at: string;
     property: { id: number; name: string; base_url?: string } | null;
+};
+
+type Trend = {
+    score_delta: number | null;
+    trend_direction: 'improving' | 'declining' | 'stable';
+    previous_score: number | null;
+    audit_count: number;
+    history: { id: number; overall_score: number | null; generated_at: string; title: string }[];
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -68,8 +77,9 @@ function scoreColor(score: number | null) {
     return 'bg-red-100 text-red-800';
 }
 
-export default function Show({ audit }: { audit: Audit }) {
+export default function Show({ audit, trend }: { audit: Audit; trend: Trend | null }) {
     const isPending = audit.status === 'pending' || audit.status === 'processing';
+    const [tab, setTab] = useState<'details' | 'summary'>('details');
 
     useEffect(() => {
         if (!isPending) return;
@@ -122,6 +132,25 @@ export default function Show({ audit }: { audit: Audit }) {
                     )}
                 </div>
 
+                {/* Tabs — only shown for completed audits */}
+                {audit.status === 'completed' && (
+                    <div className="flex gap-1 border-b">
+                        {(['details', 'summary'] as const).map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => setTab(t)}
+                                className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                                    tab === t
+                                        ? 'border-primary text-foreground'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* Pending / Processing */}
                 {isPending && (
                     <div className="flex flex-col items-center gap-4 rounded-xl border bg-card py-16">
@@ -141,8 +170,137 @@ export default function Show({ audit }: { audit: Audit }) {
                     </div>
                 )}
 
-                {/* Completed */}
-                {audit.status === 'completed' && (
+                {/* ── Summary Tab ─────────────────────────────────────────── */}
+                {audit.status === 'completed' && tab === 'summary' && (
+                    <>
+                        {/* Score + delta */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr]">
+                            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card p-6">
+                                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Overall Score</span>
+                                <span className={`rounded-full px-5 py-2 text-3xl font-bold ${scoreColor(audit.overall_score)}`}>
+                                    {audit.overall_score ?? '—'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">out of 100</span>
+                                {trend && trend.score_delta !== null && (
+                                    <div className={`flex items-center gap-1 text-sm font-medium ${
+                                        trend.trend_direction === 'improving' ? 'text-green-600'
+                                            : trend.trend_direction === 'declining' ? 'text-red-600'
+                                            : 'text-muted-foreground'
+                                    }`}>
+                                        {trend.trend_direction === 'improving' && <TrendingUp className="h-4 w-4" />}
+                                        {trend.trend_direction === 'declining' && <TrendingDown className="h-4 w-4" />}
+                                        {trend.trend_direction === 'stable' && <Minus className="h-4 w-4" />}
+                                        <span>
+                                            {trend.score_delta > 0 ? '+' : ''}{trend.score_delta} vs previous
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
+                                <div className="space-y-2 text-sm leading-relaxed">
+                                    {(audit.executive_summary ?? '').split(/\n{2,}/).map((para, i) => (
+                                        <p key={i}>{para}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Statistics */}
+                        {audit.summary_statistics && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Summary Statistics</h2>
+                                <div className="grid grid-cols-5 gap-3 text-center">
+                                    {(
+                                        [
+                                            { key: 'total_issues', label: 'Total' },
+                                            { key: 'critical', label: 'Critical' },
+                                            { key: 'serious', label: 'Serious' },
+                                            { key: 'moderate', label: 'Moderate' },
+                                            { key: 'minor', label: 'Minor' },
+                                        ] as { key: keyof SummaryStatistics; label: string }[]
+                                    ).map(({ key, label }) => (
+                                        <div key={key} className="rounded-lg border p-3">
+                                            <div className="text-2xl font-bold">{audit.summary_statistics![key] ?? 0}</div>
+                                            <div className="text-xs text-muted-foreground">{label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* WCAG Compliance */}
+                        {audit.compliance_status && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {(
+                                        [
+                                            { key: 'wcag_a', label: 'WCAG A' },
+                                            { key: 'wcag_aa', label: 'WCAG AA' },
+                                            { key: 'wcag_aaa', label: 'WCAG AAA' },
+                                        ] as { key: keyof ComplianceStatus; label: string }[]
+                                    ).map(({ key, label }) => {
+                                        const item = audit.compliance_status![key];
+                                        return (
+                                            <div key={key} className="rounded-lg border p-4">
+                                                <div className="mb-1 font-semibold">{label}</div>
+                                                <div className={`text-sm font-medium capitalize ${complianceColor(item?.status)}`}>
+                                                    {item?.status ?? '—'}
+                                                </div>
+                                                <div className="mt-1 text-xs text-muted-foreground">{item?.notes}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Top 5 Critical Risks */}
+                        {audit.top_risks && audit.top_risks.length > 0 && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Top 5 Critical Issues</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="border-b text-xs text-muted-foreground">
+                                            <tr>
+                                                <th className="pb-2 pr-4 text-left font-medium">#</th>
+                                                <th className="pb-2 pr-4 text-left font-medium">Risk</th>
+                                                <th className="pb-2 pr-4 text-left font-medium">Severity</th>
+                                                <th className="pb-2 pr-4 text-left font-medium">WCAG</th>
+                                                <th className="pb-2 text-right font-medium">Occurrences</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {audit.top_risks.slice(0, 5).map((risk) => (
+                                                <tr key={risk.rank} className="hover:bg-muted/30">
+                                                    <td className="py-2 pr-4 tabular-nums text-muted-foreground">{risk.rank}</td>
+                                                    <td className="py-2 pr-4 font-medium">{risk.title}</td>
+                                                    <td className="py-2 pr-4">
+                                                        <Badge variant={severityVariant(risk.severity)}>{risk.severity}</Badge>
+                                                    </td>
+                                                    <td className="py-2 pr-4 font-mono text-xs">{risk.wcag_criteria}</td>
+                                                    <td className="py-2 text-right tabular-nums">{risk.occurrences}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Score Trend Chart */}
+                        {audit.property && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Score Trend</h2>
+                                <AuditScoreTrendChart propertyId={audit.property.id} />
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* ── Details Tab ─────────────────────────────────────────── */}
+                {audit.status === 'completed' && tab === 'details' && (
                     <>
                         {/* Score + Summary */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr]">

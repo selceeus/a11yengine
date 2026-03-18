@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Bot, Building2, CircleAlert, Folder, Globe, LayoutGrid, ScanSearch, Users } from 'lucide-react';
+import { BarChart2, BookOpen, Bot, Building2, CircleAlert, Folder, Globe, LayoutGrid, ScanSearch, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -56,6 +56,11 @@ const mainNavItems: NavItem[] = [
         title: 'AI Audits',
         href: '/audits',
         icon: Bot,
+    },
+    {
+        title: 'Audit Dashboard',
+        href: '/audits/dashboard',
+        icon: BarChart2,
     },
 ];
 

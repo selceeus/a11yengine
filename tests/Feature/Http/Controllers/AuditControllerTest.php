@@ -186,3 +186,60 @@ it('exports a completed audit as PDF (HTML)', function (): void {
         ->assertOk()
         ->assertHeader('Content-Type', 'text/html; charset=utf-8');
 });
+
+// --- show: trend prop --------------------------------------------------------
+
+it('includes trend data for a completed audit', function (): void {
+    $audit = Audit::factory()
+        ->for($this->agency)
+        ->for($this->organization)
+        ->for($this->property)
+        ->completed()
+        ->create();
+
+    $this->get(route('audits.show', $audit))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('audits/show')
+            ->has('trend')
+        );
+});
+
+it('passes null trend for a non-completed audit', function (): void {
+    $audit = Audit::factory()
+        ->for($this->agency)
+        ->for($this->organization)
+        ->for($this->property)
+        ->create(['status' => AuditStatus::Pending]);
+
+    $this->get(route('audits.show', $audit))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('trend', null)
+        );
+});
+
+// --- dashboard ---------------------------------------------------------------
+
+it('returns the audit dashboard page', function (): void {
+    $this->get(route('audits.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('audits/dashboard'));
+});
+
+it('only returns completed audits from own agency on the dashboard', function (): void {
+    // Other agency audit — should be excluded by global scope
+    Audit::factory()->completed()->create();
+
+    Audit::factory()
+        ->for($this->agency)
+        ->for($this->organization)
+        ->for($this->property)
+        ->completed()
+        ->count(2)
+        ->create();
+
+    $this->get(route('audits.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('audits.data', 2));
+});

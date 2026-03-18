@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Audits\CompareAuditTrends;
 use App\Enums\AuditStatus;
 use App\Http\Requests\StoreAuditRequest;
 use App\Jobs\GenerateAiAuditJob;
@@ -18,6 +19,8 @@ use Inertia\Response as InertiaResponse;
 class AuditController extends Controller
 {
     use AuthorizesRequests;
+
+    public function __construct(private readonly CompareAuditTrends $trends) {}
 
     public function index(): InertiaResponse
     {
@@ -68,8 +71,44 @@ class AuditController extends Controller
 
         $audit->load('property:id,name,base_url');
 
+        $trend = $audit->status === AuditStatus::Completed
+            ? $this->trends->handle($audit)
+            : null;
+
         return Inertia::render('audits/show', [
             'audit' => $this->formatAudit($audit),
+            'trend' => $trend,
+        ]);
+    }
+
+    public function dashboard(): InertiaResponse
+    {
+        $this->authorize('viewAny', Audit::class);
+
+        $audits = Audit::query()
+            ->with('property:id,name')
+            ->where('status', AuditStatus::Completed)
+            ->latest('generated_at')
+            ->paginate(12)
+            ->withQueryString();
+
+        $properties = Property::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
+        $auditsWithTrend = $audits->through(function (Audit $audit): array {
+            $formatted = $this->formatAudit($audit);
+            $trend = $this->trends->handle($audit, 30);
+            $formatted['score_delta'] = $trend['score_delta'];
+            $formatted['trend_direction'] = $trend['trend_direction'];
+
+            return $formatted;
+        });
+
+        return Inertia::render('audits/dashboard', [
+            'audits' => $auditsWithTrend,
+            'properties' => $properties,
         ]);
     }
 
