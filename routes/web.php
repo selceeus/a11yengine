@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
 use App\Http\Controllers\Api\AssignIssueController;
+use App\Http\Controllers\Api\GenerateIssueClustersController;
+use App\Http\Controllers\Api\PropertyIssueClustersController;
 use App\Http\Controllers\Api\PropertyRiskTrendsController;
 use App\Http\Controllers\Api\PropertyScanActivityController;
 use App\Http\Controllers\Api\RiskDashboardController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\Api\ScheduledScanController;
 use App\Http\Controllers\Api\UserAssignedIssuesController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IssueClusterController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
@@ -122,6 +125,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('api/properties/{property}/audits/trend', \App\Http\Controllers\Api\AuditTrendController::class)
         ->name('api.properties.audits.trend');
 
+    Route::get('api/properties/{property}/issue-clusters', PropertyIssueClustersController::class)
+        ->name('api.properties.issue-clusters');
+
+    Route::post('api/properties/{property}/issue-clusters/generate', GenerateIssueClustersController::class)
+        ->name('api.properties.issue-clusters.generate');
+
     Route::get('audits', [AuditController::class, 'index'])->name('audits.index');
     Route::post('audits', [AuditController::class, 'store'])->name('audits.store');
     Route::get('audits/dashboard', [AuditController::class, 'dashboard'])->name('audits.dashboard');
@@ -130,6 +139,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('audits/{audit}/export/{format}', [AuditController::class, 'export'])
         ->name('audits.export')
         ->where('format', 'json|csv|pdf');
+
+    Route::get('issue-clusters', [IssueClusterController::class, 'index'])->name('issue-clusters.index');
 });
 
 Route::middleware('guest')->group(function (): void {

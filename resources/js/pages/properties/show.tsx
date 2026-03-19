@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PropertyRiskTrendsChart } from '@/components/charts/PropertyRiskTrendsChart';
 import { PropertyScanActivityChart } from '@/components/charts/PropertyScanActivityChart';
+import { IssueClusterPanel } from '@/components/IssueClusterPanel';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
@@ -365,6 +366,16 @@ export default function Show({
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* AI Issue Clusters */}
+                <Card id="ai-clusters">
+                    <CardHeader>
+                        <CardTitle>AI Issue Clusters</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <IssueClusterPanel propertyId={property.id} />
+                    </CardContent>
+                </Card>
 
                 {/* Recent scans */}
                 <div className="rounded-xl border">
