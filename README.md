@@ -13,13 +13,17 @@ The Accessibility Insights Platform helps agencies monitor, audit, and report on
 ## Features
 
 - **Automated Crawling & Scanning** — Discovers all pages on a domain and runs axe-core and Lighthouse audits on each page via headless Puppeteer
-- **Issue Deduplication & Tracking** — Aggregates raw findings into unique issues with occurrence counts, severity, WCAG category, and lifecycle status (open → in progress → resolved)
+- **Issue Deduplication & Tracking** — Aggregates raw findings into unique issues with occurrence counts, severity, WCAG category, criteria, tags, help URLs, element HTML, and lifecycle status (open → in progress → resolved)
 - **AI-Powered Audits & Remediation** — Generates executive audit summaries and per-issue remediation guidance via OpenAI GPT-4o or Anthropic Claude
+- **AI Issue Clustering** — Groups similar open issues into thematic clusters to surface systemic patterns and prioritise remediation effort
+- **AI Risk Advisory** — Produces prioritised remediation recommendations from open issue data at property, organisation, or agency scope
+- **AI Content Auditing** — Analyses scanned page content for accessibility and readability issues beyond automated rule checks
 - **Risk Scoring & Trending** — Calculates weighted risk scores at property, organisation, and agency levels with point-in-time snapshots for trend visualisation
-- **Governance Reporting** — Executive reports covering severity distribution, issue ageing, WCAG coverage, assistive-technology impact, and Core Web Vitals
+- **Governance Reporting** — AI-generated executive reports with narrative summaries, risk trends, severity breakdowns, remediation progress, compliance status, and actionable recommendations; exportable as JSON, CSV, or PDF
+- **Audit Trend Tracking** — Tracks AI-generated audit scores over time and compares trends across consecutive audits
 - **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly isolated by tenant
 - **Role-Based Access Control** — Six roles: SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, Viewer — assignable at any scope level
-- **Team Management** — Invite team members via 7-day email tokens with role pre-assignment
+- **Team Management** — Invite team members via 7-day email tokens with role pre-assignment; forced password reset on first login
 - **Performance Auditing** — Per-page Lighthouse results including performance, accessibility, SEO, and best-practices scores alongside Core Web Vitals
 - **Two-Factor Authentication** — Fortify-powered 2FA with recovery codes
 - **Scheduled Scans** — Configurable recurring scans with automated risk snapshot recording
@@ -64,6 +68,8 @@ Agency
 ```
 
 Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + `RunLighthouseScanJob` per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
+
+The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
 
 ---
 
@@ -175,7 +181,21 @@ composer run dev
 
 ### Issue Lifecycle
 
-Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records. Issues flow through: `open` → `in_progress` → `resolved`.
+Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records. Issues are enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. They flow through: `open` → `in_progress` → `resolved`. Issues can be assigned to team members and carry AI-generated remediation suggestions.
+
+### AI Intelligence Suite
+
+Four AI analysis types sit above the scan layer, each scoped to a property, organisation, or agency:
+
+| Type                  | Model              | Description                                                                                                                 |
+| --------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **Audit**             | `Audit`            | Executive summary of a scan's findings with pass/fail scoring                                                               |
+| **Issue Clusters**    | `IssueCluster`     | Groups open issues into thematic clusters to reveal systemic problems                                                       |
+| **Risk Advisory**     | `RiskAdvisory`     | Prioritised list of remediation recommendations ranked by impact                                                            |
+| **Content Audit**     | `ContentAudit`     | Prose-level analysis of page content for accessibility and readability                                                      |
+| **Governance Report** | `GovernanceReport` | Comprehensive executive report with narrative, risk trends, severity breakdown, remediation progress, and compliance status |
+
+Governance reports support configurable date ranges and can be scheduled alongside scans. They are exportable in JSON, CSV, and PDF formats.
 
 ### Risk Scoring
 
@@ -185,23 +205,28 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 
 ## Background Jobs
 
-| Job                           | Purpose                                            | Retries                | Timeout |
-| ----------------------------- | -------------------------------------------------- | ---------------------- | ------- |
-| `RunScanJob`                  | Orchestrates full scan lifecycle                   | 3 (10s / 30s backoff)  | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page               | batch                  | —       |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page | batch                  | —       |
-| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data     | 2 (60s / 120s backoff) | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue   | —                      | —       |
+| Job                           | Purpose                                                 | Retries                | Timeout |
+| ----------------------------- | ------------------------------------------------------- | ---------------------- | ------- |
+| `RunScanJob`                  | Orchestrates full scan lifecycle                        | 3 (10s / 30s backoff)  | 600s    |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                    | batch                  | —       |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page      | batch                  | —       |
+| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data          | 2 (60s / 120s backoff) | 300s    |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue        | —                      | —       |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                 | —                      | —       |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI        | —                      | —       |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages | —                      | —       |
+| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report         | —                      | —       |
 
 ---
 
 ## Artisan Commands
 
-| Command                            | Description                                 |
-| ---------------------------------- | ------------------------------------------- |
-| `php artisan scans:run-scheduled`  | Execute all pending scheduled scans         |
-| `php artisan risk:snapshot-agency` | Record a point-in-time agency risk snapshot |
-| `php artisan users:backfill-roles` | Populate historical user role records       |
+| Command                                   | Description                                 |
+| ----------------------------------------- | ------------------------------------------- |
+| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans         |
+| `php artisan risk:snapshot-agency`        | Record a point-in-time agency risk snapshot |
+| `php artisan governance:generate-reports` | Generate scheduled governance reports       |
+| `php artisan users:backfill-roles`        | Populate historical user role records       |
 
 ---
 
