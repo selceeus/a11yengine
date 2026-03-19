@@ -7,8 +7,10 @@ use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
 use App\Http\Controllers\Api\AssignIssueController;
+use App\Http\Controllers\Api\GenerateContentAuditController;
 use App\Http\Controllers\Api\GenerateIssueClustersController;
 use App\Http\Controllers\Api\GenerateRiskAdvisoryController;
+use App\Http\Controllers\Api\PropertyContentAuditController;
 use App\Http\Controllers\Api\PropertyIssueClustersController;
 use App\Http\Controllers\Api\PropertyRiskAdvisoryController;
 use App\Http\Controllers\Api\PropertyRiskTrendsController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Api\ScanOverviewController;
 use App\Http\Controllers\Api\ScheduledScanController;
 use App\Http\Controllers\Api\UserAssignedIssuesController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ContentAuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueClusterController;
 use App\Http\Controllers\IssueController;
@@ -152,6 +155,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('api.properties.risk-advisory.generate');
 
     Route::get('risk-advisory', [RiskAdvisoryController::class, 'index'])->name('risk-advisory.index');
+
+    Route::get('api/properties/{property}/content-audit', PropertyContentAuditController::class)
+        ->name('api.properties.content-audit');
+
+    Route::post('api/properties/{property}/content-audit/generate', GenerateContentAuditController::class)
+        ->name('api.properties.content-audit.generate');
+
+    Route::get('content-audit', [ContentAuditController::class, 'index'])->name('content-audit.index');
 });
 
 Route::middleware('guest')->group(function (): void {

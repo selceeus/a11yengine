@@ -10,6 +10,7 @@ import { PropertyRiskTrendsChart } from '@/components/charts/PropertyRiskTrendsC
 import { PropertyScanActivityChart } from '@/components/charts/PropertyScanActivityChart';
 import { IssueClusterPanel } from '@/components/IssueClusterPanel';
 import { RiskPriorityPanel } from '@/components/RiskPriorityPanel';
+import { ContentAuditPanel } from '@/components/ContentAuditPanel';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
@@ -385,6 +386,16 @@ export default function Show({
                     </CardHeader>
                     <CardContent>
                         <RiskPriorityPanel propertyId={property.id} />
+                    </CardContent>
+                </Card>
+
+                {/* AI Content Audit */}
+                <Card id="ai-content-audit">
+                    <CardHeader>
+                        <CardTitle>AI Content Audit</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ContentAuditPanel propertyId={property.id} />
                     </CardContent>
                 </Card>
 

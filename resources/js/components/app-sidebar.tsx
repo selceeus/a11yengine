@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BarChart2, BookOpen, Bot, Building2, CircleAlert, Folder, Globe, Layers, LayoutGrid, ScanSearch, ShieldAlert, Users } from 'lucide-react';
+import { BarChart2, BookOpen, Bot, Building2, CircleAlert, FileText, Folder, Globe, Layers, LayoutGrid, ScanSearch, ShieldAlert, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -71,6 +71,11 @@ const mainNavItems: NavItem[] = [
         title: 'Risk Advisory',
         href: '/risk-advisory',
         icon: ShieldAlert,
+    },
+    {
+        title: 'Content Audit',
+        href: '/content-audit',
+        icon: FileText,
     },
 ];
 
