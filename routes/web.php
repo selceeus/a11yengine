@@ -8,7 +8,9 @@ use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
 use App\Http\Controllers\Api\AssignIssueController;
 use App\Http\Controllers\Api\GenerateIssueClustersController;
+use App\Http\Controllers\Api\GenerateRiskAdvisoryController;
 use App\Http\Controllers\Api\PropertyIssueClustersController;
+use App\Http\Controllers\Api\PropertyRiskAdvisoryController;
 use App\Http\Controllers\Api\PropertyRiskTrendsController;
 use App\Http\Controllers\Api\PropertyScanActivityController;
 use App\Http\Controllers\Api\RiskDashboardController;
@@ -22,6 +24,7 @@ use App\Http\Controllers\IssueClusterController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\RiskAdvisoryController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\SendInvitationController;
 use App\Http\Controllers\TeamController;
@@ -141,6 +144,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->where('format', 'json|csv|pdf');
 
     Route::get('issue-clusters', [IssueClusterController::class, 'index'])->name('issue-clusters.index');
+
+    Route::get('api/properties/{property}/risk-advisory', PropertyRiskAdvisoryController::class)
+        ->name('api.properties.risk-advisory');
+
+    Route::post('api/properties/{property}/risk-advisory/generate', GenerateRiskAdvisoryController::class)
+        ->name('api.properties.risk-advisory.generate');
+
+    Route::get('risk-advisory', [RiskAdvisoryController::class, 'index'])->name('risk-advisory.index');
 });
 
 Route::middleware('guest')->group(function (): void {

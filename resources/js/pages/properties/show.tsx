@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { PropertyRiskTrendsChart } from '@/components/charts/PropertyRiskTrendsChart';
 import { PropertyScanActivityChart } from '@/components/charts/PropertyScanActivityChart';
 import { IssueClusterPanel } from '@/components/IssueClusterPanel';
+import { RiskPriorityPanel } from '@/components/RiskPriorityPanel';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
@@ -374,6 +375,16 @@ export default function Show({
                     </CardHeader>
                     <CardContent>
                         <IssueClusterPanel propertyId={property.id} />
+                    </CardContent>
+                </Card>
+
+                {/* AI Risk Advisory */}
+                <Card id="ai-risk-advisory">
+                    <CardHeader>
+                        <CardTitle>AI Risk Advisory</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <RiskPriorityPanel propertyId={property.id} />
                     </CardContent>
                 </Card>
 
