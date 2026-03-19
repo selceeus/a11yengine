@@ -8,9 +8,11 @@ use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
 use App\Http\Controllers\Api\AssignIssueController;
 use App\Http\Controllers\Api\GenerateContentAuditController;
+use App\Http\Controllers\Api\GenerateGovernanceReportController;
 use App\Http\Controllers\Api\GenerateIssueClustersController;
 use App\Http\Controllers\Api\GenerateRiskAdvisoryController;
 use App\Http\Controllers\Api\PropertyContentAuditController;
+use App\Http\Controllers\Api\PropertyGovernanceReportController;
 use App\Http\Controllers\Api\PropertyIssueClustersController;
 use App\Http\Controllers\Api\PropertyRiskAdvisoryController;
 use App\Http\Controllers\Api\PropertyRiskTrendsController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Api\UserAssignedIssuesController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ContentAuditController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GovernanceReportController;
 use App\Http\Controllers\IssueClusterController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
@@ -163,6 +166,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('api.properties.content-audit.generate');
 
     Route::get('content-audit', [ContentAuditController::class, 'index'])->name('content-audit.index');
+
+    Route::get('api/properties/{property}/governance-report', PropertyGovernanceReportController::class)
+        ->name('api.properties.governance-report');
+
+    Route::post('api/properties/{property}/governance-report/generate', GenerateGovernanceReportController::class)
+        ->name('api.properties.governance-report.generate');
+
+    Route::get('governance', [GovernanceReportController::class, 'index'])->name('governance.index');
+    Route::post('governance', [GovernanceReportController::class, 'store'])->name('governance.store');
+    Route::get('governance/{report}', [GovernanceReportController::class, 'show'])->name('governance.show');
+    Route::delete('governance/{report}', [GovernanceReportController::class, 'destroy'])->name('governance.destroy');
 });
 
 Route::middleware('guest')->group(function (): void {

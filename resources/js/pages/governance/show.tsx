@@ -1,0 +1,477 @@
+import { useEffect, useRef, useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import * as d3 from 'd3';
+import {
+    ArrowLeft,
+    ChevronDown,
+    ChevronUp,
+    ExternalLink,
+    Printer,
+    TrendingDown,
+    TrendingUp,
+    Minus,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type RiskTrendPoint = { date: string; risk_score: number; open_issues: number };
+
+type SummaryCard = {
+    title: string;
+    value: number;
+    delta: number;
+    trend: 'up' | 'down' | 'stable';
+    unit?: string | null;
+};
+
+type SourceRef = {
+    type: 'issue' | 'scan' | 'audit' | 'advisory' | 'content_audit';
+    id: number;
+    label: string;
+    url: string;
+};
+
+type Recommendation = {
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    rationale: string;
+    category: string;
+    action: string;
+    due_by_quarter: string;
+    source_refs: SourceRef[];
+};
+
+type SeverityBreakdown = Record<string, { open?: number; resolved?: number; ignored?: number }>;
+type RemediationProgress = Record<string, { total?: number; resolved?: number; rate?: number }>;
+type ComplianceStatus = Record<string, { pass?: number; fail?: number; partial?: number }>;
+
+type GovernanceReport = {
+    id: number;
+    report_scope: 'property' | 'agency';
+    period_from: string;
+    period_to: string;
+    status: string;
+    is_scheduled: boolean;
+    generated_at: string | null;
+    error_message: string | null;
+    executive_narrative: string | null;
+    summary_cards: SummaryCard[];
+    risk_trend: RiskTrendPoint[];
+    severity_breakdown: SeverityBreakdown;
+    remediation_progress: RemediationProgress;
+    compliance_status: ComplianceStatus;
+    recommendations: Recommendation[];
+    property: { id: number; name: string; base_url: string } | null;
+    agency: { id: number; name: string } | null;
+};
+
+type PageProps = { report: GovernanceReport };
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Governance', href: '/governance' },
+    { title: 'Report', href: '#' },
+];
+
+function priorityVariant(p: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+    switch (p) {
+        case 'high': return 'destructive';
+        case 'medium': return 'default';
+        default: return 'secondary';
+    }
+}
+
+function severityColor(sev: string): string {
+    switch (sev) {
+        case 'critical': return 'bg-red-500';
+        case 'high': return 'bg-orange-400';
+        case 'medium': return 'bg-yellow-400';
+        case 'low': return 'bg-blue-400';
+        default: return 'bg-muted';
+    }
+}
+
+// ── Inline risk-trend mini-chart (static data) ─────────────────────────────
+
+function RiskTrendMiniChart({ data }: { data: RiskTrendPoint[] }) {
+    const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!svgRef.current || !containerRef.current || data.length === 0) return;
+
+        const MARGIN = { top: 12, right: 12, bottom: 32, left: 44 };
+        const HEIGHT = 200;
+        const totalWidth = containerRef.current.getBoundingClientRect().width || 640;
+        const innerW = totalWidth - MARGIN.left - MARGIN.right;
+        const innerH = HEIGHT - MARGIN.top - MARGIN.bottom;
+
+        type Parsed = RiskTrendPoint & { dateObj: Date };
+        const parsed: Parsed[] = data.map((p) => ({ ...p, dateObj: new Date(p.date + 'T00:00:00') }));
+
+        const xScale = d3
+            .scaleTime()
+            .domain(d3.extent(parsed, (d) => d.dateObj) as [Date, Date])
+            .range([0, innerW]);
+
+        const maxRisk = d3.max(parsed, (d) => d.risk_score) ?? 1;
+        const yScale = d3.scaleLinear().domain([0, Math.max(maxRisk, 1)]).nice().range([innerH, 0]);
+
+        const svg = d3.select(svgRef.current).attr('width', totalWidth).attr('height', HEIGHT);
+
+        let g = svg.select<SVGGElement>('g.chart-root');
+        if (g.empty()) {
+            g = svg.append('g').attr('class', 'chart-root').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+            g.append('g').attr('class', 'area-group');
+            g.append('g').attr('class', 'line-group');
+            g.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${innerH})`);
+            g.append('g').attr('class', 'y-axis');
+        }
+
+        const xAxis = d3.axisBottom(xScale).ticks(Math.min(parsed.length, 7)).tickFormat((d) => d3.timeFormat('%b %d')(d as Date));
+        const yAxis = d3.axisLeft(yScale).ticks(4).tickSize(-innerW);
+
+        g.select<SVGGElement>('.x-axis')
+            .call(xAxis)
+            .call((ax) => ax.select('.domain').attr('stroke', 'var(--border)'))
+            .call((ax) => ax.selectAll('.tick line').attr('stroke', 'var(--border)'))
+            .call((ax) => ax.selectAll('.tick text').attr('fill', 'var(--muted-foreground)').attr('font-size', '11'));
+
+        g.select<SVGGElement>('.y-axis')
+            .call(yAxis)
+            .call((ax) => ax.select('.domain').remove())
+            .call((ax) => ax.selectAll('.tick line').attr('stroke', 'var(--border)').attr('stroke-dasharray', '3,3').attr('opacity', 0.4))
+            .call((ax) => ax.selectAll('.tick text').attr('fill', 'var(--muted-foreground)').attr('font-size', '11'));
+
+        const areaGen = d3.area<Parsed>().x((d) => xScale(d.dateObj)).y0(innerH).y1((d) => yScale(d.risk_score)).curve(d3.curveCatmullRom.alpha(0.5));
+        const lineGen = d3.line<Parsed>().x((d) => xScale(d.dateObj)).y((d) => yScale(d.risk_score)).curve(d3.curveCatmullRom.alpha(0.5));
+
+        const areaPath = g.select<SVGGElement>('.area-group').selectAll<SVGPathElement, null>('path').data([null]);
+        areaPath.enter().append('path').attr('fill', '#7c3aed').attr('opacity', 0.08).merge(areaPath).attr('d', areaGen(parsed) ?? '');
+
+        const linePath = g.select<SVGGElement>('.line-group').selectAll<SVGPathElement, null>('path').data([null]);
+        linePath.enter().append('path').attr('fill', 'none').attr('stroke', '#7c3aed').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').merge(linePath).attr('d', lineGen(parsed) ?? '');
+    }, [data]);
+
+    if (data.length === 0) {
+        return <p className="py-8 text-center text-sm text-muted-foreground">No risk trend data for this period.</p>;
+    }
+
+    return (
+        <div ref={containerRef} className="w-full">
+            <svg ref={svgRef} className="w-full overflow-visible" role="img" aria-label="Risk score trend line chart" />
+        </div>
+    );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export default function Show({ report }: PageProps) {
+    const [expandedRec, setExpandedRec] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const isPending = report.status === 'pending' || report.status === 'processing';
+    const isCompleted = report.status === 'completed';
+
+    // Poll while pending
+    useEffect(() => {
+        if (!isPending) return;
+        const timer = setInterval(() => {
+            router.reload({ only: ['report'] });
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [isPending]);
+
+    function handleDelete() {
+        if (!confirm('Delete this report? This cannot be undone.')) return;
+        setDeleting(true);
+        router.delete(`/governance/${report.id}`, {
+            onFinish: () => setDeleting(false),
+        });
+    }
+
+    const scopeLabel = report.property
+        ? report.property.name
+        : (report.agency?.name ?? 'Agency-wide');
+
+    const severities = Object.keys(report.severity_breakdown ?? {});
+    const wcagLevels = ['wcag_a', 'wcag_aa', 'wcag_aaa'];
+    const wcagLabels: Record<string, string> = { wcag_a: 'WCAG A', wcag_aa: 'WCAG AA', wcag_aaa: 'WCAG AAA' };
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title={`Governance Report — ${scopeLabel}`} />
+
+            <div className="flex flex-col gap-6 p-6 print:gap-4 print:p-0">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-4 print:hidden">
+                    <div className="flex items-center gap-3">
+                        <Link href="/governance" className="text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                        <div>
+                            <h1 className="text-xl font-semibold">Governance Report — {scopeLabel}</h1>
+                            <p className="text-sm text-muted-foreground">
+                                Period: {report.period_from} &rarr; {report.period_to}
+                                {report.is_scheduled && (
+                                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">scheduled</span>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {isCompleted && (
+                            <Button size="sm" variant="outline" onClick={() => window.print()}>
+                                <Printer className="mr-1.5 h-4 w-4" />
+                                Print / PDF
+                            </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDelete} disabled={deleting}>
+                            {deleting ? <Spinner className="h-4 w-4" /> : 'Delete'}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Print header (only visible in print) */}
+                <div className="hidden print:block">
+                    <h1 className="text-2xl font-bold">AI Governance Report — {scopeLabel}</h1>
+                    <p className="text-sm text-muted-foreground">Period: {report.period_from} to {report.period_to}</p>
+                    {report.generated_at && (
+                        <p className="text-sm text-muted-foreground">Generated: {new Date(report.generated_at).toLocaleDateString()}</p>
+                    )}
+                </div>
+
+                {/* Status */}
+                {isPending && (
+                    <div className="flex items-center gap-2 rounded-xl border bg-muted/30 p-4">
+                        <Spinner className="h-5 w-5" />
+                        <p className="text-sm">Generating report… this may take up to a minute.</p>
+                    </div>
+                )}
+
+                {report.status === 'failed' && (
+                    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                        <p className="text-sm font-medium text-destructive">Report generation failed.</p>
+                        {report.error_message && (
+                            <p className="mt-1 text-xs text-muted-foreground">{report.error_message}</p>
+                        )}
+                    </div>
+                )}
+
+                {isCompleted && (
+                    <>
+                        {/* KPI summary cards */}
+                        {report.summary_cards.length > 0 && (
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
+                                {report.summary_cards.map((card, i) => (
+                                    <div key={i} className="rounded-xl border bg-card p-4">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{card.title}</p>
+                                        <p className="mt-1 text-2xl font-bold tabular-nums">
+                                            {card.value}
+                                            {card.unit && <span className="ml-1 text-sm font-normal text-muted-foreground">{card.unit}</span>}
+                                        </p>
+                                        <div className={`mt-1 flex items-center gap-1 text-xs ${card.trend === 'up' ? 'text-green-600 dark:text-green-400' : card.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                            {card.trend === 'up' && <TrendingUp className="h-3.5 w-3.5" />}
+                                            {card.trend === 'down' && <TrendingDown className="h-3.5 w-3.5" />}
+                                            {card.trend === 'stable' && <Minus className="h-3.5 w-3.5" />}
+                                            <span>{card.delta > 0 ? '+' : ''}{card.delta} vs previous</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Executive narrative */}
+                        {report.executive_narrative && (
+                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
+                                <div className="space-y-3 text-sm leading-relaxed whitespace-pre-line">
+                                    {report.executive_narrative}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Risk trend chart */}
+                        {report.risk_trend.length > 0 && (
+                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Score Trend</h2>
+                                <RiskTrendMiniChart data={report.risk_trend} />
+                            </div>
+                        )}
+
+                        {/* Two-column: severity breakdown + remediation progress */}
+                        <div className="grid gap-4 lg:grid-cols-2 print:grid-cols-2">
+                            {/* Severity breakdown */}
+                            {severities.length > 0 && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Severity Breakdown</h2>
+                                    <div className="space-y-3">
+                                        {severities.map((sev) => {
+                                            const data = report.severity_breakdown[sev] ?? {};
+                                            const open = data.open ?? 0;
+                                            const resolved = data.resolved ?? 0;
+                                            const ignored = data.ignored ?? 0;
+                                            const total = open + resolved + ignored;
+                                            return (
+                                                <div key={sev} className="space-y-1">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="flex items-center gap-1.5 capitalize font-medium">
+                                                            <span className={`inline-block h-2 w-2 rounded-full ${severityColor(sev)}`} />
+                                                            {sev}
+                                                        </span>
+                                                        <span className="text-muted-foreground">{open} open / {total} total</span>
+                                                    </div>
+                                                    <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+                                                        {total > 0 && (
+                                                            <>
+                                                                <div className="bg-green-500" style={{ width: `${(resolved / total) * 100}%` }} />
+                                                                <div className="bg-red-400" style={{ width: `${(open / total) * 100}%` }} />
+                                                                <div className="bg-muted-foreground/30" style={{ width: `${(ignored / total) * 100}%` }} />
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-3 text-[11px] text-muted-foreground">
+                                                        <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />Resolved {resolved}</span>
+                                                        <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-red-400" />Open {open}</span>
+                                                        <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />Ignored {ignored}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Remediation progress */}
+                            {Object.keys(report.remediation_progress ?? {}).length > 0 && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Remediation Progress</h2>
+                                    <div className="space-y-3">
+                                        {Object.entries(report.remediation_progress).map(([sev, data]) => {
+                                            const rate = data.rate ?? 0;
+                                            const resolved = data.resolved ?? 0;
+                                            const total = data.total ?? 0;
+                                            return (
+                                                <div key={sev} className="space-y-1">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="flex items-center gap-1.5 capitalize font-medium">
+                                                            <span className={`inline-block h-2 w-2 rounded-full ${severityColor(sev)}`} />
+                                                            {sev}
+                                                        </span>
+                                                        <span className="font-semibold tabular-nums">{rate}%</span>
+                                                    </div>
+                                                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                                        <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: `${rate}%` }} />
+                                                    </div>
+                                                    <p className="text-[11px] text-muted-foreground">{resolved} of {total} resolved</p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* WCAG compliance grid */}
+                        {Object.keys(report.compliance_status ?? {}).length > 0 && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    {wcagLevels.map((level) => {
+                                        const data = report.compliance_status[level] ?? {};
+                                        const pass = data.pass ?? 0;
+                                        const fail = data.fail ?? 0;
+                                        const partial = data.partial ?? 0;
+                                        const total = pass + fail + partial;
+                                        const pct = total > 0 ? Math.round((pass / total) * 100) : 0;
+                                        return (
+                                            <div key={level} className="rounded-lg border p-4 text-center">
+                                                <p className="text-sm font-semibold">{wcagLabels[level] ?? level}</p>
+                                                <p className="mt-1 text-3xl font-bold tabular-nums">{pct}<span className="text-base font-normal text-muted-foreground">%</span></p>
+                                                <p className="mt-1 text-xs text-muted-foreground">pass rate</p>
+                                                <div className="mt-2 flex justify-center gap-3 text-[11px]">
+                                                    <span className="text-green-600">{pass} pass</span>
+                                                    <span className="text-red-500">{fail} fail</span>
+                                                    {partial > 0 && <span className="text-yellow-600">{partial} partial</span>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Recommendations */}
+                        {report.recommendations.length > 0 && (
+                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recommendations</h2>
+                                <div className="space-y-3">
+                                    {report.recommendations.map((rec, i) => {
+                                        const isExpanded = expandedRec === i;
+                                        return (
+                                            <div key={i} className="rounded-lg border">
+                                                <button
+                                                    className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
+                                                    onClick={() => setExpandedRec(isExpanded ? null : i)}
+                                                    aria-expanded={isExpanded}
+                                                >
+                                                    <div className="flex min-w-0 items-start gap-2">
+                                                        <Badge variant={priorityVariant(rec.priority)} className="mt-0.5 shrink-0 capitalize">
+                                                            {rec.priority}
+                                                        </Badge>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium leading-snug">{rec.title}</p>
+                                                            <p className="mt-0.5 text-xs text-muted-foreground">{rec.category} &middot; {rec.due_by_quarter}</p>
+                                                        </div>
+                                                    </div>
+                                                    {isExpanded ? <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                                                </button>
+
+                                                {isExpanded && (
+                                                    <div className="space-y-3 border-t px-4 py-3">
+                                                        <div>
+                                                            <p className="mb-1 text-xs font-medium text-muted-foreground">Rationale</p>
+                                                            <p className="text-sm">{rec.rationale}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="mb-1 text-xs font-medium text-muted-foreground">Action</p>
+                                                            <p className="text-sm">{rec.action}</p>
+                                                        </div>
+                                                        {rec.source_refs.length > 0 && (
+                                                            <div>
+                                                                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Evidence</p>
+                                                                <div className="flex flex-wrap gap-1.5">
+                                                                    {rec.source_refs.map((ref, ri) => (
+                                                                        <a
+                                                                            key={ri}
+                                                                            href={ref.url}
+                                                                            className="inline-flex items-center gap-1 rounded-full border bg-muted px-2.5 py-0.5 text-xs hover:bg-muted/80"
+                                                                        >
+                                                                            <span className="capitalize text-muted-foreground">{ref.type}</span>
+                                                                            <span className="font-medium">#{ref.id}</span>
+                                                                            <span className="truncate max-w-[160px]">{ref.label}</span>
+                                                                            <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </AppLayout>
+    );
+}
