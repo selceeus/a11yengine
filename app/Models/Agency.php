@@ -19,6 +19,7 @@ class Agency extends Model
         'name',
         'slug',
         'billing_email',
+        'mcp_token',
     ];
 
     public function organizations(): HasMany

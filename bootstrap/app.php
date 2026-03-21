@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant' => SetTenant::class,
+            'mcp.auth' => \App\Http\Middleware\VerifyMcpToken::class,
         ]);
 
     })

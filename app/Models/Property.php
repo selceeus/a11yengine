@@ -16,6 +16,7 @@ class Property extends Model
         'agency_id',
         'organization_id',
         'name',
+        'slug',
         'base_url',
         'status',
     ];
