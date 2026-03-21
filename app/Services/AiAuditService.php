@@ -2,17 +2,16 @@
 
 namespace App\Services;
 
+use App\Ai\Agents\AuditAgent;
 use App\Domain\Audits\GatherAuditContext;
 use App\Enums\AuditStatus;
 use App\Models\Audit;
 use Illuminate\Support\Facades\Date;
-use RuntimeException;
 
 class AiAuditService
 {
     public function __construct(
         private readonly GatherAuditContext $contextGatherer,
-        private readonly AiClient $client,
     ) {}
 
     /**
@@ -20,13 +19,6 @@ class AiAuditService
      */
     public function generate(Audit $audit): void
     {
-        $driver = config('ai.driver', 'openai');
-        $apiKey = config("ai.providers.{$driver}.api_key");
-
-        if (empty($apiKey)) {
-            throw new RuntimeException("AI provider [{$driver}] api_key is not configured.");
-        }
-
         $context = $this->contextGatherer->handle(
             $audit->property_id,
             $audit->source_scan_ids ?? []
@@ -34,16 +26,12 @@ class AiAuditService
 
         $prompt = $this->buildPrompt($context);
 
-        $raw = $this->getContent($this->client->chat([
-            ['role' => 'system', 'content' => 'You are an expert web accessibility auditor. Return valid JSON only — no markdown, no prose outside the JSON object.'],
-            ['role' => 'user', 'content' => $prompt],
-        ]));
-
-        $result = $this->client->decodeJson($raw);
+        $response = AuditAgent::make()->prompt($prompt);
+        $result = json_decode($response->text, true) ?? [];
 
         $audit->update([
             'prompt_context' => $prompt,
-            'raw_ai_response' => $raw,
+            'raw_ai_response' => $response->text,
             'executive_summary' => $result['executive_summary'] ?? null,
             'compliance_status' => $result['compliance_status'] ?? null,
             'top_risks' => $result['top_risks'] ?? null,
@@ -145,25 +133,5 @@ Respond with a single JSON object matching this exact schema (no prose, no markd
   ]
 }
 PROMPT;
-    }
-
-    /**
-     * Extract the text content from the AI provider response.
-     *
-     * @param  array<string, mixed>  $response
-     */
-    private function getContent(array $response): string
-    {
-        // OpenAI: choices[0].message.content
-        if (isset($response['choices'][0]['message']['content'])) {
-            return (string) $response['choices'][0]['message']['content'];
-        }
-
-        // Anthropic: content[0].text
-        if (isset($response['content'][0]['text'])) {
-            return (string) $response['content'][0]['text'];
-        }
-
-        return '';
     }
 }

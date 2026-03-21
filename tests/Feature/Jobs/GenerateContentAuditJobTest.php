@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\ContentAuditAgent;
 use App\Domain\Content\AiContentAuditService;
 use App\Enums\ContentAuditStatus;
 use App\Jobs\GenerateContentAuditJob;
@@ -10,18 +11,9 @@ use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Scan;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Ai;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-/** Build a fake OpenAI chat/completions JSON response body. */
-function fakeContentAuditOpenAiResponse(mixed $content): array
-{
-    return [
-        'choices' => [
-            ['message' => ['content' => is_string($content) ? $content : json_encode($content)]],
-        ],
-    ];
-}
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -33,9 +25,6 @@ beforeEach(function (): void {
         'organization_id' => $this->organization->id,
         'property_id' => $this->property->id,
     ]);
-
-    config(['ai.driver' => 'openai']);
-    config(['ai.providers.openai.api_key' => 'test-key']);
 });
 
 // ── Success ───────────────────────────────────────────────────────────────────
@@ -77,11 +66,8 @@ it('transitions to Completed with content_issues on a successful AI response', f
         ],
     ]);
 
+    Ai::fakeAgent(ContentAuditAgent::class, [json_decode($aiJson, true)]);
     Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeContentAuditOpenAiResponse($aiJson),
-            200,
-        ),
         $pageUrl => Http::response('<html><body><img src="photo.jpg"></body></html>', 200),
     ]);
 
@@ -95,12 +81,7 @@ it('transitions to Completed with content_issues on a successful AI response', f
 });
 
 it('stores an empty content_issues array when AI returns none', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeContentAuditOpenAiResponse(json_encode(['content_issues' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(ContentAuditAgent::class, [['content_issues' => []]]);
 
     (new GenerateContentAuditJob($this->audit))->handle(app(AiContentAuditService::class));
 
@@ -127,11 +108,8 @@ it('fetches HTML for discovered pages and stores it in the prompt context', func
         'page_url' => $pageUrl,
     ]);
 
+    Ai::fakeAgent(ContentAuditAgent::class, [['content_issues' => []]]);
     Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeContentAuditOpenAiResponse(json_encode(['content_issues' => []])),
-            200,
-        ),
         $pageUrl => Http::response('<html><body><a href="#">Click here</a></body></html>', 200),
     ]);
 
@@ -164,12 +142,7 @@ it('truncates the error message to 250 characters', function (): void {
 // ── Status transitions ─────────────────────────────────────────────────────────
 
 it('transitions through Processing to Completed on a successful run', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeContentAuditOpenAiResponse(json_encode(['content_issues' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(ContentAuditAgent::class, [['content_issues' => []]]);
 
     (new GenerateContentAuditJob($this->audit))->handle(app(AiContentAuditService::class));
 

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Governance;
 
+use App\Ai\Agents\GovernanceAgent;
 use App\Enums\GovernanceReportStatus;
 use App\Enums\IssueStatus;
 use App\Models\AgencyRiskSnapshot;
@@ -12,29 +13,18 @@ use App\Models\Property;
 use App\Models\PropertyRiskSnapshot;
 use App\Models\RiskAdvisory;
 use App\Models\Scan;
-use App\Services\AiClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
-use RuntimeException;
 
 class AiGovernanceService
 {
-    public function __construct(
-        private readonly AiClient $client,
-    ) {}
+    public function __construct() {}
 
     /**
      * Generate the AI governance report, populating all data and narrative fields.
      */
     public function generate(GovernanceReport $report): void
     {
-        $driver = config('ai.driver', 'openai');
-        $apiKey = config("ai.providers.{$driver}.api_key");
-
-        if (empty($apiKey)) {
-            throw new RuntimeException("AI provider [{$driver}] api_key is not configured.");
-        }
-
         $periodFrom = Carbon::parse($report->period_from);
         $periodTo = Carbon::parse($report->period_to);
         $periodLabel = $periodFrom->toDateString().' to '.$periodTo->toDateString();
@@ -47,19 +37,15 @@ class AiGovernanceService
 
         $prompt = $this->buildPrompt($context, $scopeName, $periodLabel);
 
-        $raw = $this->getContent($this->client->chat([
-            ['role' => 'system', 'content' => 'You are an expert web accessibility governance consultant. Return valid JSON only — no markdown, no prose outside the JSON object.'],
-            ['role' => 'user', 'content' => $prompt],
-        ]));
-
-        $result = $this->client->decodeJson($raw);
+        $response = GovernanceAgent::make()->prompt($prompt);
+        $result = json_decode($response->text, true) ?? [];
 
         $report->update(array_merge($dataFields, [
             'executive_narrative' => $result['executive_narrative'] ?? '',
             'summary_cards' => $result['summary_cards'] ?? [],
             'recommendations' => $result['recommendations'] ?? [],
             'prompt_context' => $prompt,
-            'raw_ai_response' => $raw,
+            'raw_ai_response' => $response->text,
             'status' => GovernanceReportStatus::Completed,
             'generated_at' => Date::now(),
         ]));
@@ -422,20 +408,5 @@ Rules:
 - Keep `executive_narrative` free of jargon; assume the reader is a senior manager, not a developer.
 - Prioritise recommendations by user impact and compliance risk.
 PROMPT;
-    }
-
-    private function getContent(array $response): string
-    {
-        // OpenAI format
-        if (isset($response['choices'][0]['message']['content'])) {
-            return $response['choices'][0]['message']['content'];
-        }
-
-        // Anthropic format
-        if (isset($response['content'][0]['text'])) {
-            return $response['content'][0]['text'];
-        }
-
-        throw new RuntimeException('Unexpected AI response format: '.json_encode(array_keys($response)));
     }
 }

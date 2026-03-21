@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\IssueClusterAgent;
 use App\Domain\Issues\AiIssueClusterService;
 use App\Enums\ClusterStatus;
 use App\Jobs\GenerateIssueClusteringJob;
@@ -7,19 +8,9 @@ use App\Models\Agency;
 use App\Models\IssueCluster;
 use App\Models\Organization;
 use App\Models\Property;
-use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Ai;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-/** Build a fake OpenAI chat/completions JSON response body. */
-function fakeClusterOpenAiResponse(mixed $content): array
-{
-    return [
-        'choices' => [
-            ['message' => ['content' => is_string($content) ? $content : json_encode($content)]],
-        ],
-    ];
-}
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -31,9 +22,6 @@ beforeEach(function (): void {
         'organization_id' => $this->organization->id,
         'property_id' => $this->property->id,
     ]);
-
-    config(['ai.driver' => 'openai']);
-    config(['ai.providers.openai.api_key' => 'test-key']);
 });
 
 // ── Success ───────────────────────────────────────────────────────────────────
@@ -55,12 +43,7 @@ it('transitions to Completed with cluster data on a successful AI response', fun
         ],
     ]);
 
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeClusterOpenAiResponse($aiJson),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(IssueClusterAgent::class, [json_decode($aiJson, true)]);
 
     (new GenerateIssueClusteringJob($this->cluster))->handle(app(AiIssueClusterService::class));
 
@@ -72,12 +55,7 @@ it('transitions to Completed with cluster data on a successful AI response', fun
 });
 
 it('stores an empty clusters array when AI returns no clusters', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeClusterOpenAiResponse(json_encode(['clusters' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(IssueClusterAgent::class, [['clusters' => []]]);
 
     (new GenerateIssueClusteringJob($this->cluster))->handle(app(AiIssueClusterService::class));
 
@@ -108,12 +86,7 @@ it('truncates the error message to 250 characters', function (): void {
 // ── Status transitions ────────────────────────────────────────────────────────
 
 it('sets status to Processing before invoking the service', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeClusterOpenAiResponse(json_encode(['clusters' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(IssueClusterAgent::class, [['clusters' => []]]);
 
     (new GenerateIssueClusteringJob($this->cluster))->handle(app(AiIssueClusterService::class));
 

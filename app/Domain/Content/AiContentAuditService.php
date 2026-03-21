@@ -2,16 +2,15 @@
 
 namespace App\Domain\Content;
 
+use App\Ai\Agents\ContentAuditAgent;
 use App\Enums\ContentAuditStatus;
 use App\Models\ContentAudit;
 use App\Models\Finding;
 use App\Models\Issue;
 use App\Models\Scan;
-use App\Services\AiClient;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class AiContentAuditService
 {
@@ -35,22 +34,13 @@ class AiContentAuditService
         'document-title',
     ];
 
-    public function __construct(
-        private readonly AiClient $client,
-    ) {}
+    public function __construct() {}
 
     /**
      * Generate AI-powered content issue observations for the given ContentAudit record.
      */
     public function generate(ContentAudit $audit): void
     {
-        $driver = config('ai.driver', 'openai');
-        $apiKey = config("ai.providers.{$driver}.api_key");
-
-        if (empty($apiKey)) {
-            throw new RuntimeException("AI provider [{$driver}] api_key is not configured.");
-        }
-
         $propertyName = $audit->property?->name ?? 'Unknown';
 
         // Resolve the latest completed scan for this property
@@ -109,12 +99,8 @@ class AiContentAuditService
 
         $prompt = $this->buildPrompt($pageContexts, $propertyName);
 
-        $raw = $this->getContent($this->client->chat([
-            ['role' => 'system', 'content' => 'You are an expert web accessibility content auditor. Return valid JSON only — no markdown, no prose outside the JSON object.'],
-            ['role' => 'user', 'content' => $prompt],
-        ]));
-
-        $result = $this->client->decodeJson($raw);
+        $response = ContentAuditAgent::make()->prompt($prompt);
+        $result = json_decode($response->text, true) ?? [];
         $contentIssues = $result['content_issues'] ?? [];
 
         // Enrich each issue with the matched issue_id if not already set by AI
@@ -134,7 +120,7 @@ class AiContentAuditService
             'total_issues' => count($contentIssues),
             'pages_analyzed' => $pagesAnalyzed,
             'prompt_context' => $prompt,
-            'raw_ai_response' => $raw,
+            'raw_ai_response' => $response->text,
             'status' => ContentAuditStatus::Completed,
             'generated_at' => Date::now(),
         ]);
@@ -240,25 +226,5 @@ Rules:
 - Do not invent issues not evidenced by the findings or HTML.
 - If `html_snippet` is null for a page, rely only on the `findings` array for that page.
 PROMPT;
-    }
-
-    /**
-     * Extract the text content from the AI provider response.
-     *
-     * @param  array<string, mixed>  $response
-     */
-    private function getContent(array $response): string
-    {
-        // OpenAI: choices[0].message.content
-        if (isset($response['choices'][0]['message']['content'])) {
-            return (string) $response['choices'][0]['message']['content'];
-        }
-
-        // Anthropic: content[0].text
-        if (isset($response['content'][0]['text'])) {
-            return (string) $response['content'][0]['text'];
-        }
-
-        return '';
     }
 }

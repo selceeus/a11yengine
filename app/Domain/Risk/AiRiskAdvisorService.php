@@ -2,20 +2,17 @@
 
 namespace App\Domain\Risk;
 
+use App\Ai\Agents\RiskAdvisoryAgent;
 use App\Enums\IssueStatus;
 use App\Enums\RiskAdvisoryStatus;
 use App\Models\RiskAdvisory;
 use App\Models\Scan;
 use App\Models\ScanMetric;
-use App\Services\AiClient;
 use Illuminate\Support\Facades\Date;
-use RuntimeException;
 
 class AiRiskAdvisorService
 {
-    public function __construct(
-        private readonly AiClient $client,
-    ) {}
+    public function __construct() {}
 
     /**
      * Generate AI-powered risk priorities for the given RiskAdvisory record.
@@ -24,13 +21,6 @@ class AiRiskAdvisorService
      */
     public function generate(RiskAdvisory $advisory): void
     {
-        $driver = config('ai.driver', 'openai');
-        $apiKey = config("ai.providers.{$driver}.api_key");
-
-        if (empty($apiKey)) {
-            throw new RuntimeException("AI provider [{$driver}] api_key is not configured.");
-        }
-
         $issues = \App\Models\Issue::withoutGlobalScopes()
             ->where('property_id', $advisory->property_id)
             ->whereIn('status', array_map(
@@ -53,12 +43,8 @@ class AiRiskAdvisorService
 
         $prompt = $this->buildPrompt($issuesWithTrafficScore, $propertyRiskScore, $propertyName);
 
-        $raw = $this->getContent($this->client->chat([
-            ['role' => 'system', 'content' => 'You are an expert web accessibility engineer. Return valid JSON only — no markdown, no prose outside the JSON object.'],
-            ['role' => 'user', 'content' => $prompt],
-        ]));
-
-        $result = $this->client->decodeJson($raw);
+        $response = RiskAdvisoryAgent::make()->prompt($prompt);
+        $result = json_decode($response->text, true) ?? [];
         $priorities = $result['priorities'] ?? [];
 
         $advisory->update([
@@ -66,7 +52,7 @@ class AiRiskAdvisorService
             'total_recommendations' => count($priorities),
             'issues_analyzed' => $issues->count(),
             'prompt_context' => $prompt,
-            'raw_ai_response' => $raw,
+            'raw_ai_response' => $response->text,
             'status' => RiskAdvisoryStatus::Completed,
             'generated_at' => Date::now(),
         ]);
@@ -156,25 +142,5 @@ PROMPT;
             ->value('metric_value');
 
         return $value !== null ? round((float) $value, 1) : null;
-    }
-
-    /**
-     * Extract the text content from the AI provider response.
-     *
-     * @param  array<string, mixed>  $response
-     */
-    private function getContent(array $response): string
-    {
-        // OpenAI: choices[0].message.content
-        if (isset($response['choices'][0]['message']['content'])) {
-            return (string) $response['choices'][0]['message']['content'];
-        }
-
-        // Anthropic: content[0].text
-        if (isset($response['content'][0]['text'])) {
-            return (string) $response['content'][0]['text'];
-        }
-
-        return '';
     }
 }

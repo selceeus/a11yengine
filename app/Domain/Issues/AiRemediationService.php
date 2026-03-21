@@ -2,10 +2,9 @@
 
 namespace App\Domain\Issues;
 
+use App\Ai\Agents\RemediationAgent;
 use App\Models\Issue;
-use App\Services\AiClient;
 use Illuminate\Support\Facades\Cache;
-use RuntimeException;
 
 class AiRemediationService
 {
@@ -15,16 +14,6 @@ class AiRemediationService
      * is not re-generated for every property it appears on.
      */
     private const CACHE_TTL_HOURS = 24;
-
-    private string $driver;
-
-    private string $model;
-
-    public function __construct(private readonly AiClient $client)
-    {
-        $this->driver = config('ai.driver', 'openai');
-        $this->model = config("ai.providers.{$this->driver}.model", 'default');
-    }
 
     /**
      * Generate (or return cached) AI remediation suggestions for the given issue.
@@ -45,27 +34,13 @@ class AiRemediationService
      */
     public function generate(Issue $issue): array
     {
-        $apiKey = config("ai.providers.{$this->driver}.api_key");
-
-        if (empty($apiKey)) {
-            throw new RuntimeException("AI provider [{$this->driver}] api_key is not configured.");
-        }
-
         return Cache::remember(
             $this->cacheKey($issue),
             now()->addHours(self::CACHE_TTL_HOURS),
             function () use ($issue): array {
-                $prompt = $this->buildPrompt($issue);
+                $response = RemediationAgent::make()->prompt($this->buildPrompt($issue));
 
-                $raw = $this->getContent($this->client->chat([
-                    [
-                        'role' => 'system',
-                        'content' => 'You are an Accessibility Developer Assistant. Return valid JSON only — no markdown, no prose outside the JSON object.',
-                    ],
-                    ['role' => 'user', 'content' => $prompt],
-                ]));
-
-                return $this->client->decodeJson($raw);
+                return json_decode($response->text, true) ?? [];
             }
         );
     }
@@ -77,7 +52,9 @@ class AiRemediationService
      */
     public function cacheKey(Issue $issue): string
     {
-        return 'ai_remediation:'.$this->model.':'.md5(
+        $model = config('ai.default', 'openai');
+
+        return 'ai_remediation:'.$model.':'.md5(
             $issue->rule_key.($issue->wcag_criteria ?? '').($issue->description ?? '')
         );
     }
@@ -150,25 +127,5 @@ SCHEMA;
         $prompt .= "Respond with a single JSON object matching this exact schema (no prose, no markdown fences):\n\n{$schema}";
 
         return $prompt;
-    }
-
-    /**
-     * Extract the text content from the AI provider response.
-     *
-     * @param  array<string, mixed>  $response
-     */
-    private function getContent(array $response): string
-    {
-        // OpenAI: choices[0].message.content
-        if (isset($response['choices'][0]['message']['content'])) {
-            return (string) $response['choices'][0]['message']['content'];
-        }
-
-        // Anthropic: content[0].text
-        if (isset($response['content'][0]['text'])) {
-            return (string) $response['content'][0]['text'];
-        }
-
-        return '';
     }
 }

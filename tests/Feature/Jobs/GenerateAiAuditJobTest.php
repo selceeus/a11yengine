@@ -1,24 +1,15 @@
 <?php
 
+use App\Ai\Agents\AuditAgent;
 use App\Enums\AuditStatus;
 use App\Jobs\GenerateAiAuditJob;
 use App\Models\Agency;
 use App\Models\Audit;
 use App\Models\Organization;
 use App\Models\Property;
-use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Ai;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-/** Build a fake OpenAI chat/completions JSON response body. */
-function fakeOpenAiResponse(mixed $content): array
-{
-    return [
-        'choices' => [
-            ['message' => ['content' => is_string($content) ? $content : json_encode($content)]],
-        ],
-    ];
-}
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -30,9 +21,6 @@ beforeEach(function (): void {
         ->for($this->organization)
         ->for($this->property)
         ->create();
-
-    config(['ai.driver' => 'openai']);
-    config(['ai.providers.openai.api_key' => 'test-key']);
 });
 
 // ─── status transitions ───────────────────────────────────────────────────────
@@ -48,12 +36,7 @@ it('transitions status from Pending through Processing to Completed on success',
         'remediations' => [],
     ]);
 
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeOpenAiResponse($aiJson),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(AuditAgent::class, [json_decode($aiJson, true)]);
 
     (new GenerateAiAuditJob($this->audit))->handle(app(\App\Services\AiAuditService::class));
 
@@ -74,12 +57,7 @@ it('populates executive_summary from AI response', function (): void {
         'remediations' => [],
     ]);
 
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeOpenAiResponse($aiJson),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(AuditAgent::class, [json_decode($aiJson, true)]);
 
     (new GenerateAiAuditJob($this->audit))->handle(app(\App\Services\AiAuditService::class));
 
@@ -89,10 +67,6 @@ it('populates executive_summary from AI response', function (): void {
 // ─── failure handling ─────────────────────────────────────────────────────────
 
 it('sets Failed status and records error_message when the job fails', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response([], 500),
-    ]);
-
     $job = new GenerateAiAuditJob($this->audit);
     $job->failed(new \RuntimeException('OpenAI returned HTTP 500'));
 

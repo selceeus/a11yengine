@@ -3,31 +3,26 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Active AI Driver
+    | Default AI Provider
     |--------------------------------------------------------------------------
     | Set AI_DRIVER in your .env to switch providers without code changes.
     | Supported: "openai", "anthropic"
     */
-    'driver' => env('AI_DRIVER', 'openai'),
+    'default' => env('AI_DRIVER', 'openai'),
 
     'providers' => [
         'openai' => [
-            'api_key' => env('OPENAI_API_KEY'),
+            'driver' => 'openai',
+            'key' => env('OPENAI_API_KEY'),
             'model' => env('OPENAI_MODEL', 'gpt-4o'),
             'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 4096),
-            'temperature' => 0.2,
-            'timeout' => 120,
-            'base_url' => 'https://api.openai.com/v1',
         ],
 
         'anthropic' => [
-            'api_key' => env('ANTHROPIC_API_KEY'),
+            'driver' => 'anthropic',
+            'key' => env('ANTHROPIC_API_KEY'),
             'model' => env('ANTHROPIC_MODEL', 'claude-3-7-sonnet-20250219'),
             'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 4096),
-            'temperature' => 0.2,
-            'timeout' => 120,
-            'base_url' => 'https://api.anthropic.com/v1',
-            'version' => '2023-06-01',
         ],
     ],
 

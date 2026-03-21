@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\RiskAdvisoryAgent;
 use App\Domain\Risk\AiRiskAdvisorService;
 use App\Enums\RiskAdvisoryStatus;
 use App\Jobs\GenerateRiskAdvisoryJob;
@@ -7,19 +8,9 @@ use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\RiskAdvisory;
-use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Ai;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-/** Build a fake OpenAI chat/completions JSON response body. */
-function fakeAdvisoryOpenAiResponse(mixed $content): array
-{
-    return [
-        'choices' => [
-            ['message' => ['content' => is_string($content) ? $content : json_encode($content)]],
-        ],
-    ];
-}
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -31,9 +22,6 @@ beforeEach(function (): void {
         'organization_id' => $this->organization->id,
         'property_id' => $this->property->id,
     ]);
-
-    config(['ai.driver' => 'openai']);
-    config(['ai.providers.openai.api_key' => 'test-key']);
 });
 
 // ── Success ───────────────────────────────────────────────────────────────────
@@ -59,12 +47,7 @@ it('transitions to Completed with priorities on a successful AI response', funct
         ],
     ]);
 
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeAdvisoryOpenAiResponse($aiJson),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(RiskAdvisoryAgent::class, [json_decode($aiJson, true)]);
 
     (new GenerateRiskAdvisoryJob($this->advisory))->handle(app(AiRiskAdvisorService::class));
 
@@ -76,12 +59,7 @@ it('transitions to Completed with priorities on a successful AI response', funct
 });
 
 it('stores an empty priorities array when AI returns no priorities', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeAdvisoryOpenAiResponse(json_encode(['priorities' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(RiskAdvisoryAgent::class, [['priorities' => []]]);
 
     (new GenerateRiskAdvisoryJob($this->advisory))->handle(app(AiRiskAdvisorService::class));
 
@@ -92,20 +70,11 @@ it('stores an empty priorities array when AI returns no priorities', function ()
 });
 
 it('includes traffic_score in the prompt context', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeAdvisoryOpenAiResponse(json_encode(['priorities' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(RiskAdvisoryAgent::class, [['priorities' => []]]);
 
     (new GenerateRiskAdvisoryJob($this->advisory))->handle(app(AiRiskAdvisorService::class));
 
-    $recorded = Http::recorded();
-    expect($recorded)->not->toBeEmpty();
-
-    $requestBody = (string) $recorded[0][0]->body();
-    expect($requestBody)->toContain('traffic_score');
+    Ai::assertAgentWasPrompted(RiskAdvisoryAgent::class, fn ($prompt) => str_contains($prompt->prompt, 'traffic_score'));
 });
 
 // ── Failure ───────────────────────────────────────────────────────────────────
@@ -129,12 +98,7 @@ it('truncates the error message to 250 characters', function (): void {
 // ── Status transitions ────────────────────────────────────────────────────────
 
 it('sets status to Processing before invoking the service', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeAdvisoryOpenAiResponse(json_encode(['priorities' => []])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(RiskAdvisoryAgent::class, [['priorities' => []]]);
 
     (new GenerateRiskAdvisoryJob($this->advisory))->handle(app(AiRiskAdvisorService::class));
 

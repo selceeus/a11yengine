@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\GovernanceAgent;
 use App\Domain\Governance\AiGovernanceService;
 use App\Enums\GovernanceReportStatus;
 use App\Jobs\GenerateGovernanceReportJob;
@@ -7,19 +8,9 @@ use App\Models\Agency;
 use App\Models\GovernanceReport;
 use App\Models\Organization;
 use App\Models\Property;
-use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Ai;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-/** Build a fake OpenAI chat/completions response body wrapping the given JSON string. */
-function fakeGovernanceOpenAiResponse(string $content): array
-{
-    return [
-        'choices' => [
-            ['message' => ['content' => $content]],
-        ],
-    ];
-}
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -32,24 +23,16 @@ beforeEach(function (): void {
         'property_id' => $this->property->id,
         'status' => GovernanceReportStatus::Pending,
     ]);
-
-    config(['ai.driver' => 'openai']);
-    config(['ai.providers.openai.api_key' => 'sk-fake-key-for-tests']);
 });
 
 // ── Status transition ─────────────────────────────────────────────────────────
 
 it('transitions the report to Processing then Completed on success', function (): void {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeGovernanceOpenAiResponse(json_encode([
-                'executive_narrative' => 'Test narrative.',
-                'summary_cards' => [],
-                'recommendations' => [],
-            ])),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(GovernanceAgent::class, [[
+        'executive_narrative' => 'Test narrative.',
+        'summary_cards' => [],
+        'recommendations' => [],
+    ]]);
 
     $job = new GenerateGovernanceReportJob($this->report);
     $job->handle(app(AiGovernanceService::class));
@@ -77,12 +60,7 @@ it('transitions the report to Completed after successful generation', function (
         ],
     ]);
 
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeGovernanceOpenAiResponse($aiResponse),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(GovernanceAgent::class, [json_decode($aiResponse, true)]);
 
     (new GenerateGovernanceReportJob($this->report))->handle(app(AiGovernanceService::class));
 
@@ -103,12 +81,7 @@ it('stores the prompt_context and raw_ai_response', function (): void {
         'recommendations' => [],
     ]);
 
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response(
-            fakeGovernanceOpenAiResponse($rawPayload),
-            200,
-        ),
-    ]);
+    Ai::fakeAgent(GovernanceAgent::class, [json_decode($rawPayload, true)]);
 
     (new GenerateGovernanceReportJob($this->report))->handle(app(AiGovernanceService::class));
 
