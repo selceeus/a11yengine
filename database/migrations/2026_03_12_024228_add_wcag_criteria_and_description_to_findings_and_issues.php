@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('findings', function (Blueprint $table): void {
-            $table->string('wcag_criteria')->nullable()->after('wcag_category');
-            $table->text('description')->nullable()->after('wcag_criteria');
+            $table->string('wcag_criteria')->nullable();
+            $table->text('description')->nullable();
         });
 
         Schema::table('issues', function (Blueprint $table): void {
-            $table->string('wcag_criteria')->nullable()->after('wcag_category');
-            $table->text('description')->nullable()->after('wcag_criteria');
+            $table->string('wcag_criteria')->nullable();
+            $table->text('description')->nullable();
         });
     }
 

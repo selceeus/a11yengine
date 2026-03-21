@@ -11,11 +11,10 @@ return new class extends Migration
         Schema::table('issues', function (Blueprint $table): void {
             $table->foreignId('assigned_user_id')
                 ->nullable()
-                ->after('resolved_at')
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->text('resolution_notes')->nullable()->after('assigned_user_id');
+            $table->text('resolution_notes')->nullable();
 
             $table->index('assigned_user_id');
         });

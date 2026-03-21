@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('issues', function (Blueprint $table): void {
-            $table->string('page_url')->after('rule_key');
+            $table->string('page_url');
         });
     }
 

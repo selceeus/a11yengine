@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('findings', function (Blueprint $table): void {
-            $table->json('tags')->nullable()->after('description');
-            $table->string('help_url')->nullable()->after('tags');
-            $table->text('element_html')->nullable()->after('element_identifier');
+            $table->json('tags')->nullable();
+            $table->string('help_url')->nullable();
+            $table->text('element_html')->nullable();
         });
 
         Schema::table('issues', function (Blueprint $table): void {
-            $table->json('tags')->nullable()->after('description');
-            $table->string('help_url')->nullable()->after('tags');
+            $table->json('tags')->nullable();
+            $table->string('help_url')->nullable();
         });
     }
 

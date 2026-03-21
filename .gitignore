@@ -30,3 +30,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/test_junit.xml
+/test_results.txt
+/conversation-*.txt

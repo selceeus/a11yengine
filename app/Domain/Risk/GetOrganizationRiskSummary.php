@@ -65,7 +65,7 @@ class GetOrganizationRiskSummary
             ->where('organization_id', $organizationId)
             ->where('status', IssueStatus::Resolved)
             ->whereNotNull('resolved_at')
-            ->selectRaw('AVG(DATEDIFF(resolved_at, first_detected_at)) as avg_days')
+            ->selectRaw('AVG(EXTRACT(EPOCH FROM (resolved_at - first_detected_at)) / 86400) as avg_days')
             ->value('avg_days');
 
         $resolvedLast30Days = Issue::query()

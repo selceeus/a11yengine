@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('scan_pages', function (Blueprint $table) {
-            $table->boolean('axe_completed')->default(false)->after('status');
-            $table->boolean('lighthouse_completed')->nullable()->default(null)->after('axe_completed');
+            $table->boolean('axe_completed')->default(false);
+            $table->boolean('lighthouse_completed')->nullable()->default(null);
         });
     }
 

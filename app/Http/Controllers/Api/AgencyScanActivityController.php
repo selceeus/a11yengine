@@ -37,9 +37,9 @@ class AgencyScanActivityController extends Controller
 
         /** @var array<string, array{scans: int, violations: int}> $byDate */
         $byDate = $query
-            ->selectRaw('DATE(completed_at) as day, COUNT(*) as scan_count, SUM(total_violations) as total_violations')
-            ->groupByRaw('DATE(completed_at)')
-            ->orderByRaw('DATE(completed_at)')
+            ->selectRaw('completed_at::date as day, COUNT(*) as scan_count, SUM(total_violations) as total_violations')
+            ->groupByRaw('completed_at::date')
+            ->orderByRaw('completed_at::date')
             ->get()
             ->keyBy('day')
             ->map(fn ($row) => [

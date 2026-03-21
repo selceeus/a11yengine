@@ -11,7 +11,7 @@ return new class extends Migration
     {
         // Add as nullable first so the migration runs against existing rows.
         Schema::table('findings', function (Blueprint $table): void {
-            $table->string('fingerprint')->nullable()->after('rule_key');
+            $table->string('fingerprint')->nullable();
         });
 
         // Backfill fingerprints for existing rows.

@@ -12,7 +12,7 @@ class AssignIssueController extends Controller
 {
     public function __invoke(AssignIssueRequest $request, Issue $issue): JsonResponse
     {
-        $userId = $request->validated()['user_id'];
+        $userId = $request->validated('user_id');
 
         if ($userId === null) {
             $issue->unassignUser();
