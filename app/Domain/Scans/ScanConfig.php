@@ -6,6 +6,7 @@ class ScanConfig
 {
     public function __construct(
         public readonly int $maxPages = 50,
+        public readonly int $maxDepth = 5,
         /** @var string[] */
         public readonly array $includePatterns = [],
         /** @var string[] */
@@ -20,6 +21,7 @@ class ScanConfig
     {
         return new self(
             maxPages: isset($data['max_pages']) ? (int) $data['max_pages'] : 50,
+            maxDepth: isset($data['max_depth']) ? (int) $data['max_depth'] : 5,
             includePatterns: isset($data['include_patterns']) && is_array($data['include_patterns'])
                 ? array_values(array_filter($data['include_patterns'], 'is_string'))
                 : [],
@@ -39,6 +41,7 @@ class ScanConfig
     {
         return [
             'max_pages' => $this->maxPages,
+            'max_depth' => $this->maxDepth,
             'include_patterns' => $this->includePatterns,
             'exclude_patterns' => $this->excludePatterns,
             'wcag_version' => $this->wcagVersion,
@@ -49,6 +52,7 @@ class ScanConfig
     {
         return new self(
             maxPages: $override->maxPages !== 50 ? $override->maxPages : $this->maxPages,
+            maxDepth: $override->maxDepth !== 5 ? $override->maxDepth : $this->maxDepth,
             includePatterns: $override->includePatterns !== [] ? $override->includePatterns : $this->includePatterns,
             excludePatterns: $override->excludePatterns !== [] ? $override->excludePatterns : $this->excludePatterns,
             wcagVersion: $override->wcagVersion !== 'wcag21' ? $override->wcagVersion : $this->wcagVersion,

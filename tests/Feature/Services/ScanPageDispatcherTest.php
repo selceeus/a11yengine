@@ -199,6 +199,51 @@ it('stores scan-level metrics after the batch completes', function (): void {
     )->toBe(1);
 });
 
+// ─── Error pages (4xx/5xx) ───────────────────────────────────────────────────
+
+it('creates a Failed ScanPage stub for pages with the error flag set', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/missing', 'violations' => [], 'error' => true, 'httpStatus' => 404],
+    ]);
+
+    $stub = ScanPage::withoutGlobalScopes()->where('scan_id', $this->scan->id)->first();
+
+    expect($stub->status)->toBe(ScanPageStatus::Failed)
+        ->and($stub->axe_completed)->toBeTrue();
+});
+
+it('does not dispatch jobs for error pages', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/missing', 'violations' => [], 'error' => true, 'httpStatus' => 404],
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    Bus::assertBatched(function (PendingBatch $batch): bool {
+        return $batch->jobs->count() === 1;
+    });
+});
+
+// ─── pages_discovered ────────────────────────────────────────────────────────
+
+it('sets pages_discovered on the scan to the total number of pages including error pages', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+        ['url' => 'https://example.com/missing', 'violations' => [], 'error' => true, 'httpStatus' => 404],
+        ['url' => 'https://example.com/about', 'violations' => []],
+    ]);
+
+    expect($this->scan->fresh()->pages_discovered)->toBe(3);
+});
+
 // ─── Idempotency guard ───────────────────────────────────────────────────────
 
 it('does not fire ScanCompleted a second time if the then() callback is re-invoked on an already-completed scan', function (): void {

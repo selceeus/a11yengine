@@ -35,14 +35,20 @@ class Scan
         return $scan->fresh();
     }
 
-    public function fail(ScanModel|int $scan): ScanModel
+    public function fail(ScanModel|int $scan, ?string $errorMessage = null): ScanModel
     {
         $scan = $this->resolve($scan);
 
-        $scan->update([
+        $data = [
             'status' => ScanStatus::Failed,
             'completed_at' => Date::now(),
-        ]);
+        ];
+
+        if ($errorMessage !== null) {
+            $data['error_message'] = $errorMessage;
+        }
+
+        $scan->update($data);
 
         return $scan->fresh();
     }

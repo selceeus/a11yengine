@@ -28,7 +28,9 @@ type Scan = {
     id: number;
     status: 'pending' | 'running' | 'completed' | 'failed';
     pages_scanned: number | null;
+    pages_discovered: number | null;
     total_violations: number | null;
+    error_message: string | null;
     started_at: string | null;
     completed_at: string | null;
     created_at: string;
@@ -186,7 +188,23 @@ export default function Show({
                 {/* Pending / running state */}
                 {isActive && (                    <div className="rounded-xl border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
                         <span className="inline-block size-2 animate-pulse rounded-full bg-primary align-middle mr-2" />
-                        Scan in progress — this page refreshes automatically…
+                        {scan.pages_discovered != null && scan.pages_scanned != null ? (
+                            <>
+                                {scan.pages_scanned} of {scan.pages_discovered} pages scanned
+                                {' '}({Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%)
+                                {' '}— this page refreshes automatically…
+                            </>
+                        ) : (
+                            <>Scan in progress — this page refreshes automatically…</>
+                        )}
+                    </div>
+                )}
+
+                {/* Failed state error message */}
+                {scan.status === 'failed' && scan.error_message && (
+                    <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-4 text-sm text-destructive">
+                        <span className="font-semibold mr-2">Scan failed:</span>
+                        {scan.error_message}
                     </div>
                 )}
 

@@ -223,30 +223,20 @@ it('returns the ScanPage instance', function (): void {
 
 // ─── Risk + governance recalculation ─────────────────────────────────────────
 
-it('records a risk snapshot after processing a page', function (): void {
+it('does not record a risk snapshot per page — snapshots are taken once at scan completion', function (): void {
     $this->service->handle($this->scan, axePage('https://example.com', [
         axeViolation('color-contrast', 'serious'),
     ]));
 
-    expect(RiskSnapshot::query()->where('organization_id', $this->organization->id)->count())->toBe(1);
+    expect(RiskSnapshot::query()->where('organization_id', $this->organization->id)->count())->toBe(0);
 });
 
-it('records an organization risk snapshot after processing a page', function (): void {
+it('does not record an organization risk snapshot per page — snapshots are taken once at scan completion', function (): void {
     $this->service->handle($this->scan, axePage('https://example.com', [
         axeViolation('image-alt', 'critical'),
     ]));
 
-    expect(OrganizationRiskSnapshot::query()->where('organization_id', $this->organization->id)->count())->toBe(1);
-});
-
-it('reflects open issues in the risk snapshot score', function (): void {
-    $this->service->handle($this->scan, axePage('https://example.com', [
-        axeViolation('color-contrast', 'serious'), // risk_weight=75, occurrence=1
-    ]));
-
-    $snapshot = RiskSnapshot::query()->where('organization_id', $this->organization->id)->first();
-
-    expect($snapshot->total_risk_score)->toBe(75);
+    expect(OrganizationRiskSnapshot::query()->where('organization_id', $this->organization->id)->count())->toBe(0);
 });
 
 // ─── New fields: tags, help_url, element_html, description ───────────────────

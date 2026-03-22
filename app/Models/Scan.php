@@ -19,8 +19,10 @@ class Scan extends Model
         'property_id',
         'status',
         'pages_scanned',
+        'pages_discovered',
         'total_violations',
         'raw_output_path',
+        'error_message',
         'started_at',
         'completed_at',
         'raw_summary',
@@ -37,6 +39,7 @@ class Scan extends Model
         return [
             'status' => ScanStatus::class,
             'pages_scanned' => 'integer',
+            'pages_discovered' => 'integer',
             'total_violations' => 'integer',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',

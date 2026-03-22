@@ -204,11 +204,22 @@ it('marks the scan as failed via the failed hook when retries are exhausted', fu
     expect($this->scan->fresh()->status)->toBe(ScanStatus::Failed);
 });
 
-it('does not double-fail a scan that is already in failed status', function (): void {
-    $this->scan->update(['status' => ScanStatus::Failed]);
+it('stores the error message on the scan when the crawler fails', function (): void {
+    Process::fake(['*' => Process::result(exitCode: 1, errorOutput: 'Node process crashed')]);
 
-    // Should not throw or cause any issues when the scan is already Failed
-    (new RunScanJob($this->scan))->failed(new RuntimeException('Retried'));
+    expect(fn () => (new RunScanJob($this->scan))->handle(
+        new ScanDomain,
+        app(ScanPageDispatcher::class),
+        app(CrawlerRunner::class),
+    ))->toThrow(ScanProcessException::class);
 
-    expect($this->scan->fresh()->status)->toBe(ScanStatus::Failed);
+    expect($this->scan->fresh()->error_message)->not->toBeNull();
+});
+
+it('stores the error message via the failed hook when retries are exhausted', function (): void {
+    $job = new RunScanJob($this->scan);
+
+    $job->failed(new RuntimeException('Max retries exceeded'));
+
+    expect($this->scan->fresh()->error_message)->toBe('Max retries exceeded');
 });

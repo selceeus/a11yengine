@@ -10,5 +10,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command('snapshots:agency-risk')->daily();
 Schedule::command('scans:run-scheduled')->everyMinute();
+Schedule::command('scans:expire-stuck')->everyFiveMinutes();
 Schedule::command('governance:generate-reports')->weekly();
 Schedule::command('digest:weekly')->weeklyOn(1, '9:00');

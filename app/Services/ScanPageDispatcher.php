@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Risk\RecordOrganizationRiskSnapshot;
 use App\Domain\Risk\RecordPropertyRiskSnapshot;
 use App\Domain\Scans\Scan as ScanDomain;
 use App\Enums\ScanPageStatus;
@@ -29,17 +30,32 @@ class ScanPageDispatcher
     {
         $lighthouseEnabled = config('lighthouse.enabled', true);
         $jobs = [];
+        $scan->update(['pages_discovered' => count($pageResults)]);
 
         foreach ($pageResults as $pageResult) {
-            ScanPageModel::withoutGlobalScopes()->create([
-                'agency_id' => $scan->agency_id,
-                'scan_id' => $scan->id,
-                'url' => $pageResult['url'],
-                'violations_count' => 0,
-                'status' => ScanPageStatus::Pending,
-                'axe_completed' => false,
-                'lighthouse_completed' => $lighthouseEnabled ? false : null,
-            ]);
+            if ($pageResult['error'] ?? false) {
+                ScanPageModel::withoutGlobalScopes()->updateOrCreate(
+                    ['agency_id' => $scan->agency_id, 'scan_id' => $scan->id, 'url' => $pageResult['url']],
+                    [
+                        'violations_count' => 0,
+                        'status' => ScanPageStatus::Failed,
+                        'axe_completed' => true,
+                        'lighthouse_completed' => $lighthouseEnabled ? true : null,
+                    ],
+                );
+
+                continue;
+            }
+
+            ScanPageModel::withoutGlobalScopes()->updateOrCreate(
+                ['agency_id' => $scan->agency_id, 'scan_id' => $scan->id, 'url' => $pageResult['url']],
+                [
+                    'violations_count' => 0,
+                    'status' => ScanPageStatus::Pending,
+                    'axe_completed' => false,
+                    'lighthouse_completed' => $lighthouseEnabled ? false : null,
+                ],
+            );
 
             $jobs[] = new RunAxeScanPageJob($scan, $pageResult['url'], $pageResult['violations']);
 
@@ -75,6 +91,7 @@ class ScanPageDispatcher
 
                 app(CalculateScanMetrics::class)->handle($scan->fresh() ?? $scan);
                 app(RecordPropertyRiskSnapshot::class)->handle($scan->property_id);
+                app(RecordOrganizationRiskSnapshot::class)->handle($scan->organization_id);
 
                 event(new \App\Events\ScanCompleted($scan->fresh() ?? $scan));
             })

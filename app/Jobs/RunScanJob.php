@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Domain\Scans\Scan as ScanDomain;
 use App\Domain\Scans\ScanConfig;
 use App\Enums\ScanStatus;
-use App\Exceptions\ScanProcessException;
 use App\Models\Scan;
 use App\Services\CrawlerRunner;
 use App\Services\ScanPageDispatcher;
@@ -58,7 +57,12 @@ class RunScanJob implements ShouldQueue
         ScanPageDispatcher $dispatcher,
         CrawlerRunner $crawlerRunner,
     ): void {
-        $scanDomain->start($this->scan);
+        $fresh = Scan::withoutGlobalScopes()->find($this->scan->id);
+        if ($fresh && $fresh->status === ScanStatus::Running) {
+            // Job is being retried — scan is already in the running state, skip re-transitioning.
+        } else {
+            $scanDomain->start($this->scan);
+        }
 
         $scanConfig = $this->scan->scan_config
             ? ScanConfig::fromArray($this->scan->scan_config)
@@ -70,8 +74,8 @@ class RunScanJob implements ShouldQueue
                 config('crawler.timeout', 300),
                 $scanConfig,
             );
-        } catch (ScanProcessException $e) {
-            $scanDomain->fail($this->scan);
+        } catch (Throwable $e) {
+            $scanDomain->fail($this->scan, $e->getMessage());
             throw $e;
         }
 
@@ -91,7 +95,7 @@ class RunScanJob implements ShouldQueue
         $scan = Scan::withoutGlobalScopes()->find($this->scan->id);
 
         if ($scan && $scan->status !== ScanStatus::Failed) {
-            (new ScanDomain)->fail($scan);
+            (new ScanDomain)->fail($scan, $exception->getMessage());
         }
     }
 }

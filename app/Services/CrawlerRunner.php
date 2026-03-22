@@ -41,6 +41,7 @@ class CrawlerRunner
             config('crawler.script_path'),
             $url,
             '--max-pages', (string) $config->maxPages,
+            '--max-depth', (string) $config->maxDepth,
             '--wcag-version', $config->wcagVersion,
         ];
 

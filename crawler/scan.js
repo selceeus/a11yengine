@@ -155,7 +155,8 @@ async function scan() {
                 });
 
                 if (!response || response.status() >= 400) {
-                    log('warn', `Skipping ${normalisedUrl} — HTTP ${response?.status() ?? 'no response'}`);
+                    log('warn', `Recording ${normalisedUrl} as failed — HTTP ${response?.status() ?? 'no response'}`);
+                    results.push({ url: normalisedUrl, violations: [], error: true, httpStatus: response?.status() ?? null });
                     continue;
                 }
 

@@ -2,8 +2,6 @@
 
 namespace App\Domain\Issues;
 
-use App\Domain\Risk\RecordOrganizationRiskSnapshot;
-use App\Domain\Risk\RecordRiskSnapshot;
 use App\Domain\Scans\ScanPage as ScanPageDomain;
 use App\Enums\FindingSeverity;
 use App\Enums\IssueSeverity;
@@ -21,8 +19,6 @@ class ProcessHtmlScan
 {
     public function __construct(
         private readonly ScanPageDomain $scanPage,
-        private readonly RecordRiskSnapshot $riskSnapshot,
-        private readonly RecordOrganizationRiskSnapshot $orgRiskSnapshot,
     ) {}
 
     /**
@@ -42,9 +38,6 @@ class ProcessHtmlScan
         $this->normalizeFindings($findings, $scan);
 
         $page = $this->scanPage->record($scan, $url, $findings->count());
-
-        $this->riskSnapshot->handle($scan->organization_id);
-        $this->orgRiskSnapshot->handle($scan->organization_id);
 
         return $page;
     }

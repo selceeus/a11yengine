@@ -92,7 +92,7 @@ it('passes the target URL as the third argument', function (): void {
     );
 });
 
-it('builds the full command array as [node, script_path, url]', function (): void {
+it('builds the full command array with the default config flags', function (): void {
     crawlerOutput([]);
 
     $url = 'https://example.com';
@@ -103,6 +103,9 @@ it('builds the full command array as [node, script_path, url]', function (): voi
             'node',
             config('crawler.script_path'),
             $url,
+            '--max-pages', '50',
+            '--max-depth', '5',
+            '--wcag-version', 'wcag21',
         ];
     });
 });
