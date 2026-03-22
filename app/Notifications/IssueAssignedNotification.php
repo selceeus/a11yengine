@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Issue;
+use App\Models\NotificationPreference;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,7 +24,10 @@ class IssueAssignedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return collect(['database', 'mail'])
+            ->filter(fn (string $channel) => NotificationPreference::isEnabled($notifiable, 'issue_assigned', $channel))
+            ->values()
+            ->all();
     }
 
     /**

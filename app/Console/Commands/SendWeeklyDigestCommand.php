@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\IssueStatus;
 use App\Models\Agency;
 use App\Models\Issue;
+use App\Models\NotificationPreference;
 use App\Models\Scan;
 use App\Notifications\WeeklyDigestNotification;
 use Illuminate\Console\Command;
@@ -50,6 +51,10 @@ class SendWeeklyDigestCommand extends Command
                 ->count();
 
             foreach ($agency->users as $user) {
+                if (! NotificationPreference::isEnabled($user, 'weekly_digest', 'mail')) {
+                    continue;
+                }
+
                 $assignedOpen = Issue::withoutGlobalScopes()
                     ->where('agency_id', $agency->id)
                     ->where('assigned_user_id', $user->id)

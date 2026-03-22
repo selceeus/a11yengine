@@ -11,6 +11,7 @@ import { edit } from '@/routes/profile';
 import { index as scheduledScansIndex } from '@/routes/scheduled-scans';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
+import { edit as editNotifications } from '@/routes/notification-preferences';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -36,6 +37,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Scheduled Scans',
         href: scheduledScansIndex(),
+        icon: null,
+    },
+    {
+        title: 'Notifications',
+        href: editNotifications(),
         icon: null,
     },
 ];

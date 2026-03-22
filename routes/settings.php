@@ -33,4 +33,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings/scheduled-scans', [ScheduledScansController::class, 'index'])
         ->name('scheduled-scans.index');
+
+    Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])
+        ->name('notification-preferences.edit');
+
+    Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])
+        ->name('notification-preferences.update');
 });

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\NotificationPreference;
 use App\Models\Scan;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,7 +20,10 @@ class ScanCompletedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return collect(['database', 'mail'])
+            ->filter(fn (string $channel) => NotificationPreference::isEnabled($notifiable, 'scan_completed', $channel))
+            ->values()
+            ->all();
     }
 
     /**
