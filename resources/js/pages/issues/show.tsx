@@ -266,7 +266,6 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                         </dd>
                     </div>
                 </dl>
-                </dl>
 
                 {/* Findings */}
                 <div>
