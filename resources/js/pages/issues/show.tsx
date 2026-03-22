@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
-import { AlertCircle, Bot, RefreshCw } from 'lucide-react';
+import { AlertCircle, Bot, Clock, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import IssueAssigner, { type AssignableUser } from '@/components/IssueAssigner';
+import IssueActivityLog from '@/components/IssueActivityLog';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -57,14 +58,27 @@ type Issue = {
     first_detected_at: string;
     last_detected_at: string;
     resolved_at: string | null;
+    due_date: string | null;
     assigned_user_id: number | null;
     assigned_user: { id: number; name: string; email: string } | null;
     property: Property | null;
     organization: Organization | null;
     findings: Finding[];
+    activities: Activity[];
     ai_remediation_status: 'pending' | 'processing' | 'completed' | 'failed' | null;
     ai_suggestions: AiSuggestions | null;
 };
+
+type Activity = {
+    id: number;
+    type: 'comment' | 'status_change' | 'assignment' | 'due_date_change' | 'bulk_action';
+    body: string | null;
+    metadata: Record<string, string | number | null> | null;
+    created_at: string;
+    user: { id: number; name: string } | null;
+};
+
+type TeamMember = { id: number; name: string };
 
 const severityVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     critical: 'destructive',
@@ -89,14 +103,29 @@ function StatCard({ label, value, capitalize }: { label: string; value: string; 
     );
 }
 
-export default function Show({ issue, assignableUsers }: { issue: Issue; assignableUsers: AssignableUser[] }) {
+export default function Show({ issue, assignableUsers, teamMembers }: { issue: Issue; assignableUsers: AssignableUser[]; teamMembers: TeamMember[] }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Issues', href: IssueController.index().url },
         { title: issue.rule_key, href: IssueController.show(issue.id).url },
     ];
 
+    const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+    const [dueDateInput, setDueDateInput] = useState(issue.due_date ?? '');
+
+    const isOverdue =
+        issue.due_date !== null &&
+        !['resolved', 'ignored', 'false_positive'].includes(issue.status) &&
+        new Date(issue.due_date) < new Date();
+
     function handleStatusChange(status: string) {
         router.patch(IssueController.update(issue.id).url, { status });
+    }
+
+    function saveDueDate() {
+        router.patch(IssueController.update(issue.id).url, { due_date: dueDateInput || null }, {
+            preserveScroll: true,
+            onSuccess: () => setIsEditingDueDate(false),
+        });
     }
 
     const isProcessing = issue.ai_remediation_status === 'pending' || issue.ai_remediation_status === 'processing';
@@ -158,11 +187,14 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                                 <SelectItem value="open">Open</SelectItem>
                                 <SelectItem value="in_progress">In progress</SelectItem>
                                 <SelectItem value="resolved">Resolved</SelectItem>
-                                <SelectItem value="accepted_risk">Accepted risk</SelectItem>
+                                <SelectItem value="ignored">Ignored</SelectItem>
+                                <SelectItem value="false_positive">False positive</SelectItem>
                             </SelectContent>
                         </Select>
 
                         <IssueAssigner issue={issue} users={assignableUsers} canAssign={true} />
+
+                        <IssueActivityLog issue={issue} activities={issue.activities} teamMembers={teamMembers} />
                     </div>
                 </div>
 
@@ -198,6 +230,42 @@ export default function Show({ issue, assignableUsers }: { issue: Issue; assigna
                     {issue.resolved_at && (
                         <StatCard label="Resolved" value={new Date(issue.resolved_at).toLocaleDateString()} />
                     )}
+                    <div className="rounded-lg border bg-card p-4">
+                        <dt className="text-xs text-muted-foreground">Due date</dt>
+                        <dd className="mt-1 font-medium">
+                            {isEditingDueDate ? (
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        type="date"
+                                        value={dueDateInput}
+                                        onChange={(e) => setDueDateInput(e.target.value)}
+                                        className="rounded border px-1.5 py-0.5 text-sm"
+                                        autoFocus
+                                    />
+                                    <button onClick={saveDueDate} className="text-xs text-primary hover:underline">Save</button>
+                                    <button onClick={() => setIsEditingDueDate(false)} className="text-xs text-muted-foreground hover:underline">Cancel</button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => { setDueDateInput(issue.due_date ?? ''); setIsEditingDueDate(true); }}
+                                    className="flex items-center gap-1.5 hover:underline"
+                                >
+                                    {issue.due_date ? (
+                                        <>
+                                            {isOverdue && <Clock className="h-3.5 w-3.5 text-destructive" />}
+                                            <span className={isOverdue ? 'text-destructive' : ''}>
+                                                {new Date(issue.due_date).toLocaleDateString()}
+                                                {isOverdue && ' (Overdue)'}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <span className="text-muted-foreground">Set due date…</span>
+                                    )}
+                                </button>
+                            )}
+                        </dd>
+                    </div>
+                </dl>
                 </dl>
 
                 {/* Findings */}

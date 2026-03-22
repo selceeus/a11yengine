@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Events\ScanCompleted;
 use App\Listeners\GenerateAuditOnScanCompleted;
 use App\Listeners\NotifyScanCompleted;
+use App\Models\Issue;
+use App\Observers\IssueObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Issue::observe(IssueObserver::class);
 
         Event::listen(ScanCompleted::class, GenerateAuditOnScanCompleted::class);
         Event::listen(ScanCompleted::class, NotifyScanCompleted::class);

@@ -5,14 +5,17 @@ namespace App\Models;
 use App\Enums\IssueSeverity;
 use App\Enums\IssueStatus;
 use App\Models\Scopes\TenantScope;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Issue extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'agency_id',
@@ -36,6 +39,7 @@ class Issue extends Model
         'resolution_notes',
         'ai_remediation_status',
         'ai_suggestions',
+        'due_date',
     ];
 
     protected static function booted(): void
@@ -53,6 +57,7 @@ class Issue extends Model
             'resolved_at' => 'datetime',
             'tags' => 'array',
             'ai_suggestions' => 'array',
+            'due_date' => 'date',
         ];
     }
 
@@ -79,6 +84,11 @@ class Issue extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(IssueActivity::class);
     }
 
     public function assignToUser(User $user): void
@@ -109,5 +119,33 @@ class Issue extends Model
     public function incrementOccurrence(): void
     {
         $this->increment('occurrence_count');
+    }
+
+    public function isOverdue(): bool
+    {
+        return ! $this->status->isTerminal()
+            && $this->due_date !== null
+            && $this->due_date->isPast();
+    }
+
+    public function scopeOverdue(Builder $query): void
+    {
+        $terminalValues = array_column(IssueStatus::terminalStatuses(), 'value');
+
+        $query->whereNotNull('due_date')
+            ->where('due_date', '<', now())
+            ->whereNotIn('status', $terminalValues);
+    }
+
+    public static function defaultDueDateForSeverity(IssueSeverity $severity): CarbonImmutable
+    {
+        $days = match ($severity) {
+            IssueSeverity::Critical => 7,
+            IssueSeverity::High => 14,
+            IssueSeverity::Medium => 30,
+            IssueSeverity::Low => 60,
+        };
+
+        return now()->addDays($days);
     }
 }

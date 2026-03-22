@@ -2,6 +2,8 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +25,7 @@ type Issue = {
     wcag_category: string | null;
     wcag_criteria: string | null;
     last_detected_at: string;
+    due_date: string | null;
     property: Property | null;
     organization: Organization | null;
     assigned_user: { id: number; name: string } | null;
@@ -93,6 +96,49 @@ type ModalState =
     | { open: true; userName: string; issues: []; loading: true };
 
 const [modal, setModal] = useState<ModalState>({ open: false });
+const [selectedIds, setSelectedIds] = useState<number[]>([]);
+const [bulkAction, setBulkAction] = useState<string>('');
+const [bulkStatus, setBulkStatus] = useState<string>('');
+const [bulkUserId, setBulkUserId] = useState<string>('');
+const [bulkDueDate, setBulkDueDate] = useState<string>('');
+const [bulkLoading, setBulkLoading] = useState(false);
+
+const allPageIds = issues.data.map((i) => i.id);
+const allSelected = allPageIds.length > 0 && allPageIds.every((id) => selectedIds.includes(id));
+const someSelected = selectedIds.length > 0;
+
+function toggleAll() {
+    setSelectedIds(allSelected ? [] : allPageIds);
+}
+
+function toggleOne(id: number) {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+}
+
+async function executeBulkAction() {
+    if (!selectedIds.length) return;
+    const body: Record<string, unknown> = { ids: selectedIds, action: bulkAction };
+    if (bulkAction === 'status_change') body.status = bulkStatus;
+    if (bulkAction === 'assign') body.user_id = bulkUserId ? Number(bulkUserId) : null;
+    if (bulkAction === 'set_due_date') body.due_date = bulkDueDate || null;
+    setBulkLoading(true);
+    try {
+        await fetch('/api/issues/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-XSRF-TOKEN': getCsrfToken() },
+            body: JSON.stringify(body),
+        });
+        setSelectedIds([]);
+        setBulkAction('');
+        router.reload();
+    } finally {
+        setBulkLoading(false);
+    }
+}
+
+function getCsrfToken(): string {
+    return decodeURIComponent(document.cookie.split('; ').find((r) => r.startsWith('XSRF-TOKEN='))?.split('=')[1] ?? '');
+}
 
 async function openUserModal(userId: number, userName: string) {
     setModal({ open: true, userName, issues: [], loading: true });
@@ -124,6 +170,9 @@ function filter(patch: Partial<Filters>, current: Filters) {
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">Issues</h1>
+                    {someSelected && (
+                        <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
+                    )}
                 </div>
 
                 {/* Property tabs */}
@@ -228,12 +277,16 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">
+                                <th className="px-4 py-3 text-center font-medium">
+                                    <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
+                                </th>
                                 <th className="px-4 py-3 text-center font-medium">Severity</th>
                                 <th className="px-4 py-3 text-center font-medium">Rule</th>
                                 <th className="px-4 py-3 text-center font-medium">WCAG</th>
                                 <th className="px-4 py-3 text-center font-medium">Occurrences</th>
                                 <th className="px-4 py-3 text-center font-medium">Risk weight</th>
                                 <th className="px-4 py-3 text-center font-medium">Last detected</th>
+                                <th className="px-4 py-3 text-center font-medium">Due</th>
                                 {!filters.property_id && <th className="px-4 py-3 text-center font-medium">Property</th>}
                                 <th className="px-4 py-3 text-center font-medium">Status</th>
                                 <th className="px-4 py-3 text-center font-medium">Assigned to</th>
@@ -243,53 +296,73 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         <tbody className="divide-y">
                             {issues.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={filters.property_id ? 9 : 10} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                    <td colSpan={filters.property_id ? 11 : 12} className="px-4 py-10 text-center text-sm text-muted-foreground">
                                         No issues found.
                                     </td>
                                 </tr>
                             ) : (
-                                issues.data.map((issue) => (
-                                    <tr key={issue.id} className="transition-colors hover:bg-muted/30">
-                                        <td className="px-4 py-3 text-center">
-                                            <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
-                                                {issue.severity}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-center font-mono text-xs">{issue.rule_key}</td>
-                                        <td className="px-4 py-3 text-center text-muted-foreground capitalize">
-                                            {issue.wcag_criteria
-                                                ? <span title={issue.wcag_category?.replace('-', ' ') ?? undefined}>{issue.wcag_criteria}</span>
-                                                : (issue.wcag_category?.replace('-', ' ') ?? '—')}
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-muted-foreground">{issue.occurrence_count}</td>
-                                        <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>
-                                        <td className="px-4 py-3 text-center text-muted-foreground">
-                                            {new Date(issue.last_detected_at).toLocaleDateString()}
-                                        </td>
-                                        {!filters.property_id && <td className="px-4 py-3 text-center text-muted-foreground">{issue.property?.name ?? '—'}</td>}
-                                        <td className="px-4 py-3 text-center text-muted-foreground">
-                                            {statusLabels[issue.status] ?? issue.status}
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-muted-foreground">
-                                            {issue.assigned_user ? (
-                                                <button
-                                                    onClick={() => openUserModal(issue.assigned_user!.id, issue.assigned_user!.name)}
-                                                    className="text-primary hover:underline cursor-pointer"
+                                issues.data.map((issue) => {
+                                    const isOverdue =
+                                        issue.due_date !== null &&
+                                        !['resolved', 'ignored', 'false_positive'].includes(issue.status) &&
+                                        new Date(issue.due_date) < new Date();
+                                    return (
+                                        <tr key={issue.id} className={`transition-colors hover:bg-muted/30 ${selectedIds.includes(issue.id) ? 'bg-muted/20' : ''}`}>
+                                            <td className="px-4 py-3 text-center">
+                                                <Checkbox
+                                                    checked={selectedIds.includes(issue.id)}
+                                                    onCheckedChange={() => toggleOne(issue.id)}
+                                                    aria-label={`Select issue ${issue.rule_key}`}
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
+                                                    {issue.severity}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center font-mono text-xs">{issue.rule_key}</td>
+                                            <td className="px-4 py-3 text-center text-muted-foreground capitalize">
+                                                {issue.wcag_criteria
+                                                    ? <span title={issue.wcag_category?.replace('-', ' ') ?? undefined}>{issue.wcag_criteria}</span>
+                                                    : (issue.wcag_category?.replace('-', ' ') ?? '—')}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-muted-foreground">{issue.occurrence_count}</td>
+                                            <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>
+                                            <td className="px-4 py-3 text-center text-muted-foreground">
+                                                {new Date(issue.last_detected_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-muted-foreground">
+                                                {issue.due_date ? (
+                                                    <span className={isOverdue ? 'text-destructive font-medium' : ''}>
+                                                        {isOverdue && '⚠ '}{new Date(issue.due_date).toLocaleDateString()}
+                                                    </span>
+                                                ) : '—'}
+                                            </td>
+                                            {!filters.property_id && <td className="px-4 py-3 text-center text-muted-foreground">{issue.property?.name ?? '—'}</td>}
+                                            <td className="px-4 py-3 text-center text-muted-foreground">
+                                                {statusLabels[issue.status] ?? issue.status}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-muted-foreground">
+                                                {issue.assigned_user ? (
+                                                    <button
+                                                        onClick={() => openUserModal(issue.assigned_user!.id, issue.assigned_user!.name)}
+                                                        className="text-primary hover:underline cursor-pointer"
+                                                    >
+                                                        {issue.assigned_user.name}
+                                                    </button>
+                                                ) : '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Link
+                                                    href={IssueController.show(issue.id).url}
+                                                    className="text-sm text-primary hover:underline"
                                                 >
-                                                    {issue.assigned_user.name}
-                                                </button>
-                                            ) : '—'}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Link
-                                                href={IssueController.show(issue.id).url}
-                                                className="text-sm text-primary hover:underline"
-                                            >
-                                                View
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))
+                                                    View
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
@@ -310,6 +383,83 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     </div>
                 )}
             </div>
+
+            {/* Bulk action toolbar */}
+            {someSelected && (
+                <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border bg-background px-5 py-3 shadow-xl">
+                    <span className="text-sm font-medium">{selectedIds.length} selected</span>
+                    <div className="h-4 w-px bg-border" />
+
+                    {/* Action selector */}
+                    <Select value={bulkAction} onValueChange={setBulkAction}>
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Choose action…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="status_change">Change status</SelectItem>
+                            <SelectItem value="assign">Assign to</SelectItem>
+                            <SelectItem value="ignore">Ignore</SelectItem>
+                            <SelectItem value="set_due_date">Set due date</SelectItem>
+                            <SelectItem value="delete">Archive</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {bulkAction === 'status_change' && (
+                        <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                            <SelectTrigger className="w-36">
+                                <SelectValue placeholder="New status…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="in_progress">In progress</SelectItem>
+                                <SelectItem value="resolved">Resolved</SelectItem>
+                                <SelectItem value="ignored">Ignored</SelectItem>
+                                <SelectItem value="false_positive">False positive</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    {bulkAction === 'assign' && (
+                        <Select value={bulkUserId} onValueChange={setBulkUserId}>
+                            <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Assign to…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">Unassigned</SelectItem>
+                                {teamMembers.map((m) => (
+                                    <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    {bulkAction === 'set_due_date' && (
+                        <Input
+                            type="date"
+                            className="w-40"
+                            value={bulkDueDate}
+                            onChange={(e) => setBulkDueDate(e.target.value)}
+                        />
+                    )}
+
+                    <Button
+                        size="sm"
+                        disabled={
+                            bulkLoading ||
+                            !bulkAction ||
+                            (bulkAction === 'status_change' && !bulkStatus)
+                        }
+                        onClick={executeBulkAction}
+                        variant={bulkAction === 'delete' ? 'destructive' : 'default'}
+                    >
+                        {bulkLoading ? <Spinner className="h-4 w-4" /> : 'Apply'}
+                    </Button>
+
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                        Cancel
+                    </Button>
+                </div>
+            )}
 
             <Dialog open={modal.open} onOpenChange={(open) => { if (!open) setModal({ open: false }); }}>
                 <DialogContent className="max-w-5xl">

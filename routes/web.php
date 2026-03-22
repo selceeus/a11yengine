@@ -32,6 +32,7 @@ use App\Http\Controllers\ContentAuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GovernanceReportController;
 use App\Http\Controllers\IssueClusterController;
+use App\Http\Controllers\IssueCommentController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PropertyController;
@@ -72,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('issues/{issue}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('issues/{issue}', [IssueController::class, 'update'])->name('issues.update');
     Route::post('issues/{issue}/remediation', [IssueController::class, 'generateRemediation'])->name('issues.remediation.generate');
+    Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->name('issues.comments.store');
 
     Route::get('/api/sites/{site}/risk-dashboard', RiskDashboardController::class)
         ->middleware('auth')

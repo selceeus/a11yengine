@@ -69,6 +69,7 @@ class IssueController extends Controller
             'organization:id,name',
             'assignedUser:id,name,email',
             'findings' => fn ($q) => $q->latest('detected_at')->limit(50),
+            'activities' => fn ($q) => $q->latest('created_at')->limit(50)->with('user:id,name'),
         ]);
 
         $assignableUsers = User::query()
@@ -80,6 +81,7 @@ class IssueController extends Controller
         return Inertia::render('issues/show', [
             'issue' => $issue,
             'assignableUsers' => $assignableUsers,
+            'teamMembers' => $assignableUsers->map(fn ($u) => ['id' => $u->id, 'name' => $u->name]),
         ]);
     }
 
@@ -87,12 +89,20 @@ class IssueController extends Controller
     {
         $this->authorize('update', $issue);
 
-        $newStatus = IssueStatus::from($request->validated()['status']);
+        $validated = $request->validated();
+        $updateData = [];
 
-        $issue->update([
-            'status' => $newStatus,
-            'resolved_at' => $newStatus->isTerminal() ? ($issue->resolved_at ?? now()) : null,
-        ]);
+        if (isset($validated['status'])) {
+            $newStatus = IssueStatus::from($validated['status']);
+            $updateData['status'] = $newStatus;
+            $updateData['resolved_at'] = $newStatus->isTerminal() ? ($issue->resolved_at ?? now()) : null;
+        }
+
+        if (array_key_exists('due_date', $validated)) {
+            $updateData['due_date'] = $validated['due_date'];
+        }
+
+        $issue->update($updateData);
 
         return redirect()->route('issues.show', $issue);
     }
