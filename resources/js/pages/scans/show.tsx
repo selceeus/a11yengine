@@ -186,17 +186,30 @@ export default function Show({
                 )}
 
                 {/* Pending / running state */}
-                {isActive && (                    <div className="rounded-xl border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
-                        <span className="inline-block size-2 animate-pulse rounded-full bg-primary align-middle mr-2" />
-                        {scan.pages_discovered != null && scan.pages_scanned != null ? (
-                            <>
-                                {scan.pages_scanned} of {scan.pages_discovered} pages scanned
-                                {' '}({Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%)
-                                {' '}— this page refreshes automatically…
-                            </>
-                        ) : (
-                            <>Scan in progress — this page refreshes automatically…</>
-                        )}
+                {isActive && (
+                    <div className="rounded-xl border bg-muted/40 px-6 py-5 space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2 font-medium">
+                                <span className="inline-block size-2 animate-pulse rounded-full bg-primary" />
+                                Scan in progress — refreshing automatically…
+                            </span>
+                            {scan.pages_discovered != null && scan.pages_scanned != null && (
+                                <span className="tabular-nums text-muted-foreground">
+                                    {scan.pages_scanned} / {scan.pages_discovered} pages
+                                    {' '}&#40;{Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%&#41;
+                                </span>
+                            )}
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            {scan.pages_discovered != null && scan.pages_scanned != null ? (
+                                <div
+                                    className="h-full rounded-full bg-primary transition-all duration-500"
+                                    style={{ width: `${Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%` }}
+                                />
+                            ) : (
+                                <div className="h-full w-full animate-pulse rounded-full bg-primary/40" />
+                            )}
+                        </div>
                     </div>
                 )}
 

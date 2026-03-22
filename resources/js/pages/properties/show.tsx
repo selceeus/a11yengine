@@ -34,6 +34,7 @@ type Scan = {
     id: number;
     status: 'pending' | 'running' | 'completed' | 'failed';
     pages_scanned: number | null;
+    pages_discovered: number | null;
     total_violations: number | null;
     created_at: string;
 };
@@ -519,7 +520,24 @@ export default function Show({
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                            {scan.pages_scanned ?? '—'}
+                                            {(scan.status === 'running' || scan.status === 'pending') && scan.pages_discovered != null && scan.pages_scanned != null ? (
+                                                <div className="space-y-1">
+                                                    <div className="text-xs">
+                                                        {scan.pages_scanned}/{scan.pages_discovered}
+                                                        <span className="ml-1 font-medium text-primary">
+                                                            {Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className="h-full rounded-full bg-primary transition-all"
+                                                            style={{ width: `${Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                scan.pages_scanned ?? '—'
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                                             {scan.total_violations ?? '—'}
