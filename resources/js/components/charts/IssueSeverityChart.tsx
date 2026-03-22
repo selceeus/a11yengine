@@ -23,6 +23,7 @@ type TooltipState = {
 
 export type IssueSeverityChartProps = {
     agencyId: number;
+    organizationId?: number;
 };
 
 const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low'];
@@ -56,7 +57,7 @@ function buildSegments(data: SummaryData, totalWidth: number): Segment[] {
     });
 }
 
-export function IssueSeverityChart({ agencyId }: IssueSeverityChartProps) {
+export function IssueSeverityChart({ agencyId, organizationId }: IssueSeverityChartProps) {
     const [data, setData] = useState<SummaryData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -71,7 +72,11 @@ export function IssueSeverityChart({ agencyId }: IssueSeverityChartProps) {
         setLoading(true);
         setError(null);
 
-        fetch(`/api/agencies/${agencyId}/issues/summary`, {
+        const url = organizationId
+            ? `/api/organizations/${organizationId}/issues/summary`
+            : `/api/agencies/${agencyId}/issues/summary`;
+
+        fetch(url, {
             signal: controller.signal,
             headers: { Accept: 'application/json' },
         })
@@ -91,7 +96,7 @@ export function IssueSeverityChart({ agencyId }: IssueSeverityChartProps) {
             });
 
         return () => controller.abort();
-    }, [agencyId]);
+    }, [agencyId, organizationId]);
 
     // ── D3 render + animate ──────────────────────────────────────────────────
     useEffect(() => {

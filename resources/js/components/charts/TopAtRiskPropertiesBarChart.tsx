@@ -33,9 +33,10 @@ const BAR_GAP = 6;
 
 export type TopAtRiskPropertiesBarChartProps = {
     agencyId: number;
+    organizationId?: number;
 };
 
-export function TopAtRiskPropertiesBarChart({ agencyId }: TopAtRiskPropertiesBarChartProps) {
+export function TopAtRiskPropertiesBarChart({ agencyId, organizationId }: TopAtRiskPropertiesBarChartProps) {
     const [data, setData] = useState<TopRiskData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -48,7 +49,11 @@ export function TopAtRiskPropertiesBarChart({ agencyId }: TopAtRiskPropertiesBar
         setLoading(true);
         setError(null);
 
-        fetch(`/api/agencies/${agencyId}/properties/top-risk`, {
+        const url = organizationId
+            ? `/api/organizations/${organizationId}/properties/top-risk`
+            : `/api/agencies/${agencyId}/properties/top-risk`;
+
+        fetch(url, {
             signal: controller.signal,
             headers: { Accept: 'application/json' },
         })
@@ -68,7 +73,7 @@ export function TopAtRiskPropertiesBarChart({ agencyId }: TopAtRiskPropertiesBar
             });
 
         return () => controller.abort();
-    }, [agencyId]);
+    }, [agencyId, organizationId]);
 
     useEffect(() => {
         if (!data || !svgRef.current || !containerRef.current) return;

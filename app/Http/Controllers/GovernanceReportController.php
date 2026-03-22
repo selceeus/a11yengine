@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\Exportable;
 use App\Enums\GovernanceReportStatus;
 use App\Http\Requests\StoreGovernanceReportRequest;
 use App\Jobs\GenerateGovernanceReportJob;
@@ -9,12 +10,14 @@ use App\Models\GovernanceReport;
 use App\Models\Property;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class GovernanceReportController extends Controller
 {
     use AuthorizesRequests;
+    use Exportable;
 
     public function index(): Response
     {
@@ -132,5 +135,44 @@ class GovernanceReportController extends Controller
         $report->delete();
 
         return redirect()->route('governance.index');
+    }
+
+    public function export(Request $request, GovernanceReport $report, string $format): \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
+    {
+        $this->authorize('viewAny', Property::class);
+
+        $report->load(['property:id,name,base_url', 'agency:id,name']);
+
+        $filename = 'governance-report-'.$report->id.'-'.now()->format('Y-m-d');
+
+        return match ($format) {
+            'json' => $this->exportJson([
+                'id' => $report->id,
+                'report_scope' => $report->report_scope,
+                'period_from' => $report->period_from->toDateString(),
+                'period_to' => $report->period_to->toDateString(),
+                'executive_narrative' => $report->executive_narrative,
+                'risk_trend' => $report->risk_trend,
+                'severity_breakdown' => $report->severity_breakdown,
+                'remediation_progress' => $report->remediation_progress,
+                'compliance_status' => $report->compliance_status,
+                'recommendations' => $report->recommendations,
+                'summary_cards' => $report->summary_cards,
+                'generated_at' => $report->generated_at?->toIso8601String(),
+            ], $filename.'.json'),
+            'csv' => $this->exportCsv(
+                collect($report->recommendations ?? [])->map(fn (array $rec) => [
+                    $rec['priority'] ?? '',
+                    $rec['title'] ?? '',
+                    $rec['category'] ?? '',
+                    $rec['rationale'] ?? '',
+                    $rec['action'] ?? '',
+                    $rec['due_by_quarter'] ?? '',
+                ])->all(),
+                ['Priority', 'Title', 'Category', 'Rationale', 'Action', 'Due By Quarter'],
+                $filename.'.csv'
+            ),
+            default => $this->exportPdf('governance-reports.pdf', ['report' => $report], $filename.'.html'),
+        };
     }
 }

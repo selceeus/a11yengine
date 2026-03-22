@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\IssueStatus;
+use App\Enums\ScanStatus;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Agency;
+use App\Models\Issue;
 use App\Models\Organization;
+use App\Models\RiskSnapshot;
+use App\Models\Scan;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -57,8 +62,49 @@ class OrganizationController extends Controller
 
         $organization->load(['properties' => fn ($q) => $q->orderBy('name')]);
 
+        $propertyIds = $organization->properties->pluck('id');
+
+        $openIssueCount = Issue::withoutGlobalScopes()
+            ->where('agency_id', $organization->agency_id)
+            ->whereIn('property_id', $propertyIds)
+            ->whereIn('status', array_map(fn (IssueStatus $s) => $s->value, IssueStatus::activeStatuses()))
+            ->count();
+
+        $latestScan = Scan::withoutGlobalScopes()
+            ->where('agency_id', $organization->agency_id)
+            ->whereIn('property_id', $propertyIds)
+            ->where('status', ScanStatus::Completed)
+            ->latest('completed_at')
+            ->first();
+
+        $recentScans = Scan::withoutGlobalScopes()
+            ->where('agency_id', $organization->agency_id)
+            ->whereIn('property_id', $propertyIds)
+            ->with('property:id,name')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (Scan $s) => [
+                'id' => $s->id,
+                'status' => $s->status->value,
+                'property_name' => $s->property?->name,
+                'completed_at' => $s->completed_at?->toIso8601String(),
+                'created_at' => $s->created_at?->toIso8601String(),
+            ]);
+
+        $latestSnapshot = RiskSnapshot::query()
+            ->where('organization_id', $organization->id)
+            ->latest('snapshot_date')
+            ->first();
+
         return Inertia::render('organizations/show', [
             'organization' => $organization,
+            'stats' => [
+                'open_issue_count' => $openIssueCount,
+                'latest_scan_at' => $latestScan?->completed_at?->toIso8601String(),
+                'risk_score' => $latestSnapshot?->total_risk_score ?? 0,
+            ],
+            'recentScans' => $recentScans,
         ]);
     }
 

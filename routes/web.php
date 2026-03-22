@@ -11,6 +11,11 @@ use App\Http\Controllers\Api\GenerateContentAuditController;
 use App\Http\Controllers\Api\GenerateGovernanceReportController;
 use App\Http\Controllers\Api\GenerateIssueClustersController;
 use App\Http\Controllers\Api\GenerateRiskAdvisoryController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OrgIssueSummaryController;
+use App\Http\Controllers\Api\OrgRiskTrendsController;
+use App\Http\Controllers\Api\OrgScanActivityController;
+use App\Http\Controllers\Api\OrgTopRiskPropertiesController;
 use App\Http\Controllers\Api\PropertyContentAuditController;
 use App\Http\Controllers\Api\PropertyGovernanceReportController;
 use App\Http\Controllers\Api\PropertyIssueClustersController;
@@ -184,6 +189,42 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('governance', [GovernanceReportController::class, 'store'])->name('governance.store');
     Route::get('governance/{report}', [GovernanceReportController::class, 'show'])->name('governance.show');
     Route::delete('governance/{report}', [GovernanceReportController::class, 'destroy'])->name('governance.destroy');
+    Route::get('governance/{report}/export/{format}', [GovernanceReportController::class, 'export'])
+        ->name('governance.export')
+        ->where('format', 'json|csv|pdf');
+
+    Route::get('risk-advisory/{riskAdvisory}', [RiskAdvisoryController::class, 'show'])->name('risk-advisory.show');
+    Route::get('risk-advisory/{riskAdvisory}/export/{format}', [RiskAdvisoryController::class, 'export'])
+        ->name('risk-advisory.export')
+        ->where('format', 'json|csv|pdf');
+
+    Route::get('content-audit/{contentAudit}', [ContentAuditController::class, 'show'])->name('content-audit.show');
+    Route::get('content-audit/{contentAudit}/export/{format}', [ContentAuditController::class, 'export'])
+        ->name('content-audit.export')
+        ->where('format', 'json|csv|pdf');
+
+    Route::get('scans/{scan}/export/{format}', [ScanController::class, 'export'])
+        ->name('scans.export')
+        ->where('format', 'json|csv');
+
+    Route::get('api/organizations/{organization}/issues/summary', OrgIssueSummaryController::class)
+        ->name('api.organizations.issues.summary');
+
+    Route::get('api/organizations/{organization}/scans/activity', OrgScanActivityController::class)
+        ->name('api.organizations.scans.activity');
+
+    Route::get('api/organizations/{organization}/risk-trends', OrgRiskTrendsController::class)
+        ->name('api.organizations.risk-trends');
+
+    Route::get('api/organizations/{organization}/properties/top-risk', OrgTopRiskPropertiesController::class)
+        ->name('api.organizations.properties.top-risk');
+
+    Route::get('api/notifications', [NotificationController::class, 'index'])
+        ->name('api.notifications.index');
+    Route::patch('api/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+        ->name('api.notifications.read');
+    Route::post('api/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->name('api.notifications.read-all');
 });
 
 Route::middleware('guest')->group(function (): void {

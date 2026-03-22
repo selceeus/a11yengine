@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\Exportable;
 use App\Domain\Scans\ScanConfig;
 use App\Enums\ScanStatus;
 use App\Http\Requests\StoreScanRequest;
@@ -14,6 +15,7 @@ use App\Models\Scan;
 use App\Models\ScanMetric;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,6 +23,7 @@ use Inertia\Response;
 class ScanController extends Controller
 {
     use AuthorizesRequests;
+    use Exportable;
 
     public function __construct(private readonly Agency $agency) {}
 
@@ -140,5 +143,66 @@ class ScanController extends Controller
             'lighthouseResults' => $lighthouseResults,
             'delta' => $delta,
         ]);
+    }
+
+    public function export(Request $request, Scan $scan, string $format): \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->authorize('view', $scan);
+
+        $filename = 'scan-'.$scan->id.'-'.now()->format('Y-m-d');
+
+        $findings = Finding::withoutGlobalScopes()
+            ->where('scan_id', $scan->id)
+            ->select(['rule_key', 'severity', 'page_url', 'element_identifier', 'message', 'wcag_criteria', 'detected_at'])
+            ->get();
+
+        $lighthouseResults = LighthouseResult::withoutGlobalScopes()
+            ->where('scan_id', $scan->id)
+            ->select(['url', 'performance_score', 'accessibility_score', 'best_practices_score', 'seo_score', 'first_contentful_paint', 'largest_contentful_paint', 'total_blocking_time', 'cumulative_layout_shift'])
+            ->get();
+
+        if ($format === 'csv') {
+            $rows = $findings->map(fn (Finding $f) => [
+                $f->rule_key,
+                $f->severity->value,
+                $f->page_url,
+                $f->element_identifier,
+                $f->message,
+                $f->wcag_criteria,
+                $f->detected_at?->toIso8601String(),
+            ])->all();
+
+            return $this->exportCsv(
+                $rows,
+                ['Rule Key', 'Severity', 'Page URL', 'Element', 'Message', 'WCAG Criteria', 'Detected At'],
+                $filename.'.csv'
+            );
+        }
+
+        return $this->exportJson([
+            'scan_id' => $scan->id,
+            'property' => $scan->property?->name,
+            'status' => $scan->status->value,
+            'findings' => $findings->map(fn (Finding $f) => [
+                'rule_key' => $f->rule_key,
+                'severity' => $f->severity->value,
+                'page_url' => $f->page_url,
+                'element_identifier' => $f->element_identifier,
+                'message' => $f->message,
+                'wcag_criteria' => $f->wcag_criteria,
+                'detected_at' => $f->detected_at?->toIso8601String(),
+            ])->all(),
+            'lighthouse' => $lighthouseResults->map(fn (LighthouseResult $l) => [
+                'url' => $l->url,
+                'performance_score' => $l->performance_score,
+                'accessibility_score' => $l->accessibility_score,
+                'best_practices_score' => $l->best_practices_score,
+                'seo_score' => $l->seo_score,
+                'first_contentful_paint' => $l->first_contentful_paint,
+                'largest_contentful_paint' => $l->largest_contentful_paint,
+                'total_blocking_time' => $l->total_blocking_time,
+                'cumulative_layout_shift' => $l->cumulative_layout_shift,
+            ])->all(),
+        ], $filename.'.json');
     }
 }

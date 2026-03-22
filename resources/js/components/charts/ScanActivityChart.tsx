@@ -22,6 +22,7 @@ type TooltipState = {
 
 export type ScanActivityChartProps = {
     agencyId: number;
+    organizationId?: number;
 };
 
 const MARGIN = { top: 16, right: 16, bottom: 36, left: 40 };
@@ -30,7 +31,7 @@ const LINE_COLOR = '#2563eb';
 const AREA_COLOR = '#2563eb';
 const DOT_COLOR = '#2563eb';
 
-export function ScanActivityChart({ agencyId }: ScanActivityChartProps) {
+export function ScanActivityChart({ agencyId, organizationId }: ScanActivityChartProps) {
     const [data, setData] = useState<ActivityData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,11 @@ export function ScanActivityChart({ agencyId }: ScanActivityChartProps) {
         setLoading(true);
         setError(null);
 
-        fetch(`/api/agencies/${agencyId}/scans/activity`, {
+        const url = organizationId
+            ? `/api/organizations/${organizationId}/scans/activity`
+            : `/api/agencies/${agencyId}/scans/activity`;
+
+        fetch(url, {
             signal: controller.signal,
             headers: { Accept: 'application/json' },
         })
@@ -66,7 +71,7 @@ export function ScanActivityChart({ agencyId }: ScanActivityChartProps) {
             });
 
         return () => controller.abort();
-    }, [agencyId]);
+    }, [agencyId, organizationId]);
 
     // ── D3 render + animate ──────────────────────────────────────────────────
     useEffect(() => {

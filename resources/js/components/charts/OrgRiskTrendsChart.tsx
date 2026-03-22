@@ -33,6 +33,7 @@ type TooltipState = {
 
 export type OrgRiskTrendsChartProps = {
     agencyId: number;
+    organizationId?: number;
 };
 
 type Window = 7 | 30 | 90;
@@ -50,7 +51,7 @@ const HEIGHT = 220;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function OrgRiskTrendsChart({ agencyId }: OrgRiskTrendsChartProps) {
+export function OrgRiskTrendsChart({ agencyId, organizationId }: OrgRiskTrendsChartProps) {
     const [window, setWindow] = useState<Window>(30);
     const [data, setData] = useState<TrendsData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -66,7 +67,11 @@ export function OrgRiskTrendsChart({ agencyId }: OrgRiskTrendsChartProps) {
         setLoading(true);
         setError(null);
 
-        fetch(`/api/agencies/${agencyId}/organizations/risk-trends?days=${window}`, {
+        const url = organizationId
+            ? `/api/organizations/${organizationId}/risk-trends?days=${window}`
+            : `/api/agencies/${agencyId}/organizations/risk-trends?days=${window}`;
+
+        fetch(url, {
             signal: controller.signal,
             headers: { Accept: 'application/json' },
         })
@@ -86,7 +91,7 @@ export function OrgRiskTrendsChart({ agencyId }: OrgRiskTrendsChartProps) {
             });
 
         return () => controller.abort();
-    }, [agencyId, window]);
+    }, [agencyId, organizationId, window]);
 
     // ── D3 render ──────────────────────────────────────────────────────────────
     useEffect(() => {

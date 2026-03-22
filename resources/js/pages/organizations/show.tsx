@@ -1,15 +1,33 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import * as OrganizationController from '@/actions/App/Http/Controllers/OrganizationController';
 import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
+import { ScanActivityChart } from '@/components/charts/ScanActivityChart';
+import { OrgRiskTrendsChart } from '@/components/charts/OrgRiskTrendsChart';
+import { TopAtRiskPropertiesBarChart } from '@/components/charts/TopAtRiskPropertiesBarChart';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
+import type { Auth, BreadcrumbItem } from '@/types';
 
 type Property = {
     id: number;
     name: string;
     base_url: string;
     status: string;
+};
+
+type RecentScan = {
+    id: number;
+    property_name: string;
+    status: string;
+    created_at: string;
+};
+
+type OrgStats = {
+    open_issue_count: number;
+    latest_scan_date: string | null;
+    risk_score: number | null;
 };
 
 type Organization = {
@@ -29,8 +47,9 @@ function StatCard({ label, value, capitalize }: { label: string; value: string; 
     );
 }
 
-export default function Show({ organization }: { organization: Organization }) {
+export default function Show({ organization, stats, recentScans }: { organization: Organization; stats: OrgStats; recentScans: RecentScan[] }) {
     const { delete: destroy, processing } = useForm();
+    const { auth } = usePage().props as { auth: Auth };
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Organizations', href: OrganizationController.index().url },
@@ -70,11 +89,74 @@ export default function Show({ organization }: { organization: Organization }) {
                     </div>
                 </div>
 
-                {/* Meta */}
-                <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {/* Meta stats */}
+                <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     <StatCard label="Status" value={organization.status} capitalize />
                     <StatCard label="Properties" value={String(organization.properties.length)} />
+                    <StatCard label="Open Issues" value={String(stats.open_issue_count)} />
+                    <StatCard label="Risk Score" value={stats.risk_score !== null ? String(stats.risk_score) : '—'} />
                 </dl>
+
+                {/* Charts grid */}
+                {auth.agencyId && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <Card>
+                            <CardHeader><CardTitle>Issues by Severity</CardTitle></CardHeader>
+                            <CardContent>
+                                <IssueSeverityChart agencyId={auth.agencyId} organizationId={organization.id} />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Scan Activity</CardTitle></CardHeader>
+                            <CardContent>
+                                <ScanActivityChart agencyId={auth.agencyId} organizationId={organization.id} />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Risk Trends</CardTitle></CardHeader>
+                            <CardContent>
+                                <OrgRiskTrendsChart agencyId={auth.agencyId} organizationId={organization.id} />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Top At-Risk Properties</CardTitle></CardHeader>
+                            <CardContent>
+                                <TopAtRiskPropertiesBarChart agencyId={auth.agencyId} organizationId={organization.id} />
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {/* Recent scans */}
+                {recentScans.length > 0 && (
+                    <div>
+                        <h2 className="mb-3 font-medium">Recent Scans</h2>
+                        <div className="rounded-xl border">
+                            <table className="w-full text-sm">
+                                <thead className="border-b bg-muted/50">
+                                    <tr className="text-xs text-muted-foreground">
+                                        <th className="px-4 py-3 text-left font-medium">Property</th>
+                                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                                        <th className="px-4 py-3 text-left font-medium">Date</th>
+                                        <th className="px-4 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {recentScans.map((scan) => (
+                                        <tr key={scan.id} className="transition-colors hover:bg-muted/30">
+                                            <td className="px-4 py-3 font-medium">{scan.property_name}</td>
+                                            <td className="px-4 py-3 capitalize text-muted-foreground">{scan.status}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{new Date(scan.created_at).toLocaleDateString()}</td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Link href={`/scans/${scan.id}`} className="text-sm text-primary hover:underline">View</Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {/* Properties table */}
                 <div>
