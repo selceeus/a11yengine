@@ -62,7 +62,7 @@ class ScanPageDispatcher
             ->then(function (Batch $batch) use ($scanId): void {
                 $scan = ScanModel::withoutGlobalScopes()->find($scanId);
 
-                if ($scan === null || $scan->status === ScanStatus::Failed) {
+                if ($scan === null || $scan->status === ScanStatus::Failed || $scan->status === ScanStatus::Completed) {
                     return;
                 }
 

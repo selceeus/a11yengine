@@ -119,17 +119,24 @@ async function executeBulkAction() {
     if (!selectedIds.length) return;
     const body: Record<string, unknown> = { ids: selectedIds, action: bulkAction };
     if (bulkAction === 'status_change') body.status = bulkStatus;
-    if (bulkAction === 'assign') body.user_id = bulkUserId ? Number(bulkUserId) : null;
+    if (bulkAction === 'assign') body.user_id = (bulkUserId && bulkUserId !== '__unassigned') ? Number(bulkUserId) : null;
     if (bulkAction === 'set_due_date') body.due_date = bulkDueDate || null;
     setBulkLoading(true);
     try {
-        await fetch('/api/issues/bulk', {
+        const response = await fetch('/api/issues/bulk', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-XSRF-TOKEN': getCsrfToken() },
             body: JSON.stringify(body),
         });
+        if (!response.ok) {
+            console.error('Bulk action failed', response.status, await response.text());
+            return;
+        }
         setSelectedIds([]);
         setBulkAction('');
+        setBulkStatus('');
+        setBulkUserId('');
         router.reload();
     } finally {
         setBulkLoading(false);
@@ -144,6 +151,7 @@ async function openUserModal(userId: number, userName: string) {
     setModal({ open: true, userName, issues: [], loading: true });
 
     const response = await fetch(`/api/users/${userId}/issues`, {
+        credentials: 'include',
         headers: { Accept: 'application/json' },
     });
 
@@ -425,7 +433,7 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                 <SelectValue placeholder="Assign to…" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="__unassigned">Unassigned</SelectItem>
                                 {teamMembers.map((m) => (
                                     <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
                                 ))}

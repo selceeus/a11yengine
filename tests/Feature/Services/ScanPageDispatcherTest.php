@@ -2,6 +2,7 @@
 
 use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
+use App\Events\ScanCompleted;
 use App\Jobs\RunAxeScanPageJob;
 use App\Jobs\RunLighthouseScanJob;
 use App\Models\Agency;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Services\ScanPageDispatcher;
 use Illuminate\Bus\PendingBatch;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Event;
 
 // ─── Setup ───────────────────────────────────────────────────────────────────
 
@@ -195,4 +197,26 @@ it('stores scan-level metrics after the batch completes', function (): void {
         ->where('property_id', $this->property->id)
         ->count()
     )->toBe(1);
+});
+
+// ─── Idempotency guard ───────────────────────────────────────────────────────
+
+it('does not fire ScanCompleted a second time if the then() callback is re-invoked on an already-completed scan', function (): void {
+    Event::fake([ScanCompleted::class]);
+    config(['lighthouse.enabled' => false]);
+
+    // First dispatch: batch runs synchronously, scan transitions to Completed, ScanCompleted fires once.
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    Event::assertDispatched(ScanCompleted::class, 1);
+
+    // Simulate the then() callback executing a second time (at-least-once queue delivery).
+    // The scan is already Completed, so the guard should bail out without re-firing the event.
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    Event::assertDispatched(ScanCompleted::class, 1);
 });

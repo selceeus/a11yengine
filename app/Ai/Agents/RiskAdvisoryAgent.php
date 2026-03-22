@@ -3,11 +3,13 @@
 namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
 
+#[Timeout(300)]
 class RiskAdvisoryAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -38,7 +40,7 @@ class RiskAdvisoryAgent implements Agent, HasStructuredOutput
                     'affected_page_urls' => $schema->array()->items($schema->string())->required(),
                     'quick_win' => $schema->boolean()->required(),
                     'rationale' => $schema->string()->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
         ];
     }

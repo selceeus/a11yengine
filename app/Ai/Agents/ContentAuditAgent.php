@@ -3,11 +3,13 @@
 namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
 
+#[Timeout(300)]
 class ContentAuditAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -26,19 +28,19 @@ class ContentAuditAgent implements Agent, HasStructuredOutput
             'content_issues' => $schema->array()->items(
                 $schema->object([
                     'page_url' => $schema->string()->required(),
-                    'issue_id' => $schema->integer()->nullable(),
+                    'issue_id' => $schema->integer()->nullable()->required(),
                     'rule_key' => $schema->string()->required(),
                     'category' => $schema->string()->enum(['link_text', 'alt_text', 'heading_structure', 'form_label', 'readability'])->required(),
                     'issue_type' => $schema->string()->required(),
-                    'element_html' => $schema->string()->nullable(),
-                    'current_text' => $schema->string()->nullable(),
+                    'element_html' => $schema->string()->nullable()->required(),
+                    'current_text' => $schema->string()->nullable()->required(),
                     'issue' => $schema->string()->required(),
                     'suggestion' => $schema->string()->required(),
                     'severity' => $schema->string()->enum(['critical', 'serious', 'moderate', 'minor'])->required(),
                     'wcag_criteria' => $schema->string()->required(),
                     'writer_note' => $schema->string()->required(),
                     'developer_note' => $schema->string()->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
         ];
     }

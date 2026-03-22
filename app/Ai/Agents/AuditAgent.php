@@ -3,11 +3,13 @@
 namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
 
+#[Timeout(300)]
 class AuditAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -29,23 +31,23 @@ class AuditAgent implements Agent, HasStructuredOutput
                 'wcag_a' => $schema->object([
                     'status' => $schema->string()->enum(['pass', 'partial', 'fail'])->required(),
                     'notes' => $schema->string()->required(),
-                ])->required(),
+                ])->withoutAdditionalProperties()->required(),
                 'wcag_aa' => $schema->object([
                     'status' => $schema->string()->enum(['pass', 'partial', 'fail'])->required(),
                     'notes' => $schema->string()->required(),
-                ])->required(),
+                ])->withoutAdditionalProperties()->required(),
                 'wcag_aaa' => $schema->object([
                     'status' => $schema->string()->enum(['pass', 'partial', 'fail'])->required(),
                     'notes' => $schema->string()->required(),
-                ])->required(),
-            ])->required(),
+                ])->withoutAdditionalProperties()->required(),
+            ])->withoutAdditionalProperties()->required(),
             'summary_statistics' => $schema->object([
                 'total_issues' => $schema->integer()->required(),
                 'critical' => $schema->integer()->required(),
                 'serious' => $schema->integer()->required(),
                 'moderate' => $schema->integer()->required(),
                 'minor' => $schema->integer()->required(),
-            ])->required(),
+            ])->withoutAdditionalProperties()->required(),
             'top_risks' => $schema->array()->items(
                 $schema->object([
                     'rank' => $schema->integer()->required(),
@@ -54,7 +56,7 @@ class AuditAgent implements Agent, HasStructuredOutput
                     'wcag_criteria' => $schema->string()->required(),
                     'impact' => $schema->string()->required(),
                     'occurrences' => $schema->integer()->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
             'issue_details' => $schema->array()->items(
                 $schema->object([
@@ -65,7 +67,7 @@ class AuditAgent implements Agent, HasStructuredOutput
                     'description' => $schema->string()->required(),
                     'affected_pages' => $schema->integer()->required(),
                     'remediation_hint' => $schema->string()->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
             'remediations' => $schema->array()->items(
                 $schema->object([
@@ -74,7 +76,7 @@ class AuditAgent implements Agent, HasStructuredOutput
                     'description' => $schema->string()->required(),
                     'steps' => $schema->array()->items($schema->string())->required(),
                     'code_example' => $schema->string()->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
         ];
     }

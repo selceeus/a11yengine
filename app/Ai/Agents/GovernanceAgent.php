@@ -3,11 +3,13 @@
 namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
 
+#[Timeout(300)]
 class GovernanceAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -30,8 +32,8 @@ class GovernanceAgent implements Agent, HasStructuredOutput
                     'value' => $schema->number()->required(),
                     'delta' => $schema->number()->required(),
                     'trend' => $schema->string()->enum(['up', 'down', 'stable'])->required(),
-                    'unit' => $schema->string()->nullable(),
-                ])
+                    'unit' => $schema->string()->nullable()->required(),
+                ])->withoutAdditionalProperties()
             )->required(),
             'recommendations' => $schema->array()->items(
                 $schema->object([
@@ -47,9 +49,9 @@ class GovernanceAgent implements Agent, HasStructuredOutput
                             'id' => $schema->integer()->required(),
                             'label' => $schema->string()->required(),
                             'url' => $schema->string()->required(),
-                        ])
+                        ])->withoutAdditionalProperties()
                     )->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
         ];
     }

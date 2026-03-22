@@ -296,7 +296,11 @@ class AiGovernanceService
     }
 
     /**
-     * Build WCAG compliance grid from active issues grouped by wcag_category.
+     * Build WCAG compliance grid by counting distinct wcag_criteria being violated per level.
+     *
+     * Uses the wcag_criteria column (e.g. "1.4.3 AA", "1.1.1 A") which correctly encodes the
+     * conformance level, rather than wcag_category which stores WCAG principles (perceivable,
+     * operable, etc.) and is unsuitable for level-based compliance calculations.
      *
      * @return array<string, array<string, int>>
      */
@@ -310,51 +314,51 @@ class AiGovernanceService
             $query->where('agency_id', $agencyId);
         }
 
+        // Group by distinct criterion so each SC counts once regardless of how many violations exist.
         $rows = $query
-            ->whereNotNull('wcag_category')
+            ->whereNotNull('wcag_criteria')
             ->whereIn('status', array_map(fn ($s) => $s->value, IssueStatus::activeStatuses()))
-            ->selectRaw('wcag_category, severity, COUNT(*) as total')
-            ->groupBy('wcag_category', 'severity')
+            ->selectRaw('DISTINCT wcag_criteria')
             ->get();
 
-        // Map wcag_category to level (simple heuristic: wcag_a, wcag_aa, wcag_aaa)
-        $levelMap = ['wcag_a' => 0, 'wcag_aa' => 0, 'wcag_aaa' => 0];
         $failMap = ['wcag_a' => 0, 'wcag_aa' => 0, 'wcag_aaa' => 0];
 
         foreach ($rows as $row) {
-            $level = $this->mapWcagCategoryToLevel((string) $row->wcag_category);
+            $level = $this->parseLevelFromCriteria((string) $row->wcag_criteria);
 
             if ($level === null) {
                 continue;
             }
 
-            $levelMap[$level] += (int) $row->total;
-            $failMap[$level] += (int) $row->total;
+            $failMap[$level]++;
         }
 
+        // Total success criteria counts per level (WCAG 2.1): A=30, AA=20, AAA=28.
         return [
-            'wcag_a' => ['pass' => max(0, 23 - $failMap['wcag_a']), 'fail' => $failMap['wcag_a'], 'partial' => 0],
-            'wcag_aa' => ['pass' => max(0, 13 - $failMap['wcag_aa']), 'fail' => $failMap['wcag_aa'], 'partial' => 0],
+            'wcag_a' => ['pass' => max(0, 30 - $failMap['wcag_a']), 'fail' => $failMap['wcag_a'], 'partial' => 0],
+            'wcag_aa' => ['pass' => max(0, 20 - $failMap['wcag_aa']), 'fail' => $failMap['wcag_aa'], 'partial' => 0],
             'wcag_aaa' => ['pass' => max(0, 28 - $failMap['wcag_aaa']), 'fail' => $failMap['wcag_aaa'], 'partial' => 0],
         ];
     }
 
-    private function mapWcagCategoryToLevel(string $category): ?string
+    /**
+     * Derive the wcag level key from a wcag_criteria string like "1.4.3 AA" or "2.4.3 A".
+     */
+    private function parseLevelFromCriteria(string $criteria): ?string
     {
-        if (str_contains($category, '2.1 A ') || str_contains($category, 'wcag2a') || $category === 'wcag_a') {
-            return 'wcag_a';
-        }
-
-        if (str_contains($category, 'wcag2aa') || $category === 'wcag_aa') {
-            return 'wcag_aa';
-        }
-
-        if (str_contains($category, 'wcag2aaa') || $category === 'wcag_aaa') {
+        if (str_ends_with($criteria, ' AAA')) {
             return 'wcag_aaa';
         }
 
-        // Default to AA for unrecognised categories
-        return 'wcag_aa';
+        if (str_ends_with($criteria, ' AA')) {
+            return 'wcag_aa';
+        }
+
+        if (str_ends_with($criteria, ' A')) {
+            return 'wcag_a';
+        }
+
+        return null;
     }
 
     /**

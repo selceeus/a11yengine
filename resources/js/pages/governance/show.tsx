@@ -173,6 +173,7 @@ function RiskTrendMiniChart({ data }: { data: RiskTrendPoint[] }) {
 export default function Show({ report }: PageProps) {
     const [expandedRec, setExpandedRec] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [tab, setTab] = useState<'summary' | 'details'>('summary');
 
     const isPending = report.status === 'pending' || report.status === 'processing';
     const isCompleted = report.status === 'completed';
@@ -246,6 +247,25 @@ export default function Show({ report }: PageProps) {
                     )}
                 </div>
 
+                {/* Tabs */}
+                {isCompleted && (
+                    <div className="flex gap-1 border-b print:hidden">
+                        {(['summary', 'details'] as const).map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => setTab(t)}
+                                className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                                    tab === t
+                                        ? 'border-primary text-foreground'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* Status */}
                 {isPending && (
                     <div className="flex items-center gap-2 rounded-xl border bg-muted/30 p-4">
@@ -263,7 +283,7 @@ export default function Show({ report }: PageProps) {
                     </div>
                 )}
 
-                {isCompleted && (
+                {isCompleted && tab === 'summary' && (
                     <>
                         {/* KPI summary cards */}
                         {report.summary_cards.length > 0 && (
@@ -301,6 +321,71 @@ export default function Show({ report }: PageProps) {
                             <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Score Trend</h2>
                                 <RiskTrendMiniChart data={report.risk_trend} />
+                            </div>
+                        )}
+
+                        {/* WCAG compliance grid */}
+                        {Object.keys(report.compliance_status ?? {}).length > 0 && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    {wcagLevels.map((level) => {
+                                        const data = report.compliance_status[level] ?? {};
+                                        const pass = data.pass ?? 0;
+                                        const fail = data.fail ?? 0;
+                                        const partial = data.partial ?? 0;
+                                        const total = pass + fail + partial;
+                                        const pct = total > 0 ? Math.round((pass / total) * 100) : 0;
+                                        return (
+                                            <div key={level} className="rounded-lg border p-4 text-center">
+                                                <p className="text-sm font-semibold">{wcagLabels[level] ?? level}</p>
+                                                <p className="mt-1 text-3xl font-bold tabular-nums">{pct}<span className="text-base font-normal text-muted-foreground">%</span></p>
+                                                <p className="mt-1 text-xs text-muted-foreground">pass rate</p>
+                                                <div className="mt-2 flex justify-center gap-3 text-[11px]">
+                                                    <span className="text-green-600">{pass} pass</span>
+                                                    <span className="text-red-500">{fail} fail</span>
+                                                    {partial > 0 && <span className="text-yellow-600">{partial} partial</span>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* ── Details Tab ───────────────────────────────────────────── */}
+                {isCompleted && tab === 'details' && (
+                    <>
+                        {/* KPI summary cards */}
+                        {report.summary_cards.length > 0 && (
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
+                                {report.summary_cards.map((card, i) => (
+                                    <div key={i} className="rounded-xl border bg-card p-4">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{card.title}</p>
+                                        <p className="mt-1 text-2xl font-bold tabular-nums">
+                                            {card.value}
+                                            {card.unit && <span className="ml-1 text-sm font-normal text-muted-foreground">{card.unit}</span>}
+                                        </p>
+                                        <div className={`mt-1 flex items-center gap-1 text-xs ${card.trend === 'up' ? 'text-green-600 dark:text-green-400' : card.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                            {card.trend === 'up' && <TrendingUp className="h-3.5 w-3.5" />}
+                                            {card.trend === 'down' && <TrendingDown className="h-3.5 w-3.5" />}
+                                            {card.trend === 'stable' && <Minus className="h-3.5 w-3.5" />}
+                                            <span>{card.delta > 0 ? '+' : ''}{card.delta} vs previous</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Executive narrative */}
+                        {report.executive_narrative && (
+                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
+                                <div className="space-y-3 text-sm leading-relaxed whitespace-pre-line">
+                                    {report.executive_narrative}
+                                </div>
                             </div>
                         )}
 

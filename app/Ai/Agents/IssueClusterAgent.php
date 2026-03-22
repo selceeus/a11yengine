@@ -3,11 +3,13 @@
 namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
 
+#[Timeout(300)]
 class IssueClusterAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -26,7 +28,7 @@ class IssueClusterAgent implements Agent, HasStructuredOutput
             'clusters' => $schema->array()->items(
                 $schema->object([
                     'cluster_name' => $schema->string()->required(),
-                    'common_component' => $schema->string()->nullable(),
+                    'common_component' => $schema->string()->nullable()->required(),
                     'recommended_fix' => $schema->string()->required(),
                     'severity' => $schema->string()->enum(['critical', 'high', 'medium', 'low'])->required(),
                     'priority' => $schema->string()->enum(['high', 'medium', 'low'])->required(),
@@ -34,7 +36,7 @@ class IssueClusterAgent implements Agent, HasStructuredOutput
                     'wcag_categories' => $schema->array()->items($schema->string())->required(),
                     'affected_pages' => $schema->integer()->required(),
                     'ai_notes' => $schema->string()->required(),
-                ])
+                ])->withoutAdditionalProperties()
             )->required(),
         ];
     }

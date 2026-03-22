@@ -1,16 +1,11 @@
 <?php
 
-use App\Http\Controllers\Api\BulkIssueController;
 use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
 use App\Http\Controllers\Api\OrganizationUserImpactController;
 use Illuminate\Support\Facades\Route;
-
-Route::post('issues/bulk', BulkIssueController::class.'@update')
-    ->middleware('auth')
-    ->name('api.issues.bulk');
 
 Route::post('organizations/{organizationId}/risk-snapshot', OrganizationRiskController::class)
     ->name('api.organizations.risk-snapshot');

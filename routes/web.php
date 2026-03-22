@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
 use App\Http\Controllers\Api\AgencyScanActivityController;
 use App\Http\Controllers\Api\AgencyTopRiskPropertiesController;
 use App\Http\Controllers\Api\AssignIssueController;
+use App\Http\Controllers\Api\BulkIssueController;
 use App\Http\Controllers\Api\GenerateContentAuditController;
 use App\Http\Controllers\Api\GenerateGovernanceReportController;
 use App\Http\Controllers\Api\GenerateIssueClustersController;
@@ -123,6 +124,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::post('api/issues/{issue}/assign', AssignIssueController::class)
         ->name('api.issues.assign');
+
+    Route::post('api/issues/bulk', BulkIssueController::class.'@update')
+        ->name('api.issues.bulk');
 
     Route::get('api/users/{user}/issues', UserAssignedIssuesController::class)
         ->name('api.users.issues');

@@ -12,6 +12,7 @@ use App\Models\LighthouseResult;
 use App\Models\Property;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,10 +54,21 @@ class PropertyController extends Controller
     {
         $this->authorize('create', Property::class);
 
+        $validated = $request->validated();
+
+        $baseSlug = Str::slug($validated['name']);
+        $slug = $baseSlug;
+        $count = 1;
+        while (Property::withoutGlobalScopes()->where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$count}";
+            $count++;
+        }
+
         $property = $this->agency->properties()->create([
-            'organization_id' => $request->validated()['organization_id'],
-            'name' => $request->validated()['name'],
-            'base_url' => $request->validated()['base_url'],
+            'organization_id' => $validated['organization_id'],
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'base_url' => $validated['base_url'],
             'status' => 'active',
         ]);
 
