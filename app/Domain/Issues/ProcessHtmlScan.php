@@ -58,7 +58,8 @@ class ProcessHtmlScan
             );
 
             foreach ($violation['nodes'] as $node) {
-                $elementIdentifier = $node['target'][0] ?? null;
+                $rawTarget = $node['target'][0] ?? null;
+                $elementIdentifier = is_array($rawTarget) ? implode(' > ', $rawTarget) : $rawTarget;
                 $fingerprint = sha1($violation['id'].'|'.($elementIdentifier ?? '').'|'.$url);
 
                 try {

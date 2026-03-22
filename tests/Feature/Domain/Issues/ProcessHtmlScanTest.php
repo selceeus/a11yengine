@@ -70,6 +70,24 @@ it('creates a finding for each violation node', function (): void {
     expect(Finding::query()->count())->toBe(3);
 });
 
+it('handles shadow DOM array targets without crashing', function (): void {
+    $shadowNode = [
+        'target' => [['#shadow-host', '.inner-element']], // nested array — shadow DOM
+        'html' => '<custom-element>...</custom-element>',
+        'failureSummary' => 'Fix shadow DOM issue',
+    ];
+
+    $pageResult = axePage('https://example.com/shadow', [
+        axeViolation('color-contrast', 'serious', [$shadowNode]),
+    ]);
+
+    $this->service->handle($this->scan, $pageResult);
+
+    $finding = Finding::query()->first();
+    expect(Finding::query()->count())->toBe(1)
+        ->and($finding->element_identifier)->toBe('#shadow-host > .inner-element');
+});
+
 it('maps axe-core impact to FindingSeverity correctly', function (): void {
     $pageResult = axePage('https://example.com/page', [
         axeViolation('rule-a', 'critical', [axeNode('#a')]),
