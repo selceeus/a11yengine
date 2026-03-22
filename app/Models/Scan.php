@@ -24,6 +24,7 @@ class Scan extends Model
         'started_at',
         'completed_at',
         'raw_summary',
+        'scan_config',
     ];
 
     protected static function booted(): void
@@ -40,6 +41,7 @@ class Scan extends Model
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
             'raw_summary' => 'array',
+            'scan_config' => 'array',
         ];
     }
 

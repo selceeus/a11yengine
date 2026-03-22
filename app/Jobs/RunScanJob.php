@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Domain\Scans\Scan as ScanDomain;
+use App\Domain\Scans\ScanConfig;
 use App\Enums\ScanStatus;
 use App\Exceptions\ScanProcessException;
 use App\Models\Scan;
@@ -59,10 +60,15 @@ class RunScanJob implements ShouldQueue
     ): void {
         $scanDomain->start($this->scan);
 
+        $scanConfig = $this->scan->scan_config
+            ? ScanConfig::fromArray($this->scan->scan_config)
+            : new ScanConfig;
+
         try {
             $pageResults = $crawlerRunner->run(
                 $this->scan->property->base_url,
                 config('crawler.timeout', 300),
+                $scanConfig,
             );
         } catch (ScanProcessException $e) {
             $scanDomain->fail($this->scan);

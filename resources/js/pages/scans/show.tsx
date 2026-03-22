@@ -48,6 +48,13 @@ type LighthouseResult = {
     cumulative_layout_shift: number | null;
 };
 
+type Delta = {
+    new_count: number;
+    resolved_count: number;
+    risk_trend: number | null;
+    lighthouse_accessibility_delta: number | null;
+};
+
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
     serious: 'bg-orange-500',
@@ -78,11 +85,13 @@ export default function Show({
     severityBreakdown,
     topRules,
     lighthouseResults,
+    delta,
 }: {
     scan: Scan;
     severityBreakdown: SeverityRow[];
     topRules: Record<string, number>;
     lighthouseResults: LighthouseResult[];
+    delta: Delta | null;
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
@@ -137,9 +146,45 @@ export default function Show({
                     />
                 </div>
 
+                {/* Delta bar — changes since last scan */}
+                {delta && scan.status === 'completed' && (
+                    <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-muted/30 px-5 py-3 text-sm">
+                        <span className="font-medium text-foreground">Changes vs. previous scan</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-red-600 font-medium">+{delta.new_count}</span>
+                            <span className="text-muted-foreground">new</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-green-600 font-medium">−{delta.resolved_count}</span>
+                            <span className="text-muted-foreground">resolved</span>
+                        </div>
+                        {delta.risk_trend !== null && (
+                            <div className="flex items-center gap-1.5">
+                                <span className={delta.risk_trend > 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
+                                    {delta.risk_trend > 0 ? '↑' : '↓'} {Math.abs(delta.risk_trend).toFixed(2)}
+                                </span>
+                                <span className="text-muted-foreground">risk</span>
+                            </div>
+                        )}
+                        {delta.lighthouse_accessibility_delta !== null && (
+                            <div className="flex items-center gap-1.5">
+                                <span className={delta.lighthouse_accessibility_delta >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                    {delta.lighthouse_accessibility_delta >= 0 ? '+' : ''}{delta.lighthouse_accessibility_delta.toFixed(1)}
+                                </span>
+                                <span className="text-muted-foreground">a11y score</span>
+                            </div>
+                        )}
+                        <Link
+                            href={`/scans/${scan.id}/diff`}
+                            className="ml-auto text-primary hover:underline"
+                        >
+                            Full comparison →
+                        </Link>
+                    </div>
+                )}
+
                 {/* Pending / running state */}
-                {isActive && (
-                    <div className="rounded-xl border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
+                {isActive && (                    <div className="rounded-xl border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
                         <span className="inline-block size-2 animate-pulse rounded-full bg-primary align-middle mr-2" />
                         Scan in progress — this page refreshes automatically…
                     </div>

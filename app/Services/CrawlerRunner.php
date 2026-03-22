@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Scans\ScanConfig;
 use App\Exceptions\ScanProcessException;
 use Illuminate\Support\Facades\Process;
 
@@ -31,13 +32,29 @@ class CrawlerRunner
      *
      * @throws ScanProcessException When the process fails or returns invalid output.
      */
-    public function run(string $url, int $timeout): array
+    public function run(string $url, int $timeout, ?ScanConfig $config = null): array
     {
-        $result = Process::timeout($timeout)->run([
+        $config ??= new ScanConfig;
+
+        $cmd = [
             'node',
             config('crawler.script_path'),
             $url,
-        ]);
+            '--max-pages', (string) $config->maxPages,
+            '--wcag-version', $config->wcagVersion,
+        ];
+
+        foreach ($config->includePatterns as $pattern) {
+            $cmd[] = '--include';
+            $cmd[] = $pattern;
+        }
+
+        foreach ($config->excludePatterns as $pattern) {
+            $cmd[] = '--exclude';
+            $cmd[] = $pattern;
+        }
+
+        $result = Process::timeout($timeout)->run($cmd);
 
         if ($result->failed()) {
             throw new ScanProcessException(

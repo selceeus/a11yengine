@@ -79,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('scans', [ScanController::class, 'index'])->name('scans.index');
     Route::post('scans', [ScanController::class, 'store'])->name('scans.store');
     Route::get('scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
+    Route::get('scans/{scan}/diff', [\App\Http\Controllers\ScanDiffController::class, 'show'])->name('scans.diff');
 
     Route::get('team', [TeamController::class, 'index'])->name('team.index');
     Route::get('team/members/create', [TeamController::class, 'create'])->name('team.members.create');
@@ -130,6 +131,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::delete('api/properties/{property}/scheduled-scan/{scheduledScan}', [ScheduledScanController::class, 'destroy'])
         ->name('api.properties.scheduled-scan.destroy');
+
+    Route::patch('api/properties/{property}/scheduled-scan/{scheduledScan}/toggle', [ScheduledScanController::class, 'toggle'])
+        ->name('api.properties.scheduled-scan.toggle');
+
+    Route::get('api/scheduled-scans', [ScheduledScanController::class, 'index'])
+        ->name('api.scheduled-scans.index');
 
     Route::get('api/properties/{property}/audits/trend', \App\Http\Controllers\Api\AuditTrendController::class)
         ->name('api.properties.audits.trend');

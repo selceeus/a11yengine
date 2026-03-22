@@ -59,6 +59,8 @@ type ScheduledScan = {
     run_time: string | null;
     run_day_of_week: number | null;
     run_day_of_month: number | null;
+    is_active: boolean;
+    last_run_at: string | null;
 };
 
 type ScheduleDialogState =
@@ -127,6 +129,7 @@ export default function Show({
     const [scheduleRemoving, setScheduleRemoving] = useState(false);
     const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
     const [scheduleError, setScheduleError] = useState<string | null>(null);
+    const [scheduleToggling, setScheduleToggling] = useState(false);
 
     function openScheduleDialog(mode: 'create' | 'edit') {
         if (mode === 'edit' && scheduledScan) {
@@ -223,6 +226,31 @@ export default function Show({
 
         setScheduledScan(null);
         setScheduleDialog({ open: false });
+    }
+
+    async function toggleSchedule() {
+        if (!scheduledScan) return;
+        setScheduleToggling(true);
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        const res = await fetch(
+            `/api/properties/${property.id}/scheduled-scan/${scheduledScan.id}/toggle`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            },
+        );
+
+        setScheduleToggling(false);
+
+        if (!res.ok) return;
+
+        const json = await res.json();
+        setScheduledScan((prev) => (prev ? { ...prev, is_active: json.scheduledScan.is_active } : prev));
     }
 
     async function openOverview(scan: Scan) {
@@ -405,28 +433,46 @@ export default function Show({
                         <h2 className="text-sm font-semibold">Recent scans</h2>
                         <div className="flex items-center gap-3">
                             {scheduledScan ? (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <span>
-                                        Next:{' '}
-                                        <span className="font-medium text-foreground">
-                                            {new Date(scheduledScan.next_run_at).toLocaleString()}
-                                        </span>
-                                        {scheduledScan.frequency && (
-                                            <span className="ml-1 capitalize">· {scheduledScan.frequency}</span>
-                                        )}
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <Badge variant={scheduledScan.is_active ? 'default' : 'secondary'} className="text-xs">
+                                    {scheduledScan.is_active ? 'Active' : 'Paused'}
+                                </Badge>
+                                <span>
+                                    Next:{' '}
+                                    <span className="font-medium text-foreground">
+                                        {new Date(scheduledScan.next_run_at).toLocaleString()}
                                     </span>
-                                    <button
-                                        onClick={() => openScheduleDialog('edit')}
-                                        className="text-primary hover:underline"
-                                    >
-                                        Update
-                                    </button>
-                                </div>
-                            ) : (
-                                <Button size="sm" variant="outline" onClick={() => openScheduleDialog('create')}>
-                                    Schedule scan
-                                </Button>
-                            )}
+                                    {scheduledScan.frequency && (
+                                        <span className="ml-1 capitalize">· {scheduledScan.frequency}</span>
+                                    )}
+                                </span>
+                                {scheduledScan.last_run_at && (
+                                    <span className="hidden sm:inline">
+                                        Last:{' '}
+                                        <span className="font-medium text-foreground">
+                                            {new Date(scheduledScan.last_run_at).toLocaleString()}
+                                        </span>
+                                    </span>
+                                )}
+                                <button
+                                    onClick={toggleSchedule}
+                                    disabled={scheduleToggling}
+                                    className="text-primary hover:underline disabled:opacity-50"
+                                >
+                                    {scheduleToggling ? '…' : scheduledScan.is_active ? 'Pause' : 'Resume'}
+                                </button>
+                                <button
+                                    onClick={() => openScheduleDialog('edit')}
+                                    className="text-primary hover:underline"
+                                >
+                                    Edit
+                                </button>
+                            </div>
+                        ) : (
+                            <Button size="sm" variant="outline" onClick={() => openScheduleDialog('create')}>
+                                Schedule scan
+                            </Button>
+                        )}
                             <Button size="sm" asChild>
                                 <Link href={ScanController.index().url}>Run scan</Link>
                             </Button>
@@ -486,6 +532,14 @@ export default function Show({
                                                 >
                                                     View
                                                 </Link>
+                                                {scan.status === 'completed' && (
+                                                    <Link
+                                                        href={`/scans/${scan.id}/diff`}
+                                                        className="text-sm text-primary hover:underline"
+                                                    >
+                                                        Compare
+                                                    </Link>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

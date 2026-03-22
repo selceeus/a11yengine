@@ -151,6 +151,8 @@ class PropertyController extends Controller
                 'run_time' => $property->scheduledScan->run_time,
                 'run_day_of_week' => $property->scheduledScan->run_day_of_week,
                 'run_day_of_month' => $property->scheduledScan->run_day_of_month,
+                'is_active' => $property->scheduledScan->is_active,
+                'last_run_at' => $property->scheduledScan->last_run_at?->toIso8601String(),
             ] : null,
         ]);
     }

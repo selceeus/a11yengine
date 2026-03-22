@@ -14,6 +14,28 @@ class ScheduledScanController extends Controller
 {
     use AuthorizesRequests;
 
+    public function index(): JsonResponse
+    {
+        $this->authorize('viewAny', \App\Models\Scan::class);
+
+        $schedules = ScheduledScan::query()
+            ->with('property:id,name,base_url', 'organization:id,name')
+            ->latest()
+            ->get()
+            ->map(fn (ScheduledScan $s) => $this->formatScheduleFull($s));
+
+        return response()->json(['scheduledScans' => $schedules]);
+    }
+
+    public function toggle(Property $property, ScheduledScan $scheduledScan): JsonResponse
+    {
+        $this->authorize('create', \App\Models\Scan::class);
+
+        $scheduledScan->update(['is_active' => ! $scheduledScan->is_active]);
+
+        return response()->json(['scheduledScan' => $this->formatScheduleFull($scheduledScan->fresh())]);
+    }
+
     public function store(StoreScheduledScanRequest $request, Property $property): JsonResponse
     {
         $this->authorize('create', \App\Models\Scan::class);
@@ -159,6 +181,24 @@ class ScheduledScanController extends Controller
             'run_time' => $schedule->run_time,
             'run_day_of_week' => $schedule->run_day_of_week,
             'run_day_of_month' => $schedule->run_day_of_month,
+        ];
+    }
+
+    private function formatScheduleFull(ScheduledScan $schedule): array
+    {
+        return [
+            ...$this->formatSchedule($schedule),
+            'is_active' => $schedule->is_active,
+            'last_run_at' => $schedule->last_run_at?->toIso8601String(),
+            'property' => $schedule->property ? [
+                'id' => $schedule->property->id,
+                'name' => $schedule->property->name,
+                'base_url' => $schedule->property->base_url,
+            ] : null,
+            'organization' => $schedule->organization ? [
+                'id' => $schedule->organization->id,
+                'name' => $schedule->organization->name,
+            ] : null,
         ];
     }
 }

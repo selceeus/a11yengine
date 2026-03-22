@@ -20,30 +20,98 @@ function log(level, message) {
 }
 
 /**
- * Parse CLI args:  node scan.js <url> [maxDepth] [maxPages]
+ * Parse CLI args:
+ *   node scan.js <url> [--max-pages N] [--wcag-version wcag21|wcag22]
+ *                      [--include PATTERN]... [--exclude PATTERN]...
+ *
+ * Legacy positional args (url depth pages) are still accepted for backward
+ * compatibility with existing callers that pass them positionally.
  */
 function parseArgs() {
-    const [, , url, depth, pages] = process.argv;
+    const args = process.argv.slice(2);
 
-    if (!url) {
-        process.stderr.write('Usage: node scan.js <url> [maxDepth] [maxPages]\n');
+    if (!args[0]) {
+        process.stderr.write('Usage: node scan.js <url> [--max-pages N] [--wcag-version wcag21|wcag22] [--include PATTERN]... [--exclude PATTERN]...\n');
         process.exit(1);
+    }
+
+    const url = args[0];
+    let maxPages = config.maxPages;
+    let maxDepth = config.maxDepth;
+    let wcagVersion = 'wcag21';
+    const includePatterns = [];
+    const excludePatterns = [];
+
+    for (let i = 1; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === '--max-pages' && args[i + 1]) {
+            maxPages = parseInt(args[++i], 10);
+        } else if (arg === '--max-depth' && args[i + 1]) {
+            maxDepth = parseInt(args[++i], 10);
+        } else if (arg === '--wcag-version' && args[i + 1]) {
+            wcagVersion = args[++i];
+        } else if (arg === '--include' && args[i + 1]) {
+            includePatterns.push(args[++i]);
+        } else if (arg === '--exclude' && args[i + 1]) {
+            excludePatterns.push(args[++i]);
+        } else if (!arg.startsWith('--') && i === 1) {
+            // Legacy positional depth
+            maxDepth = parseInt(arg, 10);
+        } else if (!arg.startsWith('--') && i === 2) {
+            // Legacy positional max-pages
+            maxPages = parseInt(arg, 10);
+        }
     }
 
     return {
         baseUrl: normaliseUrl(url),
-        maxDepth: depth ? parseInt(depth, 10) : config.maxDepth,
-        maxPages: pages ? parseInt(pages, 10) : config.maxPages,
+        maxDepth,
+        maxPages,
+        wcagVersion,
+        includePatterns,
+        excludePatterns,
     };
+}
+
+/**
+ * Returns true if the URL should be crawled given the include/exclude pattern lists.
+ * - If includePatterns is non-empty, the URL must match at least one.
+ * - If excludePatterns is non-empty, the URL must not match any.
+ *
+ * @param {string} url
+ * @param {string[]} includePatterns
+ * @param {string[]} excludePatterns
+ * @returns {boolean}
+ */
+function matchesPatterns(url, includePatterns, excludePatterns) {
+    if (includePatterns.length > 0) {
+        const included = includePatterns.some((p) => url.includes(p));
+        if (!included) return false;
+    }
+
+    if (excludePatterns.length > 0) {
+        const excluded = excludePatterns.some((p) => url.includes(p));
+        if (excluded) return false;
+    }
+
+    return true;
 }
 
 /**
  * Main crawler entry point.
  */
 async function scan() {
-    const { baseUrl, maxDepth, maxPages } = parseArgs();
+    const { baseUrl, maxDepth, maxPages, wcagVersion, includePatterns, excludePatterns } = parseArgs();
 
-    log('info', `Starting scan: ${baseUrl} (maxDepth=${maxDepth}, maxPages=${maxPages})`);
+    log('info', `Starting scan: ${baseUrl} (maxDepth=${maxDepth}, maxPages=${maxPages}, wcag=${wcagVersion})`);
+
+    // Build axe config, extending the base tag list for WCAG 2.2 if requested.
+    const axeConfig = { ...config.axe };
+    const tags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'];
+    if (wcagVersion === 'wcag22') {
+        tags.push('wcag22a', 'wcag22aa');
+    }
+    axeConfig.runOnly = { type: 'tag', values: tags };
 
     const robotsTxt = await fetchRobotsTxt(baseUrl);
     log('info', robotsTxt ? 'Loaded robots.txt' : 'No robots.txt found — all paths allowed');
@@ -91,7 +159,7 @@ async function scan() {
                     continue;
                 }
 
-                const pageResult = await runAxe(page, config.axe);
+                const pageResult = await runAxe(page, axeConfig);
                 results.push(pageResult);
 
                 log(
@@ -107,7 +175,8 @@ async function scan() {
                             !visited.has(link) &&
                             isSameDomain(baseUrl, link) &&
                             isAllowedByRobots(robotsTxt, link) &&
-                            visited.size + queue.length < maxPages
+                            visited.size + queue.length < maxPages &&
+                            matchesPatterns(link, includePatterns, excludePatterns)
                         ) {
                             queue.push({ url: link, depth: depth + 1 });
                         }

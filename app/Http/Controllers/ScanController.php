@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Scans\ScanConfig;
 use App\Enums\ScanStatus;
 use App\Http\Requests\StoreScanRequest;
 use App\Jobs\RunScanJob;
@@ -10,6 +11,7 @@ use App\Models\Finding;
 use App\Models\LighthouseResult;
 use App\Models\Property;
 use App\Models\Scan;
+use App\Models\ScanMetric;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -48,11 +50,18 @@ class ScanController extends Controller
 
         $property = Property::findOrFail($request->validated()['property_id']);
 
+        $propertyConfig = $property->defaultScanConfig();
+        $requestConfig = isset($request->validated()['scan_config'])
+            ? ScanConfig::fromArray($request->validated()['scan_config'])
+            : new ScanConfig;
+        $resolvedConfig = $propertyConfig->merge($requestConfig);
+
         $scan = Scan::create([
             'agency_id' => $this->agency->id,
             'organization_id' => $property->organization_id,
             'property_id' => $property->id,
             'status' => ScanStatus::Pending,
+            'scan_config' => $resolvedConfig->toArray(),
         ]);
 
         RunScanJob::dispatch($scan);
@@ -103,11 +112,33 @@ class ScanController extends Controller
             ])
             ->get();
 
+        $delta = null;
+
+        if ($scan->status === ScanStatus::Completed) {
+            $metrics = ScanMetric::query()
+                ->where('scan_id', $scan->id)
+                ->whereIn('metric_name', ['new_issue_count', 'resolved_issue_count', 'risk_trend', 'lighthouse_accessibility_delta'])
+                ->whereNull('page_id')
+                ->pluck('metric_value', 'metric_name');
+
+            if ($metrics->has('new_issue_count') || $metrics->has('resolved_issue_count')) {
+                $delta = [
+                    'new_count' => (int) ($metrics['new_issue_count'] ?? 0),
+                    'resolved_count' => (int) ($metrics['resolved_issue_count'] ?? 0),
+                    'risk_trend' => isset($metrics['risk_trend']) ? (float) $metrics['risk_trend'] : null,
+                    'lighthouse_accessibility_delta' => isset($metrics['lighthouse_accessibility_delta'])
+                        ? (float) $metrics['lighthouse_accessibility_delta']
+                        : null,
+                ];
+            }
+        }
+
         return Inertia::render('scans/show', [
             'scan' => $scan,
             'severityBreakdown' => $severityBreakdown,
             'topRules' => $topRules,
             'lighthouseResults' => $lighthouseResults,
+            'delta' => $delta,
         ]);
     }
 }

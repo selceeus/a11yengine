@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Scans\ScanConfig;
 use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,11 +20,26 @@ class Property extends Model
         'slug',
         'base_url',
         'status',
+        'scan_config',
     ];
 
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'scan_config' => 'array',
+        ];
+    }
+
+    public function defaultScanConfig(): ScanConfig
+    {
+        return $this->scan_config
+            ? ScanConfig::fromArray($this->scan_config)
+            : new ScanConfig;
     }
 
     public function organization(): BelongsTo
