@@ -191,6 +191,25 @@ it('links the finding to the issue via issue_id', function (): void {
     expect($finding->issue_id)->toBe($issue->id);
 });
 
+it('increments occurrence_count only once per issue per scan even when multiple nodes match', function (): void {
+    Issue::factory()->for($this->agency)->for($this->organization)->for($this->property)->create([
+        'rule_key' => 'color-contrast',
+        'page_url' => 'https://example.com/page',
+        'status' => IssueStatus::Open,
+        'occurrence_count' => 1,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    // Three DOM nodes failing the same rule on the same page — all map to the same Issue row.
+    $this->service->handle($this->scan, axePage('https://example.com/page', [
+        axeViolation('color-contrast', 'serious', [axeNode('#el1'), axeNode('#el2'), axeNode('#el3')]),
+    ]));
+
+    expect(Issue::query()->count())->toBe(1)
+        ->and(Issue::query()->first()->occurrence_count)->toBe(2);
+});
+
 it('does not create a duplicate issue for a resolved issue with the same rule and page', function (): void {
     Issue::factory()->for($this->agency)->for($this->organization)->for($this->property)->create([
         'rule_key' => 'image-alt',

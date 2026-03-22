@@ -13,12 +13,14 @@ class NormalizeScanFindings
 {
     public function handle(Scan $scan): void
     {
-        $scan->findings()->each(function (Finding $finding): void {
-            $this->normalizeFiniding($finding);
+        $incrementedIssueIds = [];
+
+        $scan->findings()->each(function (Finding $finding) use (&$incrementedIssueIds): void {
+            $this->normalizeFiniding($finding, $incrementedIssueIds);
         });
     }
 
-    private function normalizeFiniding(Finding $finding): void
+    private function normalizeFiniding(Finding $finding, array &$incrementedIssueIds): void
     {
         $issue = Issue::query()
             ->where('agency_id', $finding->agency_id)
@@ -33,6 +35,11 @@ class NormalizeScanFindings
 
         if ($issue) {
             $issue->update(['last_detected_at' => $finding->detected_at]);
+
+            if (! in_array($issue->id, $incrementedIssueIds)) {
+                $issue->incrementOccurrence();
+                $incrementedIssueIds[] = $issue->id;
+            }
 
             return;
         }

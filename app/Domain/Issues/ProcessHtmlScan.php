@@ -105,6 +105,8 @@ class ProcessHtmlScan
      */
     private function normalizeFindings(Collection $findings, Scan $scan): void
     {
+        $incrementedIssueIds = [];
+
         foreach ($findings as $finding) {
             $issue = Issue::query()
                 ->where('agency_id', $finding->agency_id)
@@ -122,6 +124,11 @@ class ProcessHtmlScan
                     'tags' => $issue->tags ?? $finding->tags,
                     'help_url' => $issue->help_url ?? $finding->help_url,
                 ]);
+
+                if (! in_array($issue->id, $incrementedIssueIds)) {
+                    $issue->incrementOccurrence();
+                    $incrementedIssueIds[] = $issue->id;
+                }
 
                 $finding->update(['issue_id' => $issue->id]);
 
