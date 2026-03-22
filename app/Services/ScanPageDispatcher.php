@@ -59,7 +59,7 @@ class ScanPageDispatcher
         Bus::batch($jobs)
             ->name("scan:{$scan->id}")
             ->allowFailures()
-            ->then(function (Batch $batch) use ($scanId): void {
+            ->finally(function (Batch $batch) use ($scanId): void {
                 $scan = ScanModel::withoutGlobalScopes()->find($scanId);
 
                 if ($scan === null || $scan->status === ScanStatus::Failed || $scan->status === ScanStatus::Completed) {

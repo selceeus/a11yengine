@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Exceptions\ScanProcessException;
 use App\Models\LighthouseResult;
 use App\Models\Scan;
 use App\Models\ScanPage;
@@ -11,6 +10,7 @@ use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class RunLighthouseScanJob implements ShouldQueue
 {
@@ -56,13 +56,28 @@ class RunLighthouseScanJob implements ShouldQueue
                 'scan_id' => $this->scan->id,
                 ...$metrics,
             ]);
-        } catch (ScanProcessException $e) {
+        } catch (Throwable $e) {
             Log::warning('Lighthouse scan failed', [
                 'url' => $this->pageUrl,
                 'scan_id' => $this->scan->id,
                 'error' => $e->getMessage(),
             ]);
         }
+
+        ScanPage::withoutGlobalScopes()
+            ->where('scan_id', $this->scan->id)
+            ->where('url', $this->pageUrl)
+            ->first()
+            ?->update(['lighthouse_completed' => true]);
+    }
+
+    public function failed(Throwable $e): void
+    {
+        Log::warning('Lighthouse job permanently failed', [
+            'url' => $this->pageUrl,
+            'scan_id' => $this->scan->id,
+            'error' => $e->getMessage(),
+        ]);
 
         ScanPage::withoutGlobalScopes()
             ->where('scan_id', $this->scan->id)
