@@ -166,15 +166,23 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
                                             <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-3">
                                                     {advisory ? (
-                                                        <Link
-                                                            href={
-                                                                PropertyController.show(property.id).url +
-                                                                '#ai-risk-advisory'
-                                                            }
-                                                            className="text-sm text-primary hover:underline"
-                                                        >
-                                                            View
-                                                        </Link>
+                                                        <>
+                                                            <Link
+                                                                href={`/risk-advisory/${advisory.id}`}
+                                                                className="text-sm text-primary hover:underline"
+                                                            >
+                                                                Details
+                                                            </Link>
+                                                            <Link
+                                                                href={
+                                                                    PropertyController.show(property.id).url +
+                                                                    '#ai-risk-advisory'
+                                                                }
+                                                                className="text-sm text-primary hover:underline"
+                                                            >
+                                                                View
+                                                            </Link>
+                                                        </>
                                                     ) : null}
 
                                                     <Button
