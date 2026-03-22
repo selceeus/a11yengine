@@ -100,6 +100,12 @@ function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destr
     }
 }
 
+function toLocalInputValue(utcIso: string): string {
+    const d = new Date(utcIso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function Show({
     property,
     recentScans,
@@ -135,7 +141,7 @@ export default function Show({
         if (mode === 'edit' && scheduledScan) {
             setScheduleType(scheduledScan.type);
             setScheduleFrequency(scheduledScan.frequency ?? 'weekly');
-            setScheduleAt(scheduledScan.scheduled_at ? scheduledScan.scheduled_at.slice(0, 16) : '');
+            setScheduleAt(scheduledScan.scheduled_at ? toLocalInputValue(scheduledScan.scheduled_at) : '');
             setScheduleTime(scheduledScan.run_time ?? '09:00');
             setScheduleDayOfWeek(scheduledScan.run_day_of_week?.toString() ?? '1');
             setScheduleDayOfMonth(scheduledScan.run_day_of_month?.toString() ?? '1');
@@ -162,9 +168,12 @@ export default function Show({
             ? `/api/properties/${property.id}/scheduled-scan/${scheduledScan!.id}`
             : `/api/properties/${property.id}/scheduled-scan`;
 
-        const body: Record<string, string | number> = { type: scheduleType };
+        const body: Record<string, string | number> = {
+            type: scheduleType,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
         if (scheduleType === 'once') {
-            body.scheduled_at = scheduleAt;
+            body.scheduled_at = new Date(scheduleAt).toISOString();
         } else {
             body.frequency = scheduleFrequency;
             body.run_time = scheduleTime;

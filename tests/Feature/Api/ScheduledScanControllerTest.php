@@ -239,3 +239,27 @@ it('rejects a run_day_of_month out of range', function (): void {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['run_day_of_month']);
 });
+
+it('stores next_run_at in the correct timezone for a recurring scan', function (): void {
+    // UTC 14:00 on 2026-03-22 = 09:00 CDT (America/Chicago, UTC-5 in March)
+    Carbon::setTestNow('2026-03-22 14:00:00');
+
+    $this->actingAs($this->actor)
+        ->postJson(route('api.properties.scheduled-scan.store', $this->property), [
+            'type' => 'recurring',
+            'frequency' => 'daily',
+            'run_time' => '09:00',
+            'timezone' => 'America/Chicago',
+        ])
+        ->assertOk();
+
+    $scan = ScheduledScan::withoutGlobalScopes()
+        ->where('property_id', $this->property->id)
+        ->first();
+
+    // 09:00 CDT today == 14:00 UTC == now, so next run is tomorrow 09:00 CDT = 14:00 UTC
+    expect($scan->next_run_at->toDateString())->toBe('2026-03-23')
+        ->and($scan->next_run_at->setTimezone('America/Chicago')->format('H:i'))->toBe('09:00');
+
+    Carbon::setTestNow();
+});

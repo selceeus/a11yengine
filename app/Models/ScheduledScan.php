@@ -20,6 +20,7 @@ class ScheduledScan extends Model
         'frequency',
         'scheduled_at',
         'run_time',
+        'timezone',
         'run_day_of_week',
         'run_day_of_month',
         'next_run_at',
@@ -61,15 +62,19 @@ class ScheduledScan extends Model
 
     public function computeNextRunAt(Carbon $from): Carbon
     {
+        $tz = $this->timezone ?? 'UTC';
         [$h, $min] = array_map('intval', explode(':', $this->run_time ?? '09:00'));
         $dom = $this->run_day_of_month ?? 1;
 
+        // Work in the user's local timezone so that "run at 09:00" fires at 09:00 local time
+        $fromLocal = $from->copy()->setTimezone($tz);
+
         return match ($this->frequency) {
-            'daily' => $from->copy()->addDay()->setTime($h, $min, 0),
-            'weekly' => $from->copy()->addWeek()->setTime($h, $min, 0),
-            'monthly' => $this->computeNextMonthly($from, $h, $min, $dom),
-            'quarterly' => $this->computeNextQuarterly($from, $h, $min, $dom),
-            default => $from->copy()->addDay()->setTime($h, $min, 0),
+            'daily' => $fromLocal->copy()->addDay()->setTime($h, $min, 0)->utc(),
+            'weekly' => $fromLocal->copy()->addWeek()->setTime($h, $min, 0)->utc(),
+            'monthly' => $this->computeNextMonthly($fromLocal, $h, $min, $dom),
+            'quarterly' => $this->computeNextQuarterly($fromLocal, $h, $min, $dom),
+            default => $fromLocal->copy()->addDay()->setTime($h, $min, 0)->utc(),
         };
     }
 
@@ -77,7 +82,7 @@ class ScheduledScan extends Model
     {
         $next = $from->copy()->addMonthNoOverflow()->startOfMonth();
 
-        return $next->setDay(min($dom, $next->daysInMonth))->setTime($h, $min, 0);
+        return $next->setDay(min($dom, $next->daysInMonth))->setTime($h, $min, 0)->utc();
     }
 
     private function computeNextQuarterly(Carbon $from, int $h, int $min, int $dom): Carbon
@@ -101,8 +106,8 @@ class ScheduledScan extends Model
             $nextQMonth = $quarterMonths[$idx + 1];
         }
 
-        $next = Carbon::create($year, $nextQMonth, 1, 0, 0, 0);
+        $next = Carbon::create($year, $nextQMonth, 1, 0, 0, 0, $from->timezone);
 
-        return $next->setDay(min($dom, $next->daysInMonth))->setTime($h, $min, 0);
+        return $next->setDay(min($dom, $next->daysInMonth))->setTime($h, $min, 0)->utc();
     }
 }

@@ -52,6 +52,7 @@ class ScheduledScanController extends Controller
                 'frequency' => $data['frequency'] ?? null,
                 'scheduled_at' => isset($data['scheduled_at']) ? Carbon::parse($data['scheduled_at']) : null,
                 'run_time' => $data['run_time'] ?? null,
+                'timezone' => $data['timezone'] ?? null,
                 'run_day_of_week' => $data['run_day_of_week'] ?? null,
                 'run_day_of_month' => $data['run_day_of_month'] ?? null,
                 'next_run_at' => $nextRunAt,
@@ -75,6 +76,7 @@ class ScheduledScanController extends Controller
             'frequency' => $data['frequency'] ?? null,
             'scheduled_at' => isset($data['scheduled_at']) ? Carbon::parse($data['scheduled_at']) : null,
             'run_time' => $data['run_time'] ?? null,
+            'timezone' => $data['timezone'] ?? null,
             'run_day_of_week' => $data['run_day_of_week'] ?? null,
             'run_day_of_month' => $data['run_day_of_month'] ?? null,
             'next_run_at' => $nextRunAt,
@@ -100,7 +102,9 @@ class ScheduledScanController extends Controller
             return Carbon::parse($data['scheduled_at']);
         }
 
-        $now = Carbon::now();
+        // Use the user's browser timezone so "run at 09:00" means 09:00 local, not 09:00 UTC
+        $tz = $data['timezone'] ?? 'UTC';
+        $now = Carbon::now($tz);
         [$h, $min] = array_map('intval', explode(':', $data['run_time'] ?? '09:00'));
         $dow = isset($data['run_day_of_week']) ? (int) $data['run_day_of_week'] : 1;
         $dom = isset($data['run_day_of_month']) ? (int) $data['run_day_of_month'] : 1;
@@ -118,7 +122,7 @@ class ScheduledScanController extends Controller
     {
         $candidate = $now->copy()->setTime($h, $min, 0);
 
-        return $candidate->isFuture() ? $candidate : $candidate->addDay();
+        return ($candidate->isFuture() ? $candidate : $candidate->addDay())->utc();
     }
 
     private function resolveWeekly(Carbon $now, int $h, int $min, int $dow): Carbon
@@ -126,23 +130,23 @@ class ScheduledScanController extends Controller
         if ($now->dayOfWeek === $dow) {
             $today = $now->copy()->setTime($h, $min, 0);
             if ($today->isFuture()) {
-                return $today;
+                return $today->utc();
             }
         }
 
-        return $now->copy()->next($dow)->setTime($h, $min, 0);
+        return $now->copy()->next($dow)->setTime($h, $min, 0)->utc();
     }
 
     private function resolveMonthly(Carbon $now, int $h, int $min, int $dom): Carbon
     {
         $candidate = $now->copy()->setDay(min($dom, $now->daysInMonth))->setTime($h, $min, 0);
         if ($candidate->isFuture()) {
-            return $candidate;
+            return $candidate->utc();
         }
 
         $next = $now->copy()->addMonthNoOverflow()->startOfMonth();
 
-        return $next->setDay(min($dom, $next->daysInMonth))->setTime($h, $min, 0);
+        return $next->setDay(min($dom, $next->daysInMonth))->setTime($h, $min, 0)->utc();
     }
 
     private function resolveQuarterly(Carbon $now, int $h, int $min, int $dom): Carbon
@@ -156,18 +160,18 @@ class ScheduledScanController extends Controller
                     continue;
                 }
 
-                $candidate = Carbon::create($year, $qm, 1, 0, 0, 0);
+                $candidate = Carbon::create($year, $qm, 1, 0, 0, 0, $now->timezone);
                 $candidate->setDay(min($dom, $candidate->daysInMonth))->setTime($h, $min, 0);
 
                 if ($candidate->isFuture()) {
-                    return $candidate;
+                    return $candidate->utc();
                 }
             }
 
             $year++;
         }
 
-        return Carbon::now()->addMonths(3)->setTime($h, $min, 0);
+        return Carbon::now($now->timezone)->addMonths(3)->setTime($h, $min, 0)->utc();
     }
 
     private function formatSchedule(ScheduledScan $schedule): array
