@@ -2,18 +2,22 @@
 
 namespace App\Events;
 
-use App\Models\Scan;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ScanCompleted implements ShouldBroadcast
+class ScanProgressUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public readonly Scan $scan) {}
+    public function __construct(
+        public readonly int $scanId,
+        public readonly int $agencyId,
+        public readonly int $pagesScanned,
+        public readonly string $status,
+    ) {}
 
     /**
      * @return array<int, \Illuminate\Broadcasting\Channel>
@@ -21,7 +25,7 @@ class ScanCompleted implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('agency.'.$this->scan->agency_id),
+            new PrivateChannel('agency.'.$this->agencyId),
         ];
     }
 
@@ -31,10 +35,9 @@ class ScanCompleted implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'scan_id' => $this->scan->id,
-            'property_name' => $this->scan->property?->name,
-            'status' => $this->scan->status->value,
-            'total_violations' => $this->scan->total_violations,
+            'scan_id' => $this->scanId,
+            'pages_scanned' => $this->pagesScanned,
+            'status' => $this->status,
         ];
     }
 }

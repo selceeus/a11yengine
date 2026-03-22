@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Bell, Check } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useEchoPrivate } from '@/hooks/use-echo';
 
 type NotificationData = {
     scan_id?: number;
@@ -72,6 +73,7 @@ export function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [open, setOpen] = useState(false);
+    const agencyId = usePage().props.auth?.agencyId;
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -92,6 +94,12 @@ export function NotificationBell() {
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, [fetchNotifications]);
+
+    // Real-time: refresh notifications when a scan completes or progress updates
+    useEchoPrivate(agencyId ? `agency.${agencyId}` : null, {
+        ScanCompleted: () => fetchNotifications(),
+        ScanProgressUpdated: () => fetchNotifications(),
+    });
 
     const markAsRead = async (id: string) => {
         await fetch(`/api/notifications/${id}/read`, {

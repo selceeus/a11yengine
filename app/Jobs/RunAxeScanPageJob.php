@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domain\Issues\ProcessHtmlScan;
 use App\Enums\ScanPageStatus;
+use App\Events\ScanProgressUpdated;
 use App\Models\Scan;
 use App\Models\ScanPage;
 use Illuminate\Bus\Batchable;
@@ -54,6 +55,18 @@ class RunAxeScanPageJob implements ShouldQueue
             'url' => $this->url,
             'violations' => $this->violations,
         ]);
+
+        $scannedCount = ScanPage::withoutGlobalScopes()
+            ->where('scan_id', $this->scan->id)
+            ->where('status', ScanPageStatus::Scanned)
+            ->count();
+
+        ScanProgressUpdated::dispatch(
+            $this->scan->id,
+            $this->scan->agency_id,
+            $scannedCount,
+            $this->scan->status->value,
+        );
     }
 
     /**
