@@ -33,3 +33,4 @@ yarn-error.log
 /test_junit.xml
 /test_results.txt
 /conversation-*.txt
+bash.exe.stackdump
