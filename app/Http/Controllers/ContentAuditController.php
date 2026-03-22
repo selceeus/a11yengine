@@ -97,12 +97,12 @@ class ContentAuditController extends Controller
             ], $filename.'.json'),
             'csv' => $this->exportCsv(
                 collect($contentAudit->content_issues ?? [])->map(fn (array $issue) => [
-                    $issue['type'] ?? '',
+                    $issue['issue_type'] ?? '',
                     $issue['severity'] ?? '',
                     $issue['page_url'] ?? '',
-                    $issue['description'] ?? '',
-                    $issue['element'] ?? '',
-                    $issue['recommendation'] ?? '',
+                    $issue['issue'] ?? '',
+                    $issue['element_html'] ?? '',
+                    $issue['suggestion'] ?? '',
                 ])->all(),
                 ['Type', 'Severity', 'Page URL', 'Description', 'Element', 'Recommendation'],
                 $filename.'.csv'

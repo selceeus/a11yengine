@@ -6,12 +6,12 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
 type ContentIssue = {
-    type: string;
+    issue_type: string;
     severity: string;
     page_url: string;
-    description: string;
-    element: string;
-    recommendation: string;
+    issue: string;
+    element_html: string | null;
+    suggestion: string;
 };
 
 type Audit = {
@@ -147,7 +147,7 @@ export default function Show({ audit }: PageProps) {
                                 <tbody className="divide-y">
                                     {audit.content_issues.map((issue, i) => (
                                         <tr key={i} className="transition-colors hover:bg-muted/30">
-                                            <td className="px-4 py-3 capitalize">{issue.type}</td>
+                                            <td className="px-4 py-3 capitalize">{issue.issue_type}</td>
                                             <td className="px-4 py-3">
                                                 <Badge variant={severityVariant(issue.severity)} className="capitalize">
                                                     {issue.severity}
@@ -156,9 +156,9 @@ export default function Show({ audit }: PageProps) {
                                             <td className="px-4 py-3 font-mono text-xs max-w-[200px] truncate text-muted-foreground">
                                                 {issue.page_url}
                                             </td>
-                                            <td className="px-4 py-3 text-xs">{issue.description}</td>
-                                            <td className="px-4 py-3 font-mono text-xs max-w-[150px] truncate">{issue.element}</td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground">{issue.recommendation}</td>
+                                            <td className="px-4 py-3 text-xs">{issue.issue}</td>
+                                            <td className="px-4 py-3 font-mono text-xs max-w-[150px] truncate">{issue.element_html}</td>
+                                            <td className="px-4 py-3 text-xs text-muted-foreground">{issue.suggestion}</td>
                                         </tr>
                                     ))}
                                 </tbody>
