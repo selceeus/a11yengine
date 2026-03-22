@@ -12,11 +12,13 @@ use App\Models\Agency;
  * Returns null when no tenant has been bound (e.g. unauthenticated routes
  * that skip both middlewares, or during console commands).
  */
-function currentAgency(): ?Agency
-{
-    if (app()->bound(Agency::class)) {
-        return app(Agency::class);
-    }
+if (! function_exists('currentAgency')) {
+    function currentAgency(): ?Agency
+    {
+        if (app()->bound(Agency::class)) {
+            return app(Agency::class);
+        }
 
-    return null;
+        return null;
+    }
 }
