@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AssignIssueRequest;
 use App\Models\Issue;
 use App\Models\User;
+use App\Notifications\IssueAssignedNotification;
 use Illuminate\Http\JsonResponse;
 
 class AssignIssueController extends Controller
@@ -20,6 +21,10 @@ class AssignIssueController extends Controller
             /** @var User $assignee */
             $assignee = User::findOrFail($userId);
             $issue->assignToUser($assignee);
+
+            /** @var User $assigner */
+            $assigner = $request->user();
+            $assignee->notify(new IssueAssignedNotification($issue, $assigner));
         }
 
         return response()->json(
