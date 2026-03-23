@@ -14,6 +14,8 @@ The Accessibility Insights Platform helps agencies monitor, audit, and report on
 
 - **Automated Crawling & Scanning** — Discovers all pages on a domain and runs axe-core and Lighthouse audits on each page via headless Puppeteer
 - **Issue Deduplication & Tracking** — Aggregates raw findings into unique issues with occurrence counts, severity, WCAG category, criteria, tags, help URLs, element HTML, and lifecycle status (open → in progress → resolved)
+- **Issue Activity Log** — Full audit trail per issue tracking status changes, assignments, due date updates, bulk actions, and comments
+- **Scan Diff** — Side-by-side comparison of any two consecutive scans showing new, resolved, and unchanged findings
 - **AI-Powered Audits & Remediation** — Generates executive audit summaries and per-issue remediation guidance via OpenAI GPT-4o or Anthropic Claude
 - **AI Issue Clustering** — Groups similar open issues into thematic clusters to surface systemic patterns and prioritise remediation effort
 - **AI Risk Advisory** — Produces prioritised remediation recommendations from open issue data at property, organisation, or agency scope
@@ -21,10 +23,14 @@ The Accessibility Insights Platform helps agencies monitor, audit, and report on
 - **Risk Scoring & Trending** — Calculates weighted risk scores at property, organisation, and agency levels with point-in-time snapshots for trend visualisation
 - **Governance Reporting** — AI-generated executive reports with narrative summaries, risk trends, severity breakdowns, remediation progress, compliance status, and actionable recommendations; exportable as JSON, CSV, or PDF
 - **Audit Trend Tracking** — Tracks AI-generated audit scores over time and compares trends across consecutive audits
+- **Project Management Integrations** — Push accessibility issues directly to Jira, GitHub Issues, Linear, Asana, Wrike, ClickUp, Monday.com, Azure DevOps, Trello, Notion, or Basecamp; bidirectional status sync via webhooks
+- **MCP Server** — Model Context Protocol endpoint exposing property issues, risk summaries, scan findings, and AI remediation prompts to any MCP-compatible AI tool
+- **Scoped API Keys** — Machine-to-machine API keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients
 - **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly isolated by tenant
 - **Role-Based Access Control** — Six roles: SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, Viewer — assignable at any scope level
 - **Team Management** — Invite team members via 7-day email tokens with role pre-assignment; forced password reset on first login
-- **Performance Auditing** — Per-page Lighthouse results including performance, accessibility, SEO, and best-practices scores alongside Core Web Vitals
+- **Notification System** — In-app and email notifications for issue assignments, @mentions, scan completions, and a weekly digest; per-user opt-out preferences
+- **Performance Auditing** — Per-page Lighthouse results including performance, accessibility, SEO, and best-practices scores alongside Core Web Vitals with immutable time-series scan metrics
 - **Two-Factor Authentication** — Fortify-powered 2FA with recovery codes
 - **Scheduled Scans** — Configurable recurring scans with automated risk snapshot recording
 
@@ -49,6 +55,7 @@ The Accessibility Insights Platform helps agencies monitor, audit, and report on
 | **Dev Environment**   | Laravel Sail (Docker)                                    |
 | **Monitoring**        | Laravel Telescope v5                                     |
 | **AI**                | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet              |
+| **MCP**               | Laravel MCP v0                                           |
 
 ---
 
@@ -62,14 +69,21 @@ Agency
     └── Property
         └── Scan
             ├── ScanPage          (per-page crawl record)
+            ├── ScanMetric        (immutable time-series metrics per page)
             ├── Finding           (raw axe violation)
             ├── Issue             (deduplicated, tracked violation)
+            │   ├── IssueActivity (comment / status / assignment log)
+            │   └── IssueLink     (linked external PM ticket)
             └── LighthouseResult  (performance metrics)
 ```
 
 Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + `RunLighthouseScanJob` per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
 
 The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
+
+Issues can be forwarded to any connected project management tool via `PushIssueToIntegrationJob`. The resulting `IssueLink` record stores the external ticket ID and URL; a webhook endpoint (`POST /api/webhooks/integrations/{integration}`) handles bidirectional status sync.
+
+An MCP server at `/mcp/property-accessibility` exposes property issues, risk summaries, and scan findings to any MCP-compatible AI tool, authenticated via a scoped API key.
 
 ---
 
@@ -181,7 +195,11 @@ composer run dev
 
 ### Issue Lifecycle
 
-Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records. Issues are enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. They flow through: `open` → `in_progress` → `resolved`. Issues can be assigned to team members and carry AI-generated remediation suggestions.
+Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records. Issues are enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. They flow through: `open` → `in_progress` → `resolved`. Issues can be assigned to team members, carry AI-generated remediation suggestions, and log a full activity trail covering status changes, assignments, due date updates, bulk actions, and comments.
+
+### Scan Diff
+
+`ScanDiffController` compares a scan against its most recent preceding completed scan. It fingerprints every `Finding` to produce three buckets — new findings (introduced in this scan), resolved findings (present in the prior scan but absent now), and an unchanged count — rendered in a unified diff view.
 
 ### AI Intelligence Suite
 
@@ -196,6 +214,65 @@ Four AI analysis types sit above the scan layer, each scoped to a property, orga
 | **Governance Report** | `GovernanceReport` | Comprehensive executive report with narrative, risk trends, severity breakdown, remediation progress, and compliance status |
 
 Governance reports support configurable date ranges and can be scheduled alongside scans. They are exportable in JSON, CSV, and PDF formats.
+
+### Project Management Integrations
+
+Issues can be pushed to external project management tools via the `Integration` model and `PushIssueToIntegrationJob`. An `IssueLink` record stores the external ticket ID, URL, and status for each linked issue.
+
+| Provider        | Auth Type |
+| --------------- | --------- |
+| Jira            | Basic     |
+| GitHub Issues   | Token     |
+| Linear          | Token     |
+| Asana           | Token     |
+| Wrike           | Token     |
+| ClickUp         | Token     |
+| Monday.com      | Token     |
+| Azure DevOps    | PAT       |
+| Trello          | API Key   |
+| Notion          | Token     |
+| Basecamp        | Token     |
+
+Integrations are configured per agency in **Settings → Integrations**. Webhooks from providers are received at `POST /api/webhooks/integrations/{integration}` to sync status back to `IssueLink` records.
+
+### MCP Server
+
+The platform exposes a Model Context Protocol server at `/mcp/property-accessibility`, authenticated via an API key with the `mcp` scope. It provides:
+
+| Type      | Name                         | Description                                          |
+| --------- | ---------------------------- | ---------------------------------------------------- |
+| Tool      | `GetPropertyIssuesTool`      | Query open accessibility issues for a property       |
+| Tool      | `GetIssueRemediationTool`    | Fetch AI-generated remediation for a specific issue  |
+| Tool      | `GetScanFindingsTool`        | Read raw axe-core findings from a completed scan     |
+| Resource  | `PropertyIssuesResource`     | Structured issue list keyed by property slug         |
+| Resource  | `PropertyRiskSummaryResource`| Risk score summary for a property                   |
+| Prompt    | `RemediateViolationPrompt`   | Guided prompt for remediating a specific violation   |
+
+### API Keys
+
+Scoped API keys allow machine-to-machine access without user credentials. Keys are managed in **Settings → API Keys** and support the following scopes:
+
+| Scope            | Purpose                                      |
+| ---------------- | -------------------------------------------- |
+| `scans:read`     | View scan results and history                |
+| `scans:trigger`  | Initiate new scans via API                   |
+| `issues:read`    | Read accessibility issues                    |
+| `reports:read`   | Access governance reports                    |
+| `mcp`            | Connect AI tools via MCP protocol            |
+| `wordpress`      | Authenticate the WordPress plugin            |
+
+### Notifications
+
+The platform sends notifications for the following events:
+
+| Notification              | Trigger                                              |
+| ------------------------- | ---------------------------------------------------- |
+| `IssueAssignedNotification` | An issue is assigned to the user                   |
+| `IssueMentionedNotification`| The user is @mentioned in an issue comment         |
+| `ScanCompletedNotification` | A scan completes on a property the user follows    |
+| `WeeklyDigestNotification`  | Weekly summary of new/resolved issues and scans    |
+
+Users manage preferences per notification type and channel in **Settings → Notifications** using an opt-out model (enabled by default).
 
 ### Risk Scoring
 
@@ -216,17 +293,20 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 | `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI        | —                      | —       |
 | `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages | —                      | —       |
 | `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report         | —                      | —       |
+| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                  | 3 (30s / 120s backoff) | —       |
 
 ---
 
 ## Artisan Commands
 
-| Command                                   | Description                                 |
-| ----------------------------------------- | ------------------------------------------- |
-| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans         |
-| `php artisan risk:snapshot-agency`        | Record a point-in-time agency risk snapshot |
-| `php artisan governance:generate-reports` | Generate scheduled governance reports       |
-| `php artisan users:backfill-roles`        | Populate historical user role records       |
+| Command                                   | Description                                              |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                      |
+| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min    |
+| `php artisan risk:snapshot-agency`        | Record a point-in-time agency risk snapshot              |
+| `php artisan governance:generate-reports` | Generate scheduled governance reports                    |
+| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users     |
+| `php artisan users:backfill-roles`        | Populate historical user role records                    |
 
 ---
 
@@ -304,3 +384,20 @@ cd crawler && npm test
 | `config/crawler.php`    | Crawler timeout, max depth, max pages                        |
 | `config/lighthouse.php` | Lighthouse binary path, timeout, feature flag                |
 | `config/fortify.php`    | Authentication feature flags (2FA, email verification, etc.) |
+
+---
+
+## Settings
+
+The following settings pages are available to authenticated users:
+
+| Page              | Route                      | Description                                         |
+| ----------------- | -------------------------- | --------------------------------------------------- |
+| Profile           | `/settings/profile`        | Name, email, and account details                    |
+| Password          | `/settings/password`       | Change account password                             |
+| Two-Factor Auth   | `/settings/two-factor`     | Enable/disable 2FA and manage recovery codes        |
+| Appearance        | `/settings/appearance`     | Theme and UI preferences                            |
+| Notifications     | `/settings/notifications`  | Per-channel notification opt-out preferences        |
+| Scheduled Scans   | `/settings/scheduled-scans`| Manage recurring scans                              |
+| API Keys          | `/settings/api-keys`       | Create and revoke scoped API keys                   |
+| Integrations      | `/settings/integrations`   | Connect and manage project management integrations  |
