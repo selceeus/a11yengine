@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\IntegrationWebhookController;
 use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
@@ -50,3 +51,6 @@ Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactC
 //         Route::get('risk-summary', AgencyRiskSummaryController::class)
 //             ->name('risk-summary');
 //     });
+
+Route::post('webhooks/integrations/{integration}', IntegrationWebhookController::class)
+    ->name('api.webhooks.integrations');

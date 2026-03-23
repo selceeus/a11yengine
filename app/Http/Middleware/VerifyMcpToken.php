@@ -2,16 +2,17 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\ApiKeyScope;
 use App\Models\Agency;
+use App\Models\ApiKey;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Authenticates MCP clients via a per-agency Bearer token stored in
- * agencies.mcp_token. On success the Agency is bound to the service
- * container — mirroring the SetTenant middleware pattern — so that all
- * MCP tools and resources can resolve it via dependency injection.
+ * Authenticates MCP clients. Checks the api_keys table first (scope: mcp),
+ * then falls back to the legacy agencies.mcp_token column for backwards
+ * compatibility with existing integrations.
  *
  * Usage in routes/ai.php:
  *   Mcp::web('/mcp/property-accessibility', PropertyAccessibilityServer::class)
@@ -25,6 +26,24 @@ class VerifyMcpToken
 
         abort_unless(filled($token), 401, 'MCP token required.');
 
+        // Check api_keys table first.
+        $hash = hash('sha256', $token);
+
+        $apiKey = ApiKey::query()
+            ->where('token_hash', $hash)
+            ->with('agency')
+            ->first();
+
+        if ($apiKey !== null && $apiKey->isActive() && $apiKey->hasScope(ApiKeyScope::Mcp)) {
+            $apiKey->forceFill(['last_used_at' => now()])->saveQuietly();
+
+            app()->instance(Agency::class, $apiKey->agency);
+            app()->instance('currentAgency', $apiKey->agency);
+
+            return $next($request);
+        }
+
+        // Legacy fallback: agencies.mcp_token column.
         $agency = Agency::query()->where('mcp_token', $token)->first();
 
         abort_unless($agency !== null, 401, 'Invalid MCP token.');

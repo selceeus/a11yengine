@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { Head, Link, useForm,  usePoll } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,6 +71,15 @@ function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destr
 export default function Index({ scans, properties }: { scans: Scan[]; properties: Property[] }) {
     const { data, setData, post, processing, errors } = useForm({ property_id: '' });
     const [overview, setOverview] = useState<OverviewState>({ open: false });
+
+    const hasActiveScans = scans.some((s) => s.status === 'pending' || s.status === 'running');
+    const { start, stop } = usePoll(3000, {}, { autoStart: false });
+    useEffect(() => {
+        if (hasActiveScans) {
+            start();
+            return () => stop();
+        }
+    }, [hasActiveScans]);
 
     function submit(e: React.FormEvent) {
         e.preventDefault();

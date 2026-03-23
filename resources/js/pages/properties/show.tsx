@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { Head, Link, useForm, usePoll } from '@inertiajs/react';
 import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
@@ -124,6 +124,14 @@ export default function Show({
 }) {
     const { delete: destroy, processing } = useForm();
     const [overview, setOverview] = useState<OverviewState>({ open: false });
+    const hasActiveScans = recentScans.some((s) => s.status === 'pending' || s.status === 'running');
+    const { start, stop } = usePoll(3000, {}, { autoStart: false });
+    useEffect(() => {
+        if (hasActiveScans) {
+            start();
+            return () => stop();
+        }
+    }, [hasActiveScans]);
     const [scheduledScan, setScheduledScan] = useState<ScheduledScan | null>(initialScheduledScan);
     const [scheduleDialog, setScheduleDialog] = useState<ScheduleDialogState>({ open: false });
     const [scheduleType, setScheduleType] = useState<'once' | 'recurring'>('recurring');

@@ -91,6 +91,11 @@ class Issue extends Model
         return $this->hasMany(IssueActivity::class);
     }
 
+    public function links(): HasMany
+    {
+        return $this->hasMany(IssueLink::class);
+    }
+
     public function assignToUser(User $user): void
     {
         $this->assigned_user_id = $user->id;

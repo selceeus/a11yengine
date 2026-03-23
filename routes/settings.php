@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Settings\ApiKeyController;
+use App\Http\Controllers\Settings\IntegrationController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -39,4 +41,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])
         ->name('notification-preferences.update');
+
+    Route::get('settings/api-keys', [ApiKeyController::class, 'index'])
+        ->name('api-keys.index');
+
+    Route::post('settings/api-keys', [ApiKeyController::class, 'store'])
+        ->name('api-keys.store');
+
+    Route::delete('settings/api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])
+        ->name('api-keys.destroy');
+
+    Route::get('settings/integrations', [IntegrationController::class, 'index'])
+        ->name('integrations.index');
+
+    Route::post('settings/integrations', [IntegrationController::class, 'store'])
+        ->name('integrations.store');
+
+    Route::delete('settings/integrations/{integration}', [IntegrationController::class, 'destroy'])
+        ->name('integrations.destroy');
+
+    Route::post('settings/integrations/{integration}/test', [IntegrationController::class, 'test'])
+        ->name('integrations.test');
 });
