@@ -22,6 +22,9 @@ class ContentAudit extends Model
         'content_issues',
         'total_issues',
         'pages_analyzed',
+        'reading_metrics',
+        'avg_reading_level',
+        'avg_reading_time_seconds',
         'prompt_context',
         'raw_ai_response',
         'error_message',
@@ -40,6 +43,8 @@ class ContentAudit extends Model
             'content_issues' => 'array',
             'total_issues' => 'integer',
             'pages_analyzed' => 'integer',
+            'reading_metrics' => 'array',
+            'avg_reading_time_seconds' => 'integer',
             'generated_at' => 'datetime',
         ];
     }

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\ContentAuditStatus;
 use App\Models\Agency;
 use App\Models\ContentAudit;
 use App\Models\Organization;
@@ -47,6 +46,9 @@ it('returns empty state when no audit has been generated', function (): void {
             'content_issues' => [],
             'total_issues' => 0,
             'pages_analyzed' => 0,
+            'reading_metrics' => [],
+            'avg_reading_level' => null,
+            'avg_reading_time_seconds' => null,
             'generated_at' => null,
         ]);
 });
@@ -54,21 +56,21 @@ it('returns empty state when no audit has been generated', function (): void {
 // ── Data retrieval ────────────────────────────────────────────────────────────
 
 it('returns the latest content audit for the property', function (): void {
-    ContentAudit::factory()->create([
+    ContentAudit::factory()->completed()->create([
         'agency_id' => $this->agency->id,
         'organization_id' => $this->organization->id,
         'property_id' => $this->property->id,
-        'status' => ContentAuditStatus::Completed,
-        'total_issues' => 8,
-        'pages_analyzed' => 5,
     ]);
 
     $this->actingAs($this->actor)
         ->getJson(route('api.properties.content-audit', $this->property))
         ->assertOk()
         ->assertJsonPath('status', 'completed')
-        ->assertJsonPath('total_issues', 8)
-        ->assertJsonPath('pages_analyzed', 5);
+        ->assertJsonPath('total_issues', 3)
+        ->assertJsonPath('pages_analyzed', 12)
+        ->assertJsonPath('avg_reading_level', 'Grade 9 (Flesch-Kincaid)')
+        ->assertJsonPath('avg_reading_time_seconds', 135)
+        ->assertJsonCount(2, 'reading_metrics');
 });
 
 it('exposes error_message on a failed audit', function (): void {

@@ -63,6 +63,9 @@ class ContentAuditController extends Controller
                 'content_issues' => $contentAudit->content_issues ?? [],
                 'total_issues' => $contentAudit->total_issues,
                 'pages_analyzed' => $contentAudit->pages_analyzed,
+                'reading_metrics' => $contentAudit->reading_metrics ?? [],
+                'avg_reading_level' => $contentAudit->avg_reading_level,
+                'avg_reading_time_seconds' => $contentAudit->avg_reading_time_seconds,
                 'generated_at' => $contentAudit->generated_at?->toIso8601String(),
                 'error_message' => $contentAudit->error_message,
                 'property' => $contentAudit->property ? [
@@ -92,7 +95,10 @@ class ContentAuditController extends Controller
                 'property' => $contentAudit->property?->name,
                 'total_issues' => $contentAudit->total_issues,
                 'pages_analyzed' => $contentAudit->pages_analyzed,
+                'avg_reading_level' => $contentAudit->avg_reading_level,
+                'avg_reading_time_seconds' => $contentAudit->avg_reading_time_seconds,
                 'content_issues' => $contentAudit->content_issues ?? [],
+                'reading_metrics' => $contentAudit->reading_metrics ?? [],
                 'generated_at' => $contentAudit->generated_at?->toIso8601String(),
             ], $filename.'.json'),
             'csv' => $this->exportCsv(

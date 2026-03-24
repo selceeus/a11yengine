@@ -6,6 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 
+type ReadingMetric = {
+    page_url: string;
+    reading_level: string;
+    reading_time: string;
+    reading_time_seconds: number;
+    word_count: number;
+    flesch_score: number | null;
+};
+
 type ContentIssue = {
     page_url: string;
     issue_id: number | null;
@@ -28,6 +37,9 @@ type ContentAuditReport = {
     content_issues: ContentIssue[];
     total_issues: number;
     pages_analyzed: number;
+    reading_metrics: ReadingMetric[];
+    avg_reading_level: string | null;
+    avg_reading_time_seconds: number | null;
     generated_at: string | null;
     error_message: string | null;
 };
@@ -45,6 +57,14 @@ const CATEGORIES: { key: CategoryFilter; label: string }[] = [
 
 function getCsrfToken(): string {
     return (document.head.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+}
+
+function formatReadingTime(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0 && secs > 0) return `${mins} min ${secs} sec`;
+    if (mins > 0) return `${mins} min`;
+    return `${secs} sec`;
 }
 
 function severityVariant(s: string): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -178,8 +198,12 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                     <h3 className="text-sm font-semibold">AI Content Audit</h3>
                     {hasResult && report.generated_at && (
                         <p className="text-xs text-muted-foreground">
-                            {report.total_issues} issues &middot; {report.pages_analyzed} pages analysed &middot;{' '}
-                            {new Date(report.generated_at).toLocaleDateString()}
+                            {report.total_issues} issues &middot; {report.pages_analyzed} pages analysed
+                            {report.avg_reading_level && <> &middot; {report.avg_reading_level}</>}
+                            {report.avg_reading_time_seconds != null && (
+                                <> &middot; ~{formatReadingTime(report.avg_reading_time_seconds)} avg read</>
+                            )}
+                            {' '}&middot; {new Date(report.generated_at).toLocaleDateString()}
                         </p>
                     )}
                 </div>
@@ -251,6 +275,21 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                             {Object.entries(issuesByPage).map(([pageUrl, pageIssues]) => (
                                 <div key={pageUrl}>
                                     <p className="mb-2 truncate text-xs font-semibold text-muted-foreground">{pageUrl}</p>
+                                    {/* Reading metrics for this page */}
+                                    {(() => {
+                                        const metric = report.reading_metrics?.find((m) => m.page_url === pageUrl);
+                                        if (!metric) return null;
+                                        return (
+                                            <div className="mb-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                                <span>📖 {metric.reading_level}</span>
+                                                <span>⏱ {metric.reading_time}</span>
+                                                <span>{metric.word_count.toLocaleString()} words</span>
+                                                {metric.flesch_score != null && (
+                                                    <span>Flesch {metric.flesch_score.toFixed(0)}</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                     <div className="space-y-2">
                                         {pageIssues.map((issue, idx) => {
                                             const globalIdx = filteredIssues.indexOf(issue);

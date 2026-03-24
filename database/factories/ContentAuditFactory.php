@@ -79,6 +79,26 @@ class ContentAuditFactory extends Factory
                     'developer_note' => 'Associate the label via the `for` attribute or wrap the input in the label element.',
                 ],
             ],
+            'reading_metrics' => [
+                [
+                    'page_url' => '/about',
+                    'reading_level' => 'Grade 10 (Flesch-Kincaid)',
+                    'reading_time' => '3 min',
+                    'reading_time_seconds' => 180,
+                    'word_count' => 690,
+                    'flesch_score' => 52.3,
+                ],
+                [
+                    'page_url' => '/products',
+                    'reading_level' => 'Grade 8 (Flesch-Kincaid)',
+                    'reading_time' => '1 min 30 sec',
+                    'reading_time_seconds' => 90,
+                    'word_count' => 345,
+                    'flesch_score' => 63.1,
+                ],
+            ],
+            'avg_reading_level' => 'Grade 9 (Flesch-Kincaid)',
+            'avg_reading_time_seconds' => 135,
         ]);
     }
 

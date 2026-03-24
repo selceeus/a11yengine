@@ -114,11 +114,40 @@ class AiContentAuditService
         }, $contentIssues);
 
         $pagesAnalyzed = count($topPages);
+        $readingMetrics = $result['reading_metrics'] ?? [];
+
+        // Compute site-wide averages from per-page metrics
+        $avgReadingLevel = null;
+        $avgReadingTimeSeconds = null;
+
+        if (! empty($readingMetrics)) {
+            $grades = collect($readingMetrics)
+                ->map(fn (array $m) => $this->extractGradeNumber($m['reading_level'] ?? ''))
+                ->filter()
+                ->values();
+
+            if ($grades->isNotEmpty()) {
+                $avgGrade = (int) round($grades->average());
+                $avgReadingLevel = "Grade {$avgGrade} (Flesch-Kincaid)";
+            }
+
+            $times = collect($readingMetrics)
+                ->pluck('reading_time_seconds')
+                ->filter()
+                ->values();
+
+            if ($times->isNotEmpty()) {
+                $avgReadingTimeSeconds = (int) round($times->average());
+            }
+        }
 
         $audit->update([
             'content_issues' => $contentIssues,
             'total_issues' => count($contentIssues),
             'pages_analyzed' => $pagesAnalyzed,
+            'reading_metrics' => $readingMetrics,
+            'avg_reading_level' => $avgReadingLevel,
+            'avg_reading_time_seconds' => $avgReadingTimeSeconds,
             'prompt_context' => $prompt,
             'raw_ai_response' => $response->text,
             'status' => ContentAuditStatus::Completed,
@@ -165,6 +194,37 @@ class AiContentAuditService
     }
 
     /**
+     * Extract the numeric Flesch-Kincaid grade from a reading level string.
+     */
+    private function extractGradeNumber(string $level): ?int
+    {
+        if (preg_match('/grade\s+(\d+)/i', $level, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Format a duration in seconds as a human-readable string.
+     */
+    public function formatReadingTime(int $seconds): string
+    {
+        $mins = intdiv($seconds, 60);
+        $secs = $seconds % 60;
+
+        if ($mins > 0 && $secs > 0) {
+            return "{$mins} min {$secs} sec";
+        }
+
+        if ($mins > 0) {
+            return "{$mins} min";
+        }
+
+        return "{$secs} sec";
+    }
+
+    /**
      * Build the structured content audit prompt.
      *
      * @param  array<int, array<string, mixed>>  $pages
@@ -185,6 +245,8 @@ Analyse {$count} page(s) for content-level accessibility issues that automated s
 - Unclear or absent form labels
 - Document title issues
 - Any other content clarity or readability problems that affect assistive technology users
+
+Additionally, for each page with an available `html_snippet`, estimate the reading level using Flesch-Kincaid grade and the reading time based on ~230 words per minute from the visible text content.
 
 ## Pages & Findings
 Each page entry includes:
@@ -217,6 +279,16 @@ Return a single JSON object matching this exact schema (no prose, no markdown fe
       "writer_note": "<guidance for content editors to fix this>",
       "developer_note": "<guidance for developers to implement the fix>"
     }
+  ],
+  "reading_metrics": [
+    {
+      "page_url": "<URL of the page>",
+      "reading_level": "<e.g. Grade 8 (Flesch-Kincaid)>",
+      "reading_time": "<e.g. 2 min 30 sec>",
+      "reading_time_seconds": <integer seconds>,
+      "word_count": <integer>,
+      "flesch_score": <number 0-100 or null>
+    }
   ]
 }
 
@@ -224,7 +296,7 @@ Rules:
 - Report at most 30 issues total across all pages.
 - Prioritise critical and serious issues first.
 - Do not invent issues not evidenced by the findings or HTML.
-- If `html_snippet` is null for a page, rely only on the `findings` array for that page.
+- If `html_snippet` is null for a page, rely only on the `findings` array for that page and omit that page from `reading_metrics`.
 PROMPT;
     }
 }
