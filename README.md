@@ -219,19 +219,19 @@ Governance reports support configurable date ranges and can be scheduled alongsi
 
 Issues can be pushed to external project management tools via the `Integration` model and `PushIssueToIntegrationJob`. An `IssueLink` record stores the external ticket ID, URL, and status for each linked issue.
 
-| Provider        | Auth Type |
-| --------------- | --------- |
-| Jira            | Basic     |
-| GitHub Issues   | Token     |
-| Linear          | Token     |
-| Asana           | Token     |
-| Wrike           | Token     |
-| ClickUp         | Token     |
-| Monday.com      | Token     |
-| Azure DevOps    | PAT       |
-| Trello          | API Key   |
-| Notion          | Token     |
-| Basecamp        | Token     |
+| Provider      | Auth Type |
+| ------------- | --------- |
+| Jira          | Basic     |
+| GitHub Issues | Token     |
+| Linear        | Token     |
+| Asana         | Token     |
+| Wrike         | Token     |
+| ClickUp       | Token     |
+| Monday.com    | Token     |
+| Azure DevOps  | PAT       |
+| Trello        | API Key   |
+| Notion        | Token     |
+| Basecamp      | Token     |
 
 Integrations are configured per agency in **Settings → Integrations**. Webhooks from providers are received at `POST /api/webhooks/integrations/{integration}` to sync status back to `IssueLink` records.
 
@@ -239,38 +239,38 @@ Integrations are configured per agency in **Settings → Integrations**. Webhook
 
 The platform exposes a Model Context Protocol server at `/mcp/property-accessibility`, authenticated via an API key with the `mcp` scope. It provides:
 
-| Type      | Name                         | Description                                          |
-| --------- | ---------------------------- | ---------------------------------------------------- |
-| Tool      | `GetPropertyIssuesTool`      | Query open accessibility issues for a property       |
-| Tool      | `GetIssueRemediationTool`    | Fetch AI-generated remediation for a specific issue  |
-| Tool      | `GetScanFindingsTool`        | Read raw axe-core findings from a completed scan     |
-| Resource  | `PropertyIssuesResource`     | Structured issue list keyed by property slug         |
-| Resource  | `PropertyRiskSummaryResource`| Risk score summary for a property                   |
-| Prompt    | `RemediateViolationPrompt`   | Guided prompt for remediating a specific violation   |
+| Type     | Name                          | Description                                         |
+| -------- | ----------------------------- | --------------------------------------------------- |
+| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property      |
+| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation for a specific issue |
+| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan    |
+| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug        |
+| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                   |
+| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific violation  |
 
 ### API Keys
 
 Scoped API keys allow machine-to-machine access without user credentials. Keys are managed in **Settings → API Keys** and support the following scopes:
 
-| Scope            | Purpose                                      |
-| ---------------- | -------------------------------------------- |
-| `scans:read`     | View scan results and history                |
-| `scans:trigger`  | Initiate new scans via API                   |
-| `issues:read`    | Read accessibility issues                    |
-| `reports:read`   | Access governance reports                    |
-| `mcp`            | Connect AI tools via MCP protocol            |
-| `wordpress`      | Authenticate the WordPress plugin            |
+| Scope           | Purpose                           |
+| --------------- | --------------------------------- |
+| `scans:read`    | View scan results and history     |
+| `scans:trigger` | Initiate new scans via API        |
+| `issues:read`   | Read accessibility issues         |
+| `reports:read`  | Access governance reports         |
+| `mcp`           | Connect AI tools via MCP protocol |
+| `wordpress`     | Authenticate the WordPress plugin |
 
 ### Notifications
 
 The platform sends notifications for the following events:
 
-| Notification              | Trigger                                              |
-| ------------------------- | ---------------------------------------------------- |
-| `IssueAssignedNotification` | An issue is assigned to the user                   |
-| `IssueMentionedNotification`| The user is @mentioned in an issue comment         |
-| `ScanCompletedNotification` | A scan completes on a property the user follows    |
-| `WeeklyDigestNotification`  | Weekly summary of new/resolved issues and scans    |
+| Notification                 | Trigger                                         |
+| ---------------------------- | ----------------------------------------------- |
+| `IssueAssignedNotification`  | An issue is assigned to the user                |
+| `IssueMentionedNotification` | The user is @mentioned in an issue comment      |
+| `ScanCompletedNotification`  | A scan completes on a property the user follows |
+| `WeeklyDigestNotification`   | Weekly summary of new/resolved issues and scans |
 
 Users manage preferences per notification type and channel in **Settings → Notifications** using an opt-out model (enabled by default).
 
@@ -299,14 +299,14 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 
 ## Artisan Commands
 
-| Command                                   | Description                                              |
-| ----------------------------------------- | -------------------------------------------------------- |
-| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                      |
-| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min    |
-| `php artisan risk:snapshot-agency`        | Record a point-in-time agency risk snapshot              |
-| `php artisan governance:generate-reports` | Generate scheduled governance reports                    |
-| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users     |
-| `php artisan users:backfill-roles`        | Populate historical user role records                    |
+| Command                                   | Description                                           |
+| ----------------------------------------- | ----------------------------------------------------- |
+| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                   |
+| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min |
+| `php artisan risk:snapshot-agency`        | Record a point-in-time agency risk snapshot           |
+| `php artisan governance:generate-reports` | Generate scheduled governance reports                 |
+| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users  |
+| `php artisan users:backfill-roles`        | Populate historical user role records                 |
 
 ---
 
@@ -391,13 +391,13 @@ cd crawler && npm test
 
 The following settings pages are available to authenticated users:
 
-| Page              | Route                      | Description                                         |
-| ----------------- | -------------------------- | --------------------------------------------------- |
-| Profile           | `/settings/profile`        | Name, email, and account details                    |
-| Password          | `/settings/password`       | Change account password                             |
-| Two-Factor Auth   | `/settings/two-factor`     | Enable/disable 2FA and manage recovery codes        |
-| Appearance        | `/settings/appearance`     | Theme and UI preferences                            |
-| Notifications     | `/settings/notifications`  | Per-channel notification opt-out preferences        |
-| Scheduled Scans   | `/settings/scheduled-scans`| Manage recurring scans                              |
-| API Keys          | `/settings/api-keys`       | Create and revoke scoped API keys                   |
-| Integrations      | `/settings/integrations`   | Connect and manage project management integrations  |
+| Page            | Route                       | Description                                        |
+| --------------- | --------------------------- | -------------------------------------------------- |
+| Profile         | `/settings/profile`         | Name, email, and account details                   |
+| Password        | `/settings/password`        | Change account password                            |
+| Two-Factor Auth | `/settings/two-factor`      | Enable/disable 2FA and manage recovery codes       |
+| Appearance      | `/settings/appearance`      | Theme and UI preferences                           |
+| Notifications   | `/settings/notifications`   | Per-channel notification opt-out preferences       |
+| Scheduled Scans | `/settings/scheduled-scans` | Manage recurring scans                             |
+| API Keys        | `/settings/api-keys`        | Create and revoke scoped API keys                  |
+| Integrations    | `/settings/integrations`    | Connect and manage project management integrations |
