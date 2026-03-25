@@ -36,6 +36,7 @@ class ContentAuditAgent implements Agent, HasStructuredOutput
                     'current_text' => $schema->string()->nullable()->required(),
                     'issue' => $schema->string()->required(),
                     'suggestion' => $schema->string()->required(),
+                    'suggested_alt_text' => $schema->string()->nullable()->required(),
                     'severity' => $schema->string()->enum(['critical', 'serious', 'moderate', 'minor'])->required(),
                     'wcag_criteria' => $schema->string()->required(),
                     'writer_note' => $schema->string()->required(),

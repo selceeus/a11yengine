@@ -12,6 +12,8 @@ type ContentIssue = {
     issue: string;
     element_html: string | null;
     suggestion: string;
+    suggested_alt_text: string | null;
+    category: string;
 };
 
 type ReadingMetric = {
@@ -188,7 +190,17 @@ export default function Show({ audit }: PageProps) {
                                             </td>
                                             <td className="px-4 py-3 text-xs">{issue.issue}</td>
                                             <td className="px-4 py-3 font-mono text-xs max-w-[150px] truncate">{issue.element_html}</td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground">{issue.suggestion}</td>
+                                            <td className="px-4 py-3 text-xs text-muted-foreground">
+                                                <span>{issue.suggestion}</span>
+                                                {issue.category === 'alt_text' && issue.suggested_alt_text != null && (
+                                                    <div className="mt-1.5">
+                                                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Suggested alt text</p>
+                                                        <code className="mt-0.5 block rounded bg-muted px-2 py-1 text-xs text-foreground">
+                                                            {issue.suggested_alt_text === '' ? '(empty — decorative image)' : issue.suggested_alt_text}
+                                                        </code>
+                                                    </div>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

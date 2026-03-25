@@ -58,6 +58,7 @@ it('transitions to Completed with content_issues on a successful AI response', f
                 'current_text' => null,
                 'issue' => 'The image has no alt text.',
                 'suggestion' => 'Add a descriptive alt attribute.',
+                'suggested_alt_text' => 'Person smiling while holding a coffee cup',
                 'severity' => 'critical',
                 'wcag_criteria' => '1.1.1',
                 'writer_note' => 'Describe what the image conveys.',
@@ -91,7 +92,8 @@ it('transitions to Completed with content_issues on a successful AI response', f
         ->and($fresh->reading_metrics[0]['reading_level'])->toBe('Grade 8 (Flesch-Kincaid)')
         ->and($fresh->avg_reading_level)->toBe('Grade 8 (Flesch-Kincaid)')
         ->and($fresh->avg_reading_time_seconds)->toBe(60)
-        ->and($fresh->generated_at)->not->toBeNull();
+        ->and($fresh->generated_at)->not->toBeNull()
+        ->and($fresh->content_issues[0]['suggested_alt_text'])->toBe('Person smiling while holding a coffee cup');
 });
 
 it('stores an empty content_issues array when AI returns none', function (): void {

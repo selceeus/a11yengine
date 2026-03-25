@@ -278,6 +278,7 @@ Return a single JSON object matching this exact schema (no prose, no markdown fe
       "current_text": "<the current visible or attribute text, or null>",
       "issue": "<1-2 sentence description of the problem>",
       "suggestion": "<specific, actionable recommendation>",
+      "suggested_alt_text": "<for alt_text issues only: the exact string to use as the alt attribute value; use empty string \"\" for decorative images; null for all other categories>",
       "severity": "critical|serious|moderate|minor",
       "wcag_criteria": "<WCAG criterion, e.g. 2.4.4>",
       "writer_note": "<guidance for content editors to fix this>",
@@ -301,6 +302,7 @@ Rules:
 - Prioritise critical and serious issues first.
 - Do not invent issues not evidenced by the findings or HTML.
 - If `html_snippet` is null for a page, rely only on the `findings` array for that page and omit that page from `reading_metrics`.
+- For `alt_text` issues: write a concise, descriptive `suggested_alt_text` value — the exact text to place in the `alt` attribute, written in plain language from the user's perspective. Use `""` for purely decorative images. Set `suggested_alt_text` to `null` for all other categories.
 PROMPT;
     }
 

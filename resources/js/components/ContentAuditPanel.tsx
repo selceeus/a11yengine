@@ -25,6 +25,7 @@ type ContentIssue = {
     current_text: string | null;
     issue: string;
     suggestion: string;
+    suggested_alt_text: string | null;
     severity: 'critical' | 'serious' | 'moderate' | 'minor';
     wcag_criteria: string | null;
     writer_note: string | null;
@@ -374,6 +375,36 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                                 </p>
                                                                 <p className="text-sm">{issue.suggestion}</p>
                                                             </div>
+
+                                                            {/* Suggested alt text — alt_text issues only */}
+                                                            {issue.category === 'alt_text' && issue.suggested_alt_text != null && (
+                                                                <div>
+                                                                    <div className="mb-1 flex items-center justify-between">
+                                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                                            Suggested alt text
+                                                                        </span>
+                                                                        <button
+                                                                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                                                                            onClick={() =>
+                                                                                handleCopy(
+                                                                                    issue.suggested_alt_text!,
+                                                                                    globalIdx + 10000,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Copy className="h-3 w-3" />
+                                                                            {copiedIndex === globalIdx + 10000 ? 'Copied!' : 'Copy'}
+                                                                        </button>
+                                                                    </div>
+                                                                    <pre className="overflow-x-auto rounded-md bg-muted px-3 py-2 text-xs">
+                                                                        <code>
+                                                                            {issue.suggested_alt_text === ''
+                                                                                ? '(empty — decorative image)'
+                                                                                : issue.suggested_alt_text}
+                                                                        </code>
+                                                                    </pre>
+                                                                </div>
+                                                            )}
 
                                                             {/* Writer / Developer notes */}
                                                             <div className="grid gap-3 sm:grid-cols-2">
