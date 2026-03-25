@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\VectorCast;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,7 +25,7 @@ class RemediationEmbedding extends Model
     protected function casts(): array
     {
         return [
-            'embedding' => 'array',
+            'embedding' => VectorCast::class,
             'metadata' => 'array',
         ];
     }

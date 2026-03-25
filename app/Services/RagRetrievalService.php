@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LawsuitEmbedding;
 use App\Models\RemediationEmbedding;
 use App\Models\WcagEmbedding;
+use Illuminate\Database\Eloquent\Builder;
 
 class RagRetrievalService
 {
@@ -22,22 +23,26 @@ class RagRetrievalService
     {
         $queryEmbedding = $this->embeddings->embed($query);
 
-        $builder = WcagEmbedding::query();
+        if (empty($queryEmbedding)) {
+            return [];
+        }
+
+        $builder = WcagEmbedding::query()
+            ->select(['criterion', 'level', 'title', 'chunk']);
 
         if ($criteria !== null) {
             $builder->whereIn('criterion', $criteria);
         }
 
-        $rows = $builder->get(['criterion', 'level', 'title', 'chunk', 'embedding']);
-
-        return $this->rankBySimilarity($rows, $queryEmbedding, $limit, function ($row): array {
-            return [
+        return $this->nearestNeighbors($builder, $queryEmbedding, $limit)
+            ->map(fn ($row) => [
                 'criterion' => $row->criterion,
                 'level' => $row->level,
                 'title' => $row->title,
                 'chunk' => $row->chunk,
-            ];
-        });
+                'score' => $row->score,
+            ])
+            ->all();
     }
 
     /**
@@ -50,24 +55,28 @@ class RagRetrievalService
     {
         $queryEmbedding = $this->embeddings->embed($query);
 
-        $builder = LawsuitEmbedding::query();
+        if (empty($queryEmbedding)) {
+            return [];
+        }
+
+        $builder = LawsuitEmbedding::query()
+            ->select(['case_name', 'filed_year', 'industry', 'outcome', 'settlement_amount', 'summary']);
 
         if ($industries !== null) {
             $builder->whereIn('industry', $industries);
         }
 
-        $rows = $builder->get(['case_name', 'filed_year', 'industry', 'outcome', 'settlement_amount', 'summary', 'embedding']);
-
-        return $this->rankBySimilarity($rows, $queryEmbedding, $limit, function ($row): array {
-            return [
+        return $this->nearestNeighbors($builder, $queryEmbedding, $limit)
+            ->map(fn ($row) => [
                 'case_name' => $row->case_name,
                 'filed_year' => $row->filed_year,
                 'industry' => $row->industry,
                 'outcome' => $row->outcome,
                 'settlement_amount' => $row->settlement_amount,
                 'summary' => $row->summary,
-            ];
-        });
+                'score' => $row->score,
+            ])
+            ->all();
     }
 
     /**
@@ -79,18 +88,23 @@ class RagRetrievalService
     {
         $queryEmbedding = $this->embeddings->embed($query);
 
-        $rows = RemediationEmbedding::query()
-            ->get(['rule_key', 'wcag_criteria', 'description', 'resolution', 'outcome', 'embedding']);
+        if (empty($queryEmbedding)) {
+            return [];
+        }
 
-        $ranked = $this->rankBySimilarity($rows, $queryEmbedding, $limit, function ($row): array {
-            return [
+        $builder = RemediationEmbedding::query()
+            ->select(['rule_key', 'wcag_criteria', 'description', 'resolution', 'outcome']);
+
+        $ranked = $this->nearestNeighbors($builder, $queryEmbedding, $limit)
+            ->map(fn ($row) => [
                 'rule_key' => $row->rule_key,
                 'wcag_criteria' => $row->wcag_criteria,
                 'description' => $row->description,
                 'resolution' => $row->resolution,
                 'outcome' => $row->outcome,
-            ];
-        });
+                'score' => $row->score,
+            ])
+            ->all();
 
         if (empty($ranked)) {
             return [];
@@ -111,33 +125,22 @@ class RagRetrievalService
     }
 
     /**
-     * Rank a collection of models by cosine similarity to the query embedding,
-     * returning the top $limit results with a 'score' field appended.
+     * Use pgvector's cosine distance operator (<=>) to find the nearest
+     * neighbors in the database, returning results with a similarity score.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $rows
+     * Score = 1 - cosine_distance (so higher = more similar).
+     *
      * @param  list<float>  $queryEmbedding
-     * @param  callable(\Illuminate\Database\Eloquent\Model): array<string, mixed>  $toArray
-     * @return list<array<string, mixed>>
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>
      */
-    private function rankBySimilarity($rows, array $queryEmbedding, int $limit, callable $toArray): array
+    private function nearestNeighbors(Builder $builder, array $queryEmbedding, int $limit): \Illuminate\Support\Collection
     {
-        if ($rows->isEmpty() || count($queryEmbedding) === 0) {
-            return [];
-        }
+        $vectorLiteral = '['.implode(',', $queryEmbedding).']';
 
-        $scored = $rows->map(function ($row) use ($queryEmbedding, $toArray): array {
-            $embedding = is_array($row->embedding) ? $row->embedding : [];
-
-            return array_merge(
-                $toArray($row),
-                ['score' => $this->embeddings->cosineSimilarity($queryEmbedding, $embedding)],
-            );
-        });
-
-        return $scored
-            ->sortByDesc('score')
-            ->take($limit)
-            ->values()
-            ->toArray();
+        return $builder
+            ->selectRaw('(1 - (embedding <=> ?)) as score', [$vectorLiteral])
+            ->orderByRaw('embedding <=> ?', [$vectorLiteral])
+            ->limit($limit)
+            ->get();
     }
 }

@@ -11,12 +11,7 @@ beforeEach(function (): void {
     app()->instance(Agency::class, $this->agency);
 
     $this->mockEmbedding = Mockery::mock(EmbeddingService::class);
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
-    $this->mockEmbedding->allows('cosineSimilarity')->andReturnUsing(
-        function (array $a, array $b): float {
-            return array_sum(array_map(fn ($x, $y) => $x * $y, $a, $b));
-        }
-    );
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
     app()->instance(EmbeddingService::class, $this->mockEmbedding);
 });
 
@@ -27,7 +22,7 @@ it('returns similar remediations for a rule and criterion', function (): void {
         'description' => 'Image missing alt attribute',
         'resolution' => 'Added descriptive alt text to the img element.',
         'outcome' => 'resolved',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     PropertyAccessibilityServer::tool(GetSimilarRemediationsTool::class, [
@@ -46,7 +41,7 @@ it('includes resolved_count in results', function (): void {
             'description' => "Image alt issue {$i}",
             'resolution' => 'Added alt text.',
             'outcome' => 'resolved',
-            'embedding' => [1.0, 0.0],
+            'embedding' => testVector([1.0, 0.0]),
         ]);
     }
 
@@ -73,7 +68,7 @@ it('respects the limit parameter', function (): void {
             'description' => "Description {$i}",
             'resolution' => "Resolution {$i}",
             'outcome' => 'resolved',
-            'embedding' => [1.0, 0.0],
+            'embedding' => testVector([1.0, 0.0]),
         ]);
     }
 

@@ -45,3 +45,15 @@ function something()
 {
     // ..
 }
+
+/**
+ * Create a 1536-dimensional test vector from a short seed array.
+ * Remaining dimensions are padded with zeros.
+ *
+ * @param  list<float>  $seed
+ * @return list<float>
+ */
+function testVector(array $seed): array
+{
+    return array_pad($seed, 1536, 0.0);
+}

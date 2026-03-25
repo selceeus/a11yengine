@@ -11,12 +11,7 @@ beforeEach(function (): void {
     app()->instance(Agency::class, $this->agency);
 
     $this->mockEmbedding = Mockery::mock(EmbeddingService::class);
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
-    $this->mockEmbedding->allows('cosineSimilarity')->andReturnUsing(
-        function (array $a, array $b): float {
-            return array_sum(array_map(fn ($x, $y) => $x * $y, $a, $b));
-        }
-    );
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
     app()->instance(EmbeddingService::class, $this->mockEmbedding);
 });
 
@@ -29,7 +24,7 @@ it('returns matched lawsuits for a rule and criterion', function (): void {
         'outcome' => 'plaintiff_won',
         'settlement_amount' => null,
         'summary' => 'Blind plaintiff unable to order pizza online.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     PropertyAccessibilityServer::tool(GetRelatedLawsuitsTool::class, [
@@ -49,7 +44,7 @@ it('filters lawsuits by industry', function (): void {
         'outcome' => 'settled',
         'settlement_amount' => 50000,
         'summary' => 'Hospital website inaccessible.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     LawsuitEmbedding::create([
@@ -60,7 +55,7 @@ it('filters lawsuits by industry', function (): void {
         'outcome' => 'plaintiff_won',
         'settlement_amount' => null,
         'summary' => 'Ecommerce site inaccessible.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     PropertyAccessibilityServer::tool(GetRelatedLawsuitsTool::class, [
@@ -91,7 +86,7 @@ it('respects the limit parameter', function (): void {
             'outcome' => 'settled',
             'settlement_amount' => null,
             'summary' => "Summary {$i}",
-            'embedding' => [1.0, 0.0],
+            'embedding' => testVector([1.0, 0.0]),
         ]);
     }
 

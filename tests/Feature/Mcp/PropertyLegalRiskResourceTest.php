@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\Property;
 use App\Services\EmbeddingService;
 use Laravel\Mcp\Request;
+use Mockery;
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -25,12 +26,7 @@ beforeEach(function (): void {
         ]);
 
     $this->mockEmbedding = Mockery::mock(EmbeddingService::class);
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
-    $this->mockEmbedding->allows('cosineSimilarity')->andReturnUsing(
-        function (array $a, array $b): float {
-            return array_sum(array_map(fn ($x, $y) => $x * $y, $a, $b));
-        }
-    );
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
     app()->instance(EmbeddingService::class, $this->mockEmbedding);
 });
 
@@ -64,7 +60,7 @@ it('returns top matching lawsuits when open issues exist', function (): void {
         'outcome' => 'plaintiff_won',
         'settlement_amount' => null,
         'summary' => 'Blind plaintiff unable to order pizza.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     $resource = app(PropertyLegalRiskResource::class);
@@ -102,7 +98,7 @@ it('elevates risk level based on plaintiff wins', function (): void {
         'outcome' => 'plaintiff_won',
         'settlement_amount' => null,
         'summary' => 'Tech company sued for inaccessible site.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     LawsuitEmbedding::create([
@@ -113,7 +109,7 @@ it('elevates risk level based on plaintiff wins', function (): void {
         'outcome' => 'plaintiff_won',
         'settlement_amount' => null,
         'summary' => 'Another tech lawsuit.',
-        'embedding' => [0.9, 0.1],
+        'embedding' => testVector([0.9, 0.1]),
     ]);
 
     $resource = app(PropertyLegalRiskResource::class);

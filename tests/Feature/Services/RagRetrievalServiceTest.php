@@ -8,11 +8,6 @@ use App\Services\RagRetrievalService;
 
 beforeEach(function (): void {
     $this->mockEmbedding = Mockery::mock(EmbeddingService::class);
-    $this->mockEmbedding->allows('cosineSimilarity')->andReturnUsing(
-        function (array $a, array $b): float {
-            return array_sum(array_map(fn ($x, $y) => $x * $y, $a, $b));
-        }
-    );
     $this->app->instance(EmbeddingService::class, $this->mockEmbedding);
     $this->service = app(RagRetrievalService::class);
 });
@@ -20,7 +15,7 @@ beforeEach(function (): void {
 // ─── findWcagChunks ───────────────────────────────────────────────────────────
 
 it('returns empty array when no wcag embeddings exist', function (): void {
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     expect($this->service->findWcagChunks('color contrast'))->toBe([]);
 });
@@ -31,7 +26,7 @@ it('returns ranked wcag chunks by cosine similarity', function (): void {
         'level' => 'AA',
         'title' => 'Contrast (Minimum)',
         'chunk' => 'Text must have 4.5:1 contrast ratio.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
     WcagEmbedding::create([
@@ -39,10 +34,10 @@ it('returns ranked wcag chunks by cosine similarity', function (): void {
         'level' => 'A',
         'title' => 'Non-text Content',
         'chunk' => 'All non-text content must have a text alternative.',
-        'embedding' => [0.0, 1.0],
+        'embedding' => testVector([0.0, 1.0]),
     ]);
 
-    $this->mockEmbedding->allows('embed')->andReturn([0.9, 0.1]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([0.9, 0.1]));
 
     $results = $this->service->findWcagChunks('contrast', 2);
 
@@ -52,10 +47,10 @@ it('returns ranked wcag chunks by cosine similarity', function (): void {
 });
 
 it('filters wcag chunks by criteria', function (): void {
-    WcagEmbedding::create(['criterion' => '1.4.3', 'level' => 'AA', 'title' => 'Contrast', 'chunk' => 'text', 'embedding' => [1.0, 0.0]]);
-    WcagEmbedding::create(['criterion' => '1.1.1', 'level' => 'A', 'title' => 'Images', 'chunk' => 'text', 'embedding' => [0.0, 1.0]]);
+    WcagEmbedding::create(['criterion' => '1.4.3', 'level' => 'AA', 'title' => 'Contrast', 'chunk' => 'text', 'embedding' => testVector([1.0, 0.0])]);
+    WcagEmbedding::create(['criterion' => '1.1.1', 'level' => 'A', 'title' => 'Images', 'chunk' => 'text', 'embedding' => testVector([0.0, 1.0])]);
 
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     $results = $this->service->findWcagChunks('contrast', 5, ['1.4.3']);
 
@@ -66,7 +61,7 @@ it('filters wcag chunks by criteria', function (): void {
 // ─── findLawsuits ────────────────────────────────────────────────────────────
 
 it('returns empty array when no lawsuit embeddings exist', function (): void {
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     expect($this->service->findLawsuits('image alt text'))->toBe([]);
 });
@@ -80,10 +75,10 @@ it('returns ranked lawsuits by cosine similarity', function (): void {
         'outcome' => 'plaintiff_won',
         'settlement_amount' => null,
         'summary' => 'Website inaccessible to blind users.',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     $results = $this->service->findLawsuits('screen reader');
 
@@ -93,10 +88,10 @@ it('returns ranked lawsuits by cosine similarity', function (): void {
 });
 
 it('filters lawsuits by industry', function (): void {
-    LawsuitEmbedding::create(['case_name' => 'Case A', 'filed_year' => 2020, 'industry' => 'retail', 'violation_type' => 'images', 'outcome' => 'settled', 'summary' => 'retail case', 'embedding' => [1.0, 0.0]]);
-    LawsuitEmbedding::create(['case_name' => 'Case B', 'filed_year' => 2021, 'industry' => 'healthcare', 'violation_type' => 'forms', 'outcome' => 'settled', 'summary' => 'healthcare case', 'embedding' => [1.0, 0.0]]);
+    LawsuitEmbedding::create(['case_name' => 'Case A', 'filed_year' => 2020, 'industry' => 'retail', 'violation_type' => 'images', 'outcome' => 'settled', 'summary' => 'retail case', 'embedding' => testVector([1.0, 0.0])]);
+    LawsuitEmbedding::create(['case_name' => 'Case B', 'filed_year' => 2021, 'industry' => 'healthcare', 'violation_type' => 'forms', 'outcome' => 'settled', 'summary' => 'healthcare case', 'embedding' => testVector([1.0, 0.0])]);
 
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     $results = $this->service->findLawsuits('accessibility', 5, ['retail']);
 
@@ -107,7 +102,7 @@ it('filters lawsuits by industry', function (): void {
 // ─── findSimilarRemediations ─────────────────────────────────────────────────
 
 it('returns empty array when no remediation embeddings exist', function (): void {
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     expect($this->service->findSimilarRemediations('missing alt text'))->toBe([]);
 });
@@ -119,10 +114,10 @@ it('returns ranked remediations by cosine similarity', function (): void {
         'description' => 'Image missing alt attribute',
         'resolution' => 'Add descriptive alt text to all img elements.',
         'outcome' => 'resolved',
-        'embedding' => [1.0, 0.0],
+        'embedding' => testVector([1.0, 0.0]),
     ]);
 
-    $this->mockEmbedding->allows('embed')->andReturn([0.9, 0.1]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([0.9, 0.1]));
 
     $results = $this->service->findSimilarRemediations('image alt text');
 
@@ -140,7 +135,7 @@ it('includes the correct resolved_count per rule_key', function (): void {
             'rule_key' => 'image-alt',
             'description' => "Variant {$i}",
             'resolution' => "Fix {$i}",
-            'embedding' => [1.0, 0.0],
+            'embedding' => testVector([1.0, 0.0]),
         ]);
     }
 
@@ -148,10 +143,10 @@ it('includes the correct resolved_count per rule_key', function (): void {
         'rule_key' => 'label',
         'description' => 'Label missing',
         'resolution' => 'Add label.',
-        'embedding' => [0.9, 0.1],
+        'embedding' => testVector([0.9, 0.1]),
     ]);
 
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     $results = $this->service->findSimilarRemediations('alt text', 5);
 
@@ -168,11 +163,11 @@ it('limits results to the requested count', function (): void {
             'rule_key' => "rule-{$i}",
             'description' => "Description {$i}",
             'resolution' => "Resolution {$i}",
-            'embedding' => [1.0, 0.0],
+            'embedding' => testVector([1.0, 0.0]),
         ]);
     }
 
-    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+    $this->mockEmbedding->allows('embed')->andReturn(testVector([1.0, 0.0]));
 
     $results = $this->service->findSimilarRemediations('query', 3);
 

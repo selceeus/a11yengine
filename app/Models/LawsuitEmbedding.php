@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\VectorCast;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,7 +27,7 @@ class LawsuitEmbedding extends Model
     {
         return [
             'wcag_criteria' => 'array',
-            'embedding' => 'array',
+            'embedding' => VectorCast::class,
             'metadata' => 'array',
             'settlement_amount' => 'integer',
         ];
