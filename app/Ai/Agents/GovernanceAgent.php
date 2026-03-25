@@ -35,6 +35,15 @@ class GovernanceAgent implements Agent, HasStructuredOutput
                     'unit' => $schema->string()->nullable()->required(),
                 ])->withoutAdditionalProperties()
             )->required(),
+            'legal_risk_rating' => $schema->string()->enum(['high', 'medium', 'low'])->required(),
+            'legal_precedents' => $schema->array()->items(
+                $schema->object([
+                    'case_name' => $schema->string()->required(),
+                    'year' => $schema->integer()->nullable()->required(),
+                    'outcome' => $schema->string()->required(),
+                    'relevance' => $schema->string()->required(),
+                ])->withoutAdditionalProperties()
+            )->required(),
             'recommendations' => $schema->array()->items(
                 $schema->object([
                     'priority' => $schema->string()->enum(['high', 'medium', 'low'])->required(),

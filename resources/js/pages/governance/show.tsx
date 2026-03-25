@@ -7,6 +7,7 @@ import {
     ChevronUp,
     ExternalLink,
     Printer,
+    Scale,
     TrendingDown,
     TrendingUp,
     Minus,
@@ -50,6 +51,13 @@ type SeverityBreakdown = Record<string, { open?: number; resolved?: number; igno
 type RemediationProgress = Record<string, { total?: number; resolved?: number; rate?: number }>;
 type ComplianceStatus = Record<string, { pass?: number; fail?: number; partial?: number }>;
 
+type LegalPrecedent = {
+    case_name: string;
+    year: number | null;
+    outcome: 'plaintiff_won' | 'defendant_won' | 'settled';
+    relevance: string;
+};
+
 type GovernanceReport = {
     id: number;
     report_scope: 'property' | 'agency';
@@ -65,6 +73,8 @@ type GovernanceReport = {
     severity_breakdown: SeverityBreakdown;
     remediation_progress: RemediationProgress;
     compliance_status: ComplianceStatus;
+    legal_risk_rating: 'high' | 'medium' | 'low' | null;
+    legal_precedents: LegalPrecedent[];
     recommendations: Recommendation[];
     property: { id: number; name: string; base_url: string } | null;
     agency: { id: number; name: string } | null;
@@ -81,6 +91,32 @@ function priorityVariant(p: string): 'default' | 'secondary' | 'destructive' | '
     switch (p) {
         case 'high': return 'destructive';
         case 'medium': return 'default';
+        default: return 'secondary';
+    }
+}
+
+function legalRiskColor(rating: string): string {
+    switch (rating) {
+        case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+        case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        default: return 'bg-muted text-muted-foreground';
+    }
+}
+
+function outcomeLabel(outcome: string): string {
+    switch (outcome) {
+        case 'plaintiff_won': return 'Plaintiff Won';
+        case 'defendant_won': return 'Defendant Won';
+        case 'settled': return 'Settled';
+        default: return outcome;
+    }
+}
+
+function outcomeVariant(outcome: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+    switch (outcome) {
+        case 'plaintiff_won': return 'destructive';
+        case 'settled': return 'default';
         default: return 'secondary';
     }
 }
@@ -352,6 +388,24 @@ export default function Show({ report }: PageProps) {
                                 </div>
                             </div>
                         )}
+
+                        {/* Legal risk rating */}
+                        {report.legal_risk_rating && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Legal Risk Assessment</h2>
+                                <div className="flex items-center gap-4">
+                                    <div className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold capitalize ${legalRiskColor(report.legal_risk_rating)}`}>
+                                        <Scale className="h-4 w-4" />
+                                        {report.legal_risk_rating} Risk
+                                    </div>
+                                    {report.legal_precedents.length > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Based on {report.legal_precedents.length} relevant legal precedent{report.legal_precedents.length !== 1 ? 's' : ''}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -488,6 +542,41 @@ export default function Show({ report }: PageProps) {
                                         );
                                     })}
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Legal risk + precedents */}
+                        {report.legal_risk_rating && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <div className="mb-4 flex items-center justify-between">
+                                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Legal Risk Assessment</h2>
+                                    <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold capitalize ${legalRiskColor(report.legal_risk_rating)}`}>
+                                        <Scale className="h-4 w-4" />
+                                        {report.legal_risk_rating} Risk
+                                    </div>
+                                </div>
+
+                                {report.legal_precedents.length > 0 && (
+                                    <div className="space-y-3">
+                                        <p className="text-xs font-medium text-muted-foreground">Relevant Legal Precedents ({report.legal_precedents.length})</p>
+                                        {report.legal_precedents.map((prec, i) => (
+                                            <div key={i} className="rounded-lg border p-4">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium">{prec.case_name}</p>
+                                                        {prec.year && (
+                                                            <p className="mt-0.5 text-xs text-muted-foreground">{prec.year}</p>
+                                                        )}
+                                                    </div>
+                                                    <Badge variant={outcomeVariant(prec.outcome)} className="shrink-0">
+                                                        {outcomeLabel(prec.outcome)}
+                                                    </Badge>
+                                                </div>
+                                                <p className="mt-2 text-sm text-muted-foreground">{prec.relevance}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 

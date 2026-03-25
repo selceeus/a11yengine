@@ -44,6 +44,8 @@ class AiGovernanceService
         $report->update(array_merge($dataFields, [
             'executive_narrative' => $result['executive_narrative'] ?? '',
             'summary_cards' => $result['summary_cards'] ?? [],
+            'legal_risk_rating' => $result['legal_risk_rating'] ?? null,
+            'legal_precedents' => $result['legal_precedents'] ?? [],
             'recommendations' => $result['recommendations'] ?? [],
             'prompt_context' => $prompt,
             'raw_ai_response' => $response->text,
@@ -379,7 +381,9 @@ You are producing an AI Governance Report for "{$scopeName}" covering the period
 Using the data provided below, produce:
 1. An `executive_narrative` — 3-5 paragraph plain-English summary of the accessibility posture, risk trends, and key findings suitable for a non-technical executive audience.
 2. `summary_cards` — 4 KPI cards derived from the provided data. Each card has a `title`, `value` (number), `delta` (positive = improved, negative = worsened), `trend` ("up"|"down"|"stable"), and optional `unit` (e.g. "/100", "%", or null).
-3. `recommendations` — up to 5 prioritised, actionable recommendations for the next quarter. Each recommendation must include `source_refs` — an array of traceable evidence links referencing the data you were given. Each source_ref has `type` (one of: "issue", "scan", "audit", "advisory", "content_audit"), `id` (integer), `label` (descriptive text), and `url` (e.g. "/issues/42").
+3. `legal_risk_rating` — "high", "medium", or "low" based on the severity of open issues, industry litigation history from the ADA legal precedents below, and how many plaintiff-won or settled cases match the current violation profile.
+4. `legal_precedents` — up to 5 relevant ADA lawsuit cases from the knowledge base below. Each has `case_name`, `year` (integer or null), `outcome` ("plaintiff_won"|"defendant_won"|"settled"), and `relevance` (1-2 sentences explaining why this case is relevant to the current accessibility posture).
+5. `recommendations` — up to 5 prioritised, actionable recommendations for the next quarter. Each recommendation must include `source_refs` — an array of traceable evidence links referencing the data you were given. Each source_ref has `type` (one of: "issue", "scan", "audit", "advisory", "content_audit"), `id` (integer), `label` (descriptive text), and `url` (e.g. "/issues/42").
 
 ## Data
 {$contextJson}
@@ -393,6 +397,15 @@ Return a single JSON object only (no markdown fences, no prose outside the JSON)
   "executive_narrative": "<3-5 paragraphs of plain-English executive summary>",
   "summary_cards": [
     { "title": "...", "value": <number>, "delta": <number>, "trend": "up|down|stable", "unit": "..." }
+  ],
+  "legal_risk_rating": "<high|medium|low>",
+  "legal_precedents": [
+    {
+      "case_name": "<ADA case name from knowledge base>",
+      "year": <year filed or null>,
+      "outcome": "<plaintiff_won|defendant_won|settled>",
+      "relevance": "<1-2 sentences explaining why this case matters for the current accessibility posture>"
+    }
   ],
   "recommendations": [
     {
@@ -414,6 +427,8 @@ Rules:
 - Only include source_refs that have a real `id` from the data you were given.
 - Keep `executive_narrative` free of jargon; assume the reader is a senior manager, not a developer.
 - Prioritise recommendations by user impact and compliance risk.
+- For `legal_precedents`, only reference cases from the ADA Legal Precedents section above — do not invent case names.
+- Set `legal_risk_rating` to "high" if multiple plaintiff-won or settled cases match the current violation types, "medium" if there is some overlap, and "low" if no relevant precedents exist.
 PROMPT;
     }
 

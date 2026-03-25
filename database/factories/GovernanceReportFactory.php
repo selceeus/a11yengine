@@ -67,6 +67,21 @@ class GovernanceReportFactory extends Factory
                 'wcag_aa' => ['pass' => 24, 'fail' => 7, 'partial' => 4],
                 'wcag_aaa' => ['pass' => 9, 'fail' => 14, 'partial' => 6],
             ],
+            'legal_risk_rating' => 'medium',
+            'legal_precedents' => [
+                [
+                    'case_name' => 'Gil v. Winn-Dixie Stores, Inc.',
+                    'year' => 2017,
+                    'outcome' => 'plaintiff_won',
+                    'relevance' => 'Court ruled that inaccessible websites violate the ADA. Relevant because the current property has unresolved WCAG AA failures on transactional pages.',
+                ],
+                [
+                    'case_name' => 'Robles v. Domino\'s Pizza LLC',
+                    'year' => 2019,
+                    'outcome' => 'plaintiff_won',
+                    'relevance' => 'Ninth Circuit held that the ADA applies to websites, reinforcing the need for WCAG compliance on commercial sites with physical locations.',
+                ],
+            ],
             'recommendations' => [
                 [
                     'priority' => 'high',

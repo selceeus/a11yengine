@@ -90,6 +90,53 @@ it('stores the prompt_context and raw_ai_response', function (): void {
         ->and($fresh->raw_ai_response)->toBe($rawPayload);
 });
 
+it('persists legal_risk_rating and legal_precedents from the AI response', function (): void {
+    $precedents = [
+        [
+            'case_name' => 'Gil v. Winn-Dixie Stores, Inc.',
+            'year' => 2017,
+            'outcome' => 'plaintiff_won',
+            'relevance' => 'Inaccessible website violated ADA.',
+        ],
+        [
+            'case_name' => 'Robles v. Domino\'s Pizza LLC',
+            'year' => 2019,
+            'outcome' => 'plaintiff_won',
+            'relevance' => 'Ninth Circuit upheld ADA applies to websites.',
+        ],
+    ];
+
+    Ai::fakeAgent(GovernanceAgent::class, [[
+        'executive_narrative' => 'Legal risk is elevated.',
+        'summary_cards' => [],
+        'legal_risk_rating' => 'high',
+        'legal_precedents' => $precedents,
+        'recommendations' => [],
+    ]]);
+
+    (new GenerateGovernanceReportJob($this->report))->handle(app(AiGovernanceService::class));
+
+    $fresh = $this->report->fresh();
+    expect($fresh->legal_risk_rating)->toBe('high')
+        ->and($fresh->legal_precedents)->toHaveCount(2)
+        ->and($fresh->legal_precedents[0]['case_name'])->toBe('Gil v. Winn-Dixie Stores, Inc.')
+        ->and($fresh->legal_precedents[1]['outcome'])->toBe('plaintiff_won');
+});
+
+it('defaults legal_risk_rating to null when AI omits it', function (): void {
+    Ai::fakeAgent(GovernanceAgent::class, [[
+        'executive_narrative' => 'No legal data.',
+        'summary_cards' => [],
+        'recommendations' => [],
+    ]]);
+
+    (new GenerateGovernanceReportJob($this->report))->handle(app(AiGovernanceService::class));
+
+    $fresh = $this->report->fresh();
+    expect($fresh->legal_risk_rating)->toBeNull()
+        ->and($fresh->legal_precedents)->toBe([]);
+});
+
 // ── Failure ───────────────────────────────────────────────────────────────────
 
 it('transitions to Failed when the job fails', function (): void {

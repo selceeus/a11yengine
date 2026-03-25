@@ -114,6 +114,8 @@ class GovernanceReportController extends Controller
                 'severity_breakdown' => $report->severity_breakdown ?? [],
                 'remediation_progress' => $report->remediation_progress ?? [],
                 'compliance_status' => $report->compliance_status ?? [],
+                'legal_risk_rating' => $report->legal_risk_rating,
+                'legal_precedents' => $report->legal_precedents ?? [],
                 'recommendations' => $report->recommendations ?? [],
                 'property' => $report->property ? [
                     'id' => $report->property->id,
@@ -156,6 +158,8 @@ class GovernanceReportController extends Controller
                 'severity_breakdown' => $report->severity_breakdown,
                 'remediation_progress' => $report->remediation_progress,
                 'compliance_status' => $report->compliance_status,
+                'legal_risk_rating' => $report->legal_risk_rating,
+                'legal_precedents' => $report->legal_precedents,
                 'recommendations' => $report->recommendations,
                 'summary_cards' => $report->summary_cards,
                 'generated_at' => $report->generated_at?->toIso8601String(),
