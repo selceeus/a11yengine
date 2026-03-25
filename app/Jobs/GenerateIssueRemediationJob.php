@@ -31,6 +31,8 @@ class GenerateIssueRemediationJob implements ShouldQueue
             'ai_remediation_status' => 'completed',
             'ai_suggestions' => $suggestions,
         ]);
+
+        IndexRemediationPatternJob::dispatch($this->issue->fresh());
     }
 
     public function failed(Throwable $e): void

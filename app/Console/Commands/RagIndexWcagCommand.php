@@ -8,7 +8,8 @@ use Illuminate\Console\Command;
 class RagIndexWcagCommand extends Command
 {
     protected $signature = 'rag:index-wcag
-                            {--fresh : Truncate wcag_embeddings before indexing}';
+                            {--fresh : Truncate wcag_embeddings before indexing}
+                            {--skip-if-indexed : Skip if all expected chunks are already indexed}';
 
     protected $description = 'Dispatch queued jobs to embed all WCAG criteria chunks into the vector store';
 
@@ -36,6 +37,18 @@ class RagIndexWcagCommand extends Command
         }
 
         $totalChunks = array_sum(array_map(fn (array $c) => count($c['chunks']), $criteria));
+
+        if ($this->option('skip-if-indexed')) {
+            $indexed = \App\Models\WcagEmbedding::query()->count();
+
+            if ($indexed >= $totalChunks) {
+                $this->info("WCAG embeddings already fully indexed ({$indexed}/{$totalChunks} chunks). Skipping.");
+
+                return self::SUCCESS;
+            }
+
+            $this->info("WCAG embeddings partially indexed ({$indexed}/{$totalChunks} chunks). Continuing.");
+        }
 
         $this->info(sprintf(
             'Dispatching %d chunk jobs across %d WCAG criteria…',
