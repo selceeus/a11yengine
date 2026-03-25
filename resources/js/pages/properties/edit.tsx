@@ -4,6 +4,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -12,10 +13,17 @@ type Organization = {
     name: string;
 };
 
+type Industry = {
+    value: string;
+    label: string;
+    risk: 'high' | 'medium' | 'low';
+};
+
 type Property = {
     id: number;
     name: string;
     base_url: string;
+    industry: string | null;
     status: string;
     organization: Organization | null;
 };
@@ -23,9 +31,11 @@ type Property = {
 export default function Edit({
     property,
     organizations,
+    industries,
 }: {
     property: Property;
     organizations: Organization[];
+    industries: Industry[];
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Properties', href: PropertyController.index().url },
@@ -68,6 +78,26 @@ export default function Edit({
                                         defaultValue={property.base_url}
                                     />
                                     <InputError message={errors.base_url} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="industry">Industry</Label>
+                                    <Select name="industry" defaultValue={property.industry ?? undefined}>
+                                        <SelectTrigger id="industry">
+                                            <SelectValue placeholder="Select an industry…" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {industries.map((ind) => (
+                                                <SelectItem key={ind.value} value={ind.value}>
+                                                    {ind.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Used to assess legal risk based on ADA lawsuit data for your sector.
+                                    </p>
+                                    <InputError message={errors.industry} />
                                 </div>
 
                                 <div className="flex items-center gap-3">

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Domain\Scans\ScanConfig;
+use App\Enums\PropertyIndustry;
 use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,9 +21,12 @@ class Property extends Model
         'name',
         'slug',
         'base_url',
+        'industry',
         'status',
         'scan_config',
     ];
+
+    protected $appends = ['industry_label', 'legal_risk_level'];
 
     protected static function booted(): void
     {
@@ -31,8 +36,19 @@ class Property extends Model
     protected function casts(): array
     {
         return [
+            'industry' => PropertyIndustry::class,
             'scan_config' => 'array',
         ];
+    }
+
+    protected function industryLabel(): Attribute
+    {
+        return Attribute::get(fn () => $this->industry?->label());
+    }
+
+    protected function legalRiskLevel(): Attribute
+    {
+        return Attribute::get(fn () => $this->industry?->legalRiskLevel());
     }
 
     public function defaultScanConfig(): ScanConfig

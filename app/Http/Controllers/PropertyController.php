@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\FindingSeverity;
+use App\Enums\PropertyIndustry;
 use App\Enums\ScanStatus;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
@@ -47,6 +48,10 @@ class PropertyController extends Controller
 
         return Inertia::render('properties/create', [
             'organizations' => $organizations,
+            'industries' => array_map(
+                fn (PropertyIndustry $i) => ['value' => $i->value, 'label' => $i->label(), 'risk' => $i->legalRiskLevel()],
+                PropertyIndustry::cases(),
+            ),
         ]);
     }
 
@@ -69,6 +74,7 @@ class PropertyController extends Controller
             'name' => $validated['name'],
             'slug' => $slug,
             'base_url' => $validated['base_url'],
+            'industry' => $validated['industry'] ?? null,
             'status' => 'active',
         ]);
 
@@ -183,6 +189,10 @@ class PropertyController extends Controller
         return Inertia::render('properties/edit', [
             'property' => $property,
             'organizations' => $organizations,
+            'industries' => array_map(
+                fn (PropertyIndustry $i) => ['value' => $i->value, 'label' => $i->label(), 'risk' => $i->legalRiskLevel()],
+                PropertyIndustry::cases(),
+            ),
         ]);
     }
 

@@ -26,6 +26,9 @@ type Property = {
     id: number;
     name: string;
     base_url: string;
+    industry: string | null;
+    industry_label: string | null;
+    legal_risk_level: 'high' | 'medium' | 'low' | null;
     status: string;
     organization: Organization | null;
 };
@@ -334,8 +337,28 @@ export default function Show({
                 {/* Meta */}
                 <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <StatCard label="Organization" value={property.organization?.name ?? '—'} />
-                    <StatCard label="Status" value={property.status} capitalize />
-                </dl>
+                    <StatCard label="Status" value={property.status} capitalize />                    {property.industry_label && (
+                        <div className="rounded-xl border p-4">
+                            <dt className="text-xs text-muted-foreground">Industry</dt>
+                            <dd className="mt-1 flex items-center gap-2">
+                                <span className="font-medium">{property.industry_label}</span>
+                                {property.legal_risk_level && (
+                                    <Badge
+                                        variant={
+                                            property.legal_risk_level === 'high'
+                                                ? 'destructive'
+                                                : property.legal_risk_level === 'medium'
+                                                  ? 'default'
+                                                  : 'secondary'
+                                        }
+                                        className="capitalize"
+                                    >
+                                        {property.legal_risk_level} legal risk
+                                    </Badge>
+                                )}
+                            </dd>
+                        </div>
+                    )}                </dl>
 
                 {/* Lighthouse averages */}
                 {lighthouseAverages && (

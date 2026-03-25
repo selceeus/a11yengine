@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -13,9 +14,25 @@ type Property = {
     id: number;
     name: string;
     base_url: string;
+    industry: string | null;
+    industry_label: string | null;
+    legal_risk_level: 'high' | 'medium' | 'low' | null;
     status: string;
     organization: Organization | null;
 };
+
+function riskVariant(risk: 'high' | 'medium' | 'low' | null): 'destructive' | 'default' | 'secondary' | 'outline' {
+    switch (risk) {
+        case 'high':
+            return 'destructive';
+        case 'medium':
+            return 'default';
+        case 'low':
+            return 'secondary';
+        default:
+            return 'outline';
+    }
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Properties', href: PropertyController.index().url },
@@ -41,6 +58,8 @@ export default function Index({ properties }: { properties: Property[] }) {
                                 <th className="px-4 py-3 text-left font-medium">Name</th>
                                 <th className="px-4 py-3 text-left font-medium">URL</th>
                                 <th className="px-4 py-3 text-left font-medium">Organization</th>
+                                <th className="px-4 py-3 text-left font-medium">Industry</th>
+                                <th className="px-4 py-3 text-left font-medium">Legal Risk</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
                                 <th className="px-4 py-3"></th>
                             </tr>
@@ -49,7 +68,7 @@ export default function Index({ properties }: { properties: Property[] }) {
                             {properties.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={5}
+                                        colSpan={7}
                                         className="px-4 py-10 text-center text-sm text-muted-foreground"
                                     >
                                         No properties yet.{' '}
@@ -81,6 +100,18 @@ export default function Index({ properties }: { properties: Property[] }) {
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {property.organization?.name ?? '—'}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {property.industry_label ?? '—'}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {property.legal_risk_level ? (
+                                                <Badge variant={riskVariant(property.legal_risk_level)} className="capitalize">
+                                                    {property.legal_risk_level}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 capitalize text-muted-foreground">
                                             {property.status}

@@ -13,12 +13,18 @@ type Organization = {
     name: string;
 };
 
+type Industry = {
+    value: string;
+    label: string;
+    risk: 'high' | 'medium' | 'low';
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Properties', href: PropertyController.index().url },
     { title: 'Add property', href: PropertyController.create().url },
 ];
 
-export default function Create({ organizations }: { organizations: Organization[] }) {
+export default function Create({ organizations, industries }: { organizations: Organization[]; industries: Industry[] }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Add property" />
@@ -70,6 +76,26 @@ export default function Create({ organizations }: { organizations: Organization[
                                         placeholder="https://example.com"
                                     />
                                     <InputError message={errors.base_url} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="industry">Industry</Label>
+                                    <Select name="industry">
+                                        <SelectTrigger id="industry">
+                                            <SelectValue placeholder="Select an industry…" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {industries.map((ind) => (
+                                                <SelectItem key={ind.value} value={ind.value}>
+                                                    {ind.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Used to assess legal risk based on ADA lawsuit data for your sector.
+                                    </p>
+                                    <InputError message={errors.industry} />
                                 </div>
 
                                 <div className="flex items-center gap-3">

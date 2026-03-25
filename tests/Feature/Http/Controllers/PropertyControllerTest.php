@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PropertyIndustry;
 use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\Property;
@@ -56,6 +57,11 @@ it('returns the create property page', function (): void {
 it('passes the agency organizations to the create page', function (): void {
     $this->get(route('properties.create'))
         ->assertInertia(fn ($page) => $page->has('organizations', 1));
+});
+
+it('passes industries to the create page', function (): void {
+    $this->get(route('properties.create'))
+        ->assertInertia(fn ($page) => $page->has('industries'));
 });
 
 // ─── store ───────────────────────────────────────────────────────────────────
@@ -116,6 +122,42 @@ it('returns a validation error when base_url is not a valid URL', function (): v
     ])->assertSessionHasErrors('base_url');
 });
 
+it('stores a property with an industry', function (): void {
+    $this->post(route('properties.store'), [
+        'organization_id' => $this->organization->id,
+        'name' => 'Retail Site',
+        'base_url' => 'https://retail.example.com',
+        'industry' => PropertyIndustry::Retail->value,
+    ])->assertRedirect();
+
+    $property = Property::query()->where('name', 'Retail Site')->first();
+
+    expect($property->industry)->toBe(PropertyIndustry::Retail)
+        ->and($property->industry_label)->toBe('Retail')
+        ->and($property->legal_risk_level)->toBe('high');
+});
+
+it('stores a property successfully without an industry', function (): void {
+    $this->post(route('properties.store'), [
+        'organization_id' => $this->organization->id,
+        'name' => 'No Industry Site',
+        'base_url' => 'https://noindustry.example.com',
+    ])->assertRedirect();
+
+    $property = Property::query()->where('name', 'No Industry Site')->first();
+
+    expect($property->industry)->toBeNull();
+});
+
+it('returns a validation error when storing with an invalid industry', function (): void {
+    $this->post(route('properties.store'), [
+        'organization_id' => $this->organization->id,
+        'name' => 'Bad Industry',
+        'base_url' => 'https://badindustry.example.com',
+        'industry' => 'invalid_industry',
+    ])->assertSessionHasErrors('industry');
+});
+
 // ─── show ─────────────────────────────────────────────────────────────────────
 
 it('returns the property show page', function (): void {
@@ -153,6 +195,11 @@ it('returns the edit property page', function (): void {
         ->assertInertia(fn ($page) => $page->component('properties/edit'));
 });
 
+it('passes industries to the edit page', function (): void {
+    $this->get(route('properties.edit', $this->property))
+        ->assertInertia(fn ($page) => $page->has('industries'));
+});
+
 it('returns 404 when editing a property from another agency', function (): void {
     $otherProperty = Property::factory()->create();
 
@@ -184,6 +231,26 @@ it('returns 404 when updating a property from another agency', function (): void
         'name' => 'Hacked',
         'base_url' => 'https://hacked.example.com',
     ])->assertNotFound();
+});
+
+it('updates the property with an industry', function (): void {
+    $this->patch(route('properties.update', $this->property), [
+        'name' => 'Updated Name',
+        'base_url' => 'https://updated.example.com',
+        'industry' => PropertyIndustry::Healthcare->value,
+    ])->assertRedirect(route('properties.show', $this->property));
+
+    expect($this->property->fresh())
+        ->industry->toBe(PropertyIndustry::Healthcare)
+        ->legal_risk_level->toBe('high');
+});
+
+it('returns a validation error when updating with an invalid industry', function (): void {
+    $this->patch(route('properties.update', $this->property), [
+        'name' => 'Updated',
+        'base_url' => 'https://updated.example.com',
+        'industry' => 'not_valid',
+    ])->assertSessionHasErrors('industry');
 });
 
 // ─── destroy ──────────────────────────────────────────────────────────────────

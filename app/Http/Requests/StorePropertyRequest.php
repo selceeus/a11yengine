@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PropertyIndustry;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,6 +26,7 @@ class StorePropertyRequest extends FormRequest
             ],
             'name' => ['required', 'string', 'max:255'],
             'base_url' => ['required', 'url', 'max:255'],
+            'industry' => ['nullable', Rule::enum(PropertyIndustry::class)],
         ];
     }
 }
