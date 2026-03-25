@@ -64,6 +64,57 @@ it('populates executive_summary from AI response', function (): void {
     expect($this->audit->fresh()->executive_summary)->toBe('Needs improvement.');
 });
 
+it('persists legal_precedents from the AI response', function (): void {
+    $precedents = [
+        [
+            'case_name' => 'Gil v. Winn-Dixie Stores, Inc.',
+            'year' => 2017,
+            'outcome' => 'plaintiff_won',
+            'relevance' => 'Inaccessible website violated ADA.',
+        ],
+        [
+            'case_name' => 'Robles v. Domino\'s Pizza LLC',
+            'year' => 2019,
+            'outcome' => 'plaintiff_won',
+            'relevance' => 'Ninth Circuit upheld ADA applies to websites.',
+        ],
+    ];
+
+    Ai::fakeAgent(AuditAgent::class, [[
+        'overall_score' => 55,
+        'executive_summary' => 'Legal risk identified.',
+        'compliance_status' => [],
+        'summary_statistics' => [],
+        'top_risks' => [],
+        'issue_details' => [],
+        'remediations' => [],
+        'legal_precedents' => $precedents,
+    ]]);
+
+    (new GenerateAiAuditJob($this->audit))->handle(app(\App\Services\AiAuditService::class));
+
+    $fresh = $this->audit->fresh();
+    expect($fresh->legal_precedents)->toHaveCount(2)
+        ->and($fresh->legal_precedents[0]['case_name'])->toBe('Gil v. Winn-Dixie Stores, Inc.')
+        ->and($fresh->legal_precedents[1]['outcome'])->toBe('plaintiff_won');
+});
+
+it('defaults legal_precedents to empty array when AI omits it', function (): void {
+    Ai::fakeAgent(AuditAgent::class, [[
+        'overall_score' => 80,
+        'executive_summary' => 'Clean audit.',
+        'compliance_status' => [],
+        'summary_statistics' => [],
+        'top_risks' => [],
+        'issue_details' => [],
+        'remediations' => [],
+    ]]);
+
+    (new GenerateAiAuditJob($this->audit))->handle(app(\App\Services\AiAuditService::class));
+
+    expect($this->audit->fresh()->legal_precedents)->toBe([]);
+});
+
 // ─── failure handling ─────────────────────────────────────────────────────────
 
 it('sets Failed status and records error_message when the job fails', function (): void {

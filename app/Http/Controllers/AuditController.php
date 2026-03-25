@@ -187,6 +187,7 @@ class AuditController extends Controller
             'top_risks' => $audit->top_risks,
             'issue_details' => $audit->issue_details,
             'remediations' => $audit->remediations,
+            'legal_precedents' => $audit->legal_precedents ?? [],
             'summary_statistics' => $audit->summary_statistics,
             'error_message' => $audit->error_message,
             'generated_at' => $audit->generated_at?->toIso8601String(),

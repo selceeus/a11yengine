@@ -58,6 +58,20 @@ class AuditFactory extends Factory
             'remediations' => [
                 ['issue_id' => 1, 'priority' => 'high', 'title' => 'Add alt text to images', 'steps' => ['Step 1'], 'code_example' => null],
             ],
+            'legal_precedents' => [
+                [
+                    'case_name' => 'Gil v. Winn-Dixie Stores, Inc.',
+                    'year' => 2017,
+                    'outcome' => 'plaintiff_won',
+                    'relevance' => 'Court found that an inaccessible website violates the ADA when it is closely integrated with a physical store.',
+                ],
+                [
+                    'case_name' => 'Robles v. Domino\'s Pizza LLC',
+                    'year' => 2019,
+                    'outcome' => 'plaintiff_won',
+                    'relevance' => 'Ninth Circuit held that websites of businesses with physical locations must comply with ADA accessibility standards.',
+                ],
+            ],
         ]);
     }
 

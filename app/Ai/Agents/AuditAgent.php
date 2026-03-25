@@ -78,6 +78,14 @@ class AuditAgent implements Agent, HasStructuredOutput
                     'code_example' => $schema->string()->required(),
                 ])->withoutAdditionalProperties()
             )->required(),
+            'legal_precedents' => $schema->array()->items(
+                $schema->object([
+                    'case_name' => $schema->string()->required(),
+                    'year' => $schema->integer()->nullable()->required(),
+                    'outcome' => $schema->string()->enum(['plaintiff_won', 'defendant_won', 'settled'])->required(),
+                    'relevance' => $schema->string()->required(),
+                ])->withoutAdditionalProperties()
+            )->required(),
         ];
     }
 }

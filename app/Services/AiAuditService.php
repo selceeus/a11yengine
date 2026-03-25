@@ -12,6 +12,7 @@ class AiAuditService
 {
     public function __construct(
         private readonly GatherAuditContext $contextGatherer,
+        private readonly RagRetrievalService $ragService,
     ) {}
 
     /**
@@ -37,6 +38,7 @@ class AiAuditService
             'top_risks' => $result['top_risks'] ?? null,
             'issue_details' => $result['issue_details'] ?? null,
             'remediations' => $result['remediations'] ?? null,
+            'legal_precedents' => $result['legal_precedents'] ?? [],
             'summary_statistics' => $result['summary_statistics'] ?? null,
             'overall_score' => isset($result['overall_score']) ? (int) $result['overall_score'] : null,
             'status' => AuditStatus::Completed,
@@ -64,6 +66,8 @@ class AiAuditService
         $lhBp = $lighthouse['best_practices'] ?? 'N/A';
         $lhSeo = $lighthouse['seo'] ?? 'N/A';
 
+        $ragSection = $this->buildRagSection($context);
+
         return <<<PROMPT
 You are auditing the accessibility of the website "{$propertyName}" ({$baseUrl}).
 
@@ -82,6 +86,7 @@ Performance: {$lhPerf} | Accessibility: {$lhA11y} | Best Practices: {$lhBp} | SE
 ## Top Open Issues (by risk weight, highest first)
 {$issuesJson}
 
+{$ragSection}
 ---
 
 Respond with a single JSON object matching this exact schema (no prose, no markdown fences):
@@ -130,8 +135,51 @@ Respond with a single JSON object matching this exact schema (no prose, no markd
       "steps": ["<step 1>", "<step 2>"],
       "code_example": "<optional short code snippet or empty string>"
     }
+  ],
+  "legal_precedents": [
+    {
+      "case_name": "<ADA case name from knowledge base>",
+      "year": <year filed or null>,
+      "outcome": "plaintiff_won|defendant_won|settled",
+      "relevance": "<1-2 sentences explaining why this case is relevant to the issues found in this audit>"
+    }
   ]
 }
+
+Rules:
+- Base all numbers on the provided data — do not fabricate statistics.
+- For `legal_precedents`, only reference cases from the ADA Legal Precedents section above — do not invent case names. If no precedents are available, return an empty array.
 PROMPT;
+    }
+
+    private function buildRagSection(array $context): string
+    {
+        try {
+            $sections = '';
+            $industry = $context['property']['industry'] ?? null;
+
+            $lawsuits = $this->ragService->findLawsuits(
+                'web accessibility ADA compliance violations legal risk '.($industry ?? ''),
+                3,
+                $industry !== null ? [$industry] : null,
+            );
+
+            if (! empty($lawsuits)) {
+                $sections .= "## ADA Legal Precedents (Knowledge Base)\n";
+
+                foreach ($lawsuits as $case) {
+                    $settlement = $case['settlement_amount'] !== null
+                        ? ' — $'.number_format((int) $case['settlement_amount']).' settlement'
+                        : '';
+                    $sections .= "\n- **{$case['case_name']}** ({$case['filed_year']}, {$case['industry']}): {$case['summary']}{$settlement}";
+                }
+
+                $sections .= "\n\n";
+            }
+
+            return $sections;
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }

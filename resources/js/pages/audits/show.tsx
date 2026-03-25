@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Download, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { ArrowLeft, Download, Scale, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -15,6 +15,13 @@ type TopRisk = { rank: number; title: string; severity: string; wcag_criteria: s
 type IssueDetail = { rule_key: string; title: string; severity: string; wcag_criteria: string; description: string; affected_pages: number; remediation_hint: string };
 type Remediation = { priority: string; title: string; description: string; steps: string[]; code_example?: string };
 
+type LegalPrecedent = {
+    case_name: string;
+    year: number | null;
+    outcome: 'plaintiff_won' | 'defendant_won' | 'settled';
+    relevance: string;
+};
+
 type Audit = {
     id: number;
     title: string;
@@ -25,6 +32,7 @@ type Audit = {
     top_risks: TopRisk[] | null;
     issue_details: IssueDetail[] | null;
     remediations: Remediation[] | null;
+    legal_precedents: LegalPrecedent[];
     summary_statistics: SummaryStatistics | null;
     error_message: string | null;
     generated_at: string | null;
@@ -58,6 +66,23 @@ function priorityVariant(p: string): 'default' | 'secondary' | 'destructive' | '
     switch (p) {
         case 'high': return 'destructive';
         case 'medium': return 'default';
+        default: return 'secondary';
+    }
+}
+
+function outcomeLabel(outcome: string): string {
+    switch (outcome) {
+        case 'plaintiff_won': return 'Plaintiff Won';
+        case 'defendant_won': return 'Defendant Won';
+        case 'settled': return 'Settled';
+        default: return outcome;
+    }
+}
+
+function outcomeVariant(outcome: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+    switch (outcome) {
+        case 'plaintiff_won': return 'destructive';
+        case 'settled': return 'default';
         default: return 'secondary';
     }
 }
@@ -465,6 +490,34 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                                     <code>{rem.code_example}</code>
                                                 </pre>
                                             )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Legal Precedents */}
+                        {audit.legal_precedents && audit.legal_precedents.length > 0 && (
+                            <div className="rounded-xl border bg-card p-6">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <Scale className="h-4 w-4 text-muted-foreground" />
+                                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Legal Precedents</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {audit.legal_precedents.map((prec, i) => (
+                                        <div key={i} className="rounded-lg border p-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium">{prec.case_name}</p>
+                                                    {prec.year && (
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">{prec.year}</p>
+                                                    )}
+                                                </div>
+                                                <Badge variant={outcomeVariant(prec.outcome)} className="shrink-0">
+                                                    {outcomeLabel(prec.outcome)}
+                                                </Badge>
+                                            </div>
+                                            <p className="mt-2 text-sm text-muted-foreground">{prec.relevance}</p>
                                         </div>
                                     ))}
                                 </div>
