@@ -8,11 +8,12 @@ use App\Enums\RiskAdvisoryStatus;
 use App\Models\RiskAdvisory;
 use App\Models\Scan;
 use App\Models\ScanMetric;
+use App\Services\RagRetrievalService;
 use Illuminate\Support\Facades\Date;
 
 class AiRiskAdvisorService
 {
-    public function __construct() {}
+    public function __construct(private readonly RagRetrievalService $ragService) {}
 
     /**
      * Generate AI-powered risk priorities for the given RiskAdvisory record.
@@ -40,8 +41,9 @@ class AiRiskAdvisorService
 
         $propertyRiskScore = $this->resolvePropertyRiskScore($advisory->property_id);
         $propertyName = $advisory->property?->name ?? 'Unknown';
+        $industry = $advisory->property?->industry?->value;
 
-        $prompt = $this->buildPrompt($issuesWithTrafficScore, $propertyRiskScore, $propertyName);
+        $prompt = $this->buildPrompt($issuesWithTrafficScore, $propertyRiskScore, $propertyName, $industry);
 
         $response = RiskAdvisoryAgent::make()->prompt($prompt);
         $result = json_decode($response->text, true) ?? [];
@@ -63,13 +65,15 @@ class AiRiskAdvisorService
      *
      * @param  array<int, array<string, mixed>>  $issues
      */
-    public function buildPrompt(array $issues, ?float $propertyRiskScore, string $propertyName): string
+    public function buildPrompt(array $issues, ?float $propertyRiskScore, string $propertyName, ?string $industry = null): string
     {
         $issuesJson = json_encode($issues, JSON_PRETTY_PRINT);
         $count = count($issues);
         $riskContext = $propertyRiskScore !== null
             ? "The property currently has an overall accessibility risk score of {$propertyRiskScore}/100 (lower is riskier)."
             : 'No overall risk score is currently available for this property.';
+
+        $ragSection = $this->buildRagSection($issues, $industry);
 
         return <<<PROMPT
 You are analysing {$count} open accessibility issues for the website "{$propertyName}".
@@ -82,6 +86,7 @@ Each issue below includes a `traffic_score` field computed as `occurrence_count 
 ## Open Issues
 {$issuesJson}
 
+{$ragSection}
 ---
 
 Rank these issues by their potential to reduce accessibility risk for the most users. Prioritise issues where:
@@ -118,6 +123,69 @@ Rules:
 - `affected_page_urls` should be an array of the `page_url` values from matching issues in the input.
 - Do not include issues with severity "info".
 PROMPT;
+    }
+
+    /**
+     * Build a supplementary RAG context block for risk prioritisation.
+     * Returns an empty string if the knowledge base is empty or unavailable.
+     *
+     * @param  array<int, array<string, mixed>>  $issues
+     */
+    private function buildRagSection(array $issues, ?string $industry): string
+    {
+        try {
+            $sections = '';
+
+            $criteria = collect($issues)
+                ->pluck('wcag_criteria')
+                ->filter()
+                ->map(fn (string $c) => (string) preg_replace('/\s+[A-Z]+$/', '', $c))
+                ->unique()
+                ->take(3)
+                ->values()
+                ->all();
+
+            if (! empty($criteria)) {
+                $wcagChunks = $this->ragService->findWcagChunks(
+                    'accessibility compliance risk '.implode(' ', $criteria),
+                    3,
+                    $criteria,
+                );
+
+                if (! empty($wcagChunks)) {
+                    $sections .= "## WCAG Compliance Context (Knowledge Base)\n";
+
+                    foreach ($wcagChunks as $chunk) {
+                        $sections .= "\n**{$chunk['criterion']} {$chunk['title']}**: {$chunk['chunk']}";
+                    }
+
+                    $sections .= "\n\n";
+                }
+            }
+
+            $lawsuits = $this->ragService->findLawsuits(
+                'web accessibility ADA compliance violations '.($industry ?? ''),
+                3,
+                $industry !== null ? [$industry] : null,
+            );
+
+            if (! empty($lawsuits)) {
+                $sections .= "## ADA Legal Precedents (Knowledge Base)\n";
+
+                foreach ($lawsuits as $case) {
+                    $settlement = $case['settlement_amount'] !== null
+                        ? ' — $'.number_format((int) $case['settlement_amount']).' settlement'
+                        : '';
+                    $sections .= "\n- **{$case['case_name']}** ({$case['filed_year']}, {$case['industry']}): {$case['summary']}{$settlement}";
+                }
+
+                $sections .= "\n\n";
+            }
+
+            return $sections;
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /**

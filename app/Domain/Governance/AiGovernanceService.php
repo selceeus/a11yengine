@@ -13,12 +13,13 @@ use App\Models\Property;
 use App\Models\PropertyRiskSnapshot;
 use App\Models\RiskAdvisory;
 use App\Models\Scan;
+use App\Services\RagRetrievalService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 
 class AiGovernanceService
 {
-    public function __construct() {}
+    public function __construct(private readonly RagRetrievalService $ragService) {}
 
     /**
      * Generate the AI governance report, populating all data and narrative fields.
@@ -134,7 +135,7 @@ class AiGovernanceService
 
         $context = [
             'scope' => 'property',
-            'property' => $property->only(['id', 'name', 'base_url']),
+            'property' => array_merge($property->only(['id', 'name', 'base_url']), ['industry' => $property->industry?->value]),
             'risk_trend' => $snapshots,
             'severity_breakdown' => $severityBreakdown,
             'remediation_progress' => $remediationProgress,
@@ -369,6 +370,7 @@ class AiGovernanceService
     public function buildPrompt(array $context, string $scopeName, string $periodLabel): string
     {
         $contextJson = json_encode($context, JSON_PRETTY_PRINT);
+        $ragSection = $this->buildRagSection($context);
 
         return <<<PROMPT
 You are producing an AI Governance Report for "{$scopeName}" covering the period {$periodLabel}.
@@ -382,6 +384,7 @@ Using the data provided below, produce:
 ## Data
 {$contextJson}
 
+{$ragSection}
 ---
 
 Return a single JSON object only (no markdown fences, no prose outside the JSON):
@@ -412,5 +415,58 @@ Rules:
 - Keep `executive_narrative` free of jargon; assume the reader is a senior manager, not a developer.
 - Prioritise recommendations by user impact and compliance risk.
 PROMPT;
+    }
+
+    /**
+     * Build a supplementary RAG context block for governance report narrative.
+     * Returns an empty string if the knowledge base is empty or unavailable.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function buildRagSection(array $context): string
+    {
+        try {
+            $sections = '';
+            $industry = $context['property']['industry'] ?? null;
+
+            $lawsuits = $this->ragService->findLawsuits(
+                'web accessibility ADA compliance violations legal risk '.($industry ?? ''),
+                3,
+                $industry !== null ? [$industry] : null,
+            );
+
+            if (! empty($lawsuits)) {
+                $sections .= "## ADA Legal Precedents (Knowledge Base)\n";
+
+                foreach ($lawsuits as $case) {
+                    $settlement = $case['settlement_amount'] !== null
+                        ? ' — $'.number_format((int) $case['settlement_amount']).' settlement'
+                        : '';
+                    $sections .= "\n- **{$case['case_name']}** ({$case['filed_year']}, {$case['industry']}): {$case['summary']}{$settlement}";
+                }
+
+                $sections .= "\n\n";
+            }
+
+            $wcagChunks = $this->ragService->findWcagChunks(
+                'accessibility compliance risk governance executive summary remediation',
+                3,
+                null,
+            );
+
+            if (! empty($wcagChunks)) {
+                $sections .= "## WCAG Compliance Context (Knowledge Base)\n";
+
+                foreach ($wcagChunks as $chunk) {
+                    $sections .= "\n**{$chunk['criterion']} {$chunk['title']}**: {$chunk['chunk']}";
+                }
+
+                $sections .= "\n\n";
+            }
+
+            return $sections;
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }

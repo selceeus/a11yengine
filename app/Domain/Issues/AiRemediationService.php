@@ -4,10 +4,13 @@ namespace App\Domain\Issues;
 
 use App\Ai\Agents\RemediationAgent;
 use App\Models\Issue;
+use App\Services\RagRetrievalService;
 use Illuminate\Support\Facades\Cache;
 
 class AiRemediationService
 {
+    public function __construct(private readonly RagRetrievalService $ragService) {}
+
     /**
      * Hours to cache results per rule + WCAG criterion + description + model.
      * Shared across all issues with matching rule/criterion so the same fix
@@ -105,6 +108,13 @@ PROMPT;
             $prompt .= "\n\n## Affected Pages (sample)\n\n  - {$pagesText}";
         }
 
+        $criterionNumber = (string) preg_replace('/\s+[A-Z]+$/', '', $wcagCriteria);
+        $ragContext = $this->buildRagContext($description, $criterionNumber);
+
+        if ($ragContext !== '') {
+            $prompt .= $ragContext;
+        }
+
         $schema = <<<'SCHEMA'
 {
   "explanation": "<2-3 sentences explaining why this issue harms accessibility>",
@@ -127,5 +137,41 @@ SCHEMA;
         $prompt .= "Respond with a single JSON object matching this exact schema (no prose, no markdown fences):\n\n{$schema}";
 
         return $prompt;
+    }
+
+    /**
+     * Build a supplementary context block from the RAG knowledge base.
+     * Returns an empty string if the knowledge base is empty or unavailable.
+     */
+    private function buildRagContext(string $description, string $criterion): string
+    {
+        try {
+            $sections = '';
+
+            $wcagChunks = $this->ragService->findWcagChunks($description, 3, [$criterion]);
+
+            if (! empty($wcagChunks)) {
+                $sections .= "\n\n## WCAG Guidance (Knowledge Base)\n";
+
+                foreach ($wcagChunks as $chunk) {
+                    $sections .= "\n**{$chunk['criterion']} {$chunk['title']}**: {$chunk['chunk']}";
+                }
+            }
+
+            $remediations = $this->ragService->findSimilarRemediations($description, 3);
+
+            if (! empty($remediations)) {
+                $sections .= "\n\n## Similar Past Remediations\n";
+
+                foreach ($remediations as $rem) {
+                    $wcag = $rem['wcag_criteria'] ? " ({$rem['wcag_criteria']})" : '';
+                    $sections .= "\n- `{$rem['rule_key']}`{$wcag}: {$rem['resolution']}";
+                }
+            }
+
+            return $sections;
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }

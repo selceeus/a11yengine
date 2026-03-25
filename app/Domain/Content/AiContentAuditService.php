@@ -8,6 +8,7 @@ use App\Models\ContentAudit;
 use App\Models\Finding;
 use App\Models\Issue;
 use App\Models\Scan;
+use App\Services\RagRetrievalService;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +35,7 @@ class AiContentAuditService
         'document-title',
     ];
 
-    public function __construct() {}
+    public function __construct(private readonly RagRetrievalService $ragService) {}
 
     /**
      * Generate AI-powered content issue observations for the given ContentAudit record.
@@ -234,6 +235,8 @@ class AiContentAuditService
         $pagesJson = json_encode($pages, JSON_PRETTY_PRINT);
         $count = count($pages);
 
+        $ragSection = $this->buildRagSection();
+
         return <<<PROMPT
 You are auditing the content accessibility of the website "{$propertyName}".
 
@@ -256,6 +259,7 @@ Each page entry includes:
 
 {$pagesJson}
 
+{$ragSection}
 ---
 
 For each distinct content problem you identify, return a JSON object under `content_issues`. Use the scanner findings as a starting point but also identify problems the automated scan may have missed from the HTML snippet.
@@ -298,5 +302,34 @@ Rules:
 - Do not invent issues not evidenced by the findings or HTML.
 - If `html_snippet` is null for a page, rely only on the `findings` array for that page and omit that page from `reading_metrics`.
 PROMPT;
+    }
+
+    /**
+     * Build a supplementary WCAG context block for content accessibility rules.
+     * Returns an empty string if the knowledge base is empty or unavailable.
+     */
+    private function buildRagSection(): string
+    {
+        try {
+            $wcagChunks = $this->ragService->findWcagChunks(
+                'image alt text link heading label form document title',
+                5,
+                ['1.1.1', '1.3.1', '2.4.4', '2.4.2', '4.1.2'],
+            );
+
+            if (empty($wcagChunks)) {
+                return '';
+            }
+
+            $sections = "## WCAG Content Accessibility Guidance (Knowledge Base)\n";
+
+            foreach ($wcagChunks as $chunk) {
+                $sections .= "\n**{$chunk['criterion']} {$chunk['title']}**: {$chunk['chunk']}";
+            }
+
+            return $sections."\n\n";
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }
