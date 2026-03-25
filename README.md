@@ -32,26 +32,26 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Language** | PHP 8.2 |
-| **Framework** | Laravel 12 |
-| **Authentication** | Laravel Fortify v1 |
-| **Frontend** | React 19, TypeScript 5.7, Inertia.js v2 |
-| **Styling** | Tailwind CSS v4 |
-| **UI Components** | Radix UI, Headless UI |
-| **Visualisation** | D3.js v7, Three.js |
-| **Type-Safe Routing** | Laravel Wayfinder v0 |
-| **Crawler** | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13 |
-| **Build Tool** | Vite 7 |
-| **Database** | PostgreSQL with pgvector (vector embeddings) |
-| **Queue** | Laravel Queues (database driver) |
-| **Testing** | Pest v3, PHPUnit v11 |
-| **Code Quality** | Laravel Pint, ESLint v9, Prettier v3 |
-| **Dev Environment** | Laravel Sail (Docker) |
-| **Monitoring** | Laravel Telescope v5 |
-| **AI Models** | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet |
-| **MCP** | Laravel MCP v0 |
+| Layer                 | Technology                                              |
+| --------------------- | ------------------------------------------------------- |
+| **Language**          | PHP 8.2                                                 |
+| **Framework**         | Laravel 12                                              |
+| **Authentication**    | Laravel Fortify v1                                      |
+| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                 |
+| **Styling**           | Tailwind CSS v4                                         |
+| **UI Components**     | Radix UI, Headless UI                                   |
+| **Visualisation**     | D3.js v7, Three.js                                      |
+| **Type-Safe Routing** | Laravel Wayfinder v0                                    |
+| **Crawler**           | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13 |
+| **Build Tool**        | Vite 7                                                  |
+| **Database**          | PostgreSQL with pgvector (vector embeddings)            |
+| **Queue**             | Laravel Queues (database driver)                        |
+| **Testing**           | Pest v3, PHPUnit v11                                    |
+| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                    |
+| **Dev Environment**   | Laravel Sail (Docker)                                   |
+| **Monitoring**        | Laravel Telescope v5                                    |
+| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet             |
+| **MCP**               | Laravel MCP v0                                          |
 
 ---
 
@@ -128,49 +128,49 @@ composer run dev
 
 ### Application
 
-| Variable | Purpose |
-|---|---|
-| `APP_URL` | Application base URL |
+| Variable  | Purpose                            |
+| --------- | ---------------------------------- |
+| `APP_URL` | Application base URL               |
 | `APP_KEY` | Laravel application encryption key |
 
 ### Database
 
-| Variable | Purpose |
-|---|---|
+| Variable        | Purpose                                        |
+| --------------- | ---------------------------------------------- |
 | `DB_CONNECTION` | Must be `pgsql` (pgvector requires PostgreSQL) |
-| `DB_HOST` | Database host |
-| `DB_DATABASE` | Database name |
-| `DB_USERNAME` | Database username |
-| `DB_PASSWORD` | Database password |
+| `DB_HOST`       | Database host                                  |
+| `DB_DATABASE`   | Database name                                  |
+| `DB_USERNAME`   | Database username                              |
+| `DB_PASSWORD`   | Database password                              |
 
 ### AI
 
-| Variable | Purpose |
-|---|---|
-| `AI_DRIVER` | Provider: `openai` or `anthropic` |
-| `OPENAI_API_KEY` | OpenAI API key (required when driver is `openai`) |
-| `ANTHROPIC_API_KEY` | Anthropic API key (required when driver is `anthropic`) |
+| Variable                 | Purpose                                                    |
+| ------------------------ | ---------------------------------------------------------- |
+| `AI_DRIVER`              | Provider: `openai` or `anthropic`                          |
+| `OPENAI_API_KEY`         | OpenAI API key (required when driver is `openai`)          |
+| `ANTHROPIC_API_KEY`      | Anthropic API key (required when driver is `anthropic`)    |
 | `AI_AUTO_GENERATE_AUDIT` | Auto-generate AI audit on scan completion (`true`/`false`) |
 
 ### Crawler
 
-| Variable | Purpose |
-|---|---|
-| `CRAWLER_SCRIPT_PATH` | Path to `crawler/scan.js` (default: `crawler/scan.js`) |
-| `CRAWLER_TIMEOUT` | Max seconds for a full crawl (default: `300`) |
-| `CRAWLER_MAX_PAGES` | Maximum pages to crawl per scan (default: `50`) |
-| `CRAWLER_MAX_DEPTH` | Maximum link depth to follow (default: `5`) |
-| `CRAWLER_PAGE_TIMEOUT_MS` | Page load timeout in milliseconds (default: `30000`) |
-| `CRAWLER_NAV_TIMEOUT_MS` | Navigation timeout in milliseconds (default: `60000`) |
-| `CRAWLER_REQUEST_DELAY_MS` | Delay between page requests (default: `500`) |
+| Variable                   | Purpose                                                |
+| -------------------------- | ------------------------------------------------------ |
+| `CRAWLER_SCRIPT_PATH`      | Path to `crawler/scan.js` (default: `crawler/scan.js`) |
+| `CRAWLER_TIMEOUT`          | Max seconds for a full crawl (default: `300`)          |
+| `CRAWLER_MAX_PAGES`        | Maximum pages to crawl per scan (default: `50`)        |
+| `CRAWLER_MAX_DEPTH`        | Maximum link depth to follow (default: `5`)            |
+| `CRAWLER_PAGE_TIMEOUT_MS`  | Page load timeout in milliseconds (default: `30000`)   |
+| `CRAWLER_NAV_TIMEOUT_MS`   | Navigation timeout in milliseconds (default: `60000`)  |
+| `CRAWLER_REQUEST_DELAY_MS` | Delay between page requests (default: `500`)           |
 
 ### Lighthouse
 
-| Variable | Purpose |
-|---|---|
-| `LIGHTHOUSE_BINARY` | Path to Lighthouse CLI binary |
+| Variable             | Purpose                                         |
+| -------------------- | ----------------------------------------------- |
+| `LIGHTHOUSE_BINARY`  | Path to Lighthouse CLI binary                   |
 | `LIGHTHOUSE_TIMEOUT` | Max seconds per Lighthouse run (default: `120`) |
-| `LIGHTHOUSE_ENABLED` | Toggle Lighthouse performance audits on/off |
+| `LIGHTHOUSE_ENABLED` | Toggle Lighthouse performance audits on/off     |
 
 ---
 
@@ -178,14 +178,14 @@ composer run dev
 
 ### Roles
 
-| Role | Scope | Capabilities |
-|---|---|---|
-| `SuperUser` | Platform | Full access across all agencies |
-| `AgencyAdmin` | Agency | Manage all organisations and properties within the agency |
-| `OrgAdmin` | Organisation | Manage all properties within the organisation |
-| `PropAdmin` | Property | Manage a single property including integrations and API keys |
-| `Editor` | Property | Create scans, update issues, add comments |
-| `Viewer` | Property | Read-only access |
+| Role          | Scope        | Capabilities                                                 |
+| ------------- | ------------ | ------------------------------------------------------------ |
+| `SuperUser`   | Platform     | Full access across all agencies                              |
+| `AgencyAdmin` | Agency       | Manage all organisations and properties within the agency    |
+| `OrgAdmin`    | Organisation | Manage all properties within the organisation                |
+| `PropAdmin`   | Property     | Manage a single property including integrations and API keys |
+| `Editor`      | Property     | Create scans, update issues, add comments                    |
+| `Viewer`      | Property     | Read-only access                                             |
 
 ### Scan Lifecycle
 
@@ -212,14 +212,14 @@ Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplic
 
 All agents use Laravel AI with structured JSON output and a 300-second timeout.
 
-| Agent | Input | Output |
-|---|---|---|
-| `AuditAgent` | Scan findings, property context, RAG | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents` |
-| `RemediationAgent` | Single issue + WCAG context, RAG | `explanation`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `legal_precedents` |
-| `ContentAuditAgent` | Page HTML + axe findings | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues |
-| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win` |
-| `IssueClusterAgent` | Open issue set | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages` |
-| `GovernanceAgent` | Audit + scan + content audit data, RAG | `executive_narrative`, `legal_risk_rating`, `legal_precedents`, `recommendations` |
+| Agent               | Input                                       | Output                                                                                                      |
+| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents` |
+| `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `legal_precedents`          |
+| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                   |
+| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                |
+| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages`                     |
+| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `legal_risk_rating`, `legal_precedents`, `recommendations`                           |
 
 ### RAG Knowledge Base
 
@@ -258,13 +258,13 @@ Reading metrics (Flesch-Kincaid grade, reading time, word count, Flesch score) a
 
 ### Tools
 
-| Tool | Parameters | Returns |
-|---|---|---|
-| `GetPropertyIssuesTool` | `property_slug`, `severity?`, `status?` | Property metadata + filtered issues |
-| `GetIssueRemediationTool` | `issue_id` | Full remediation guidance with legal precedents |
-| `GetScanFindingsTool` | `scan_id`, `page_url?` | Raw findings with element HTML and help URLs |
-| `GetRelatedLawsuitsTool` | `issue_id` or `rule_key` | Relevant ADA lawsuit cases and outcomes |
-| `GetSimilarRemediationsTool` | `issue_id` or `rule_key` | Remediation patterns from similar resolved issues |
+| Tool                         | Parameters                              | Returns                                           |
+| ---------------------------- | --------------------------------------- | ------------------------------------------------- |
+| `GetPropertyIssuesTool`      | `property_slug`, `severity?`, `status?` | Property metadata + filtered issues               |
+| `GetIssueRemediationTool`    | `issue_id`                              | Full remediation guidance with legal precedents   |
+| `GetScanFindingsTool`        | `scan_id`, `page_url?`                  | Raw findings with element HTML and help URLs      |
+| `GetRelatedLawsuitsTool`     | `issue_id` or `rule_key`                | Relevant ADA lawsuit cases and outcomes           |
+| `GetSimilarRemediationsTool` | `issue_id` or `rule_key`                | Remediation patterns from similar resolved issues |
 
 ---
 
@@ -272,11 +272,11 @@ Reading metrics (Flesch-Kincaid grade, reading time, word count, Flesch score) a
 
 Reports can be exported in three formats via the `Exportable` concern:
 
-| Resource | Formats |
-|---|---|
-| AI Audit Reports | JSON, CSV, PDF |
+| Resource           | Formats        |
+| ------------------ | -------------- |
+| AI Audit Reports   | JSON, CSV, PDF |
 | Governance Reports | JSON, CSV, PDF |
-| Content Audits | JSON, CSV |
+| Content Audits     | JSON, CSV      |
 
 ---
 
@@ -316,7 +316,6 @@ node crawler/scan.js <url> \
 ```
 
 Output is a JSON payload piped to the Laravel `CrawlerRunner` service. All diagnostic output is written to stderr only.
-
 
 An enterprise web accessibility audit and risk management platform that automatically scans digital properties for WCAG violations, tracks remediation over time, and generates AI-powered governance reports.
 
