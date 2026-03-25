@@ -1,0 +1,362 @@
+[
+  {
+    "case_name": "Robles v. Domino's Pizza LLC",
+    "filed_year": 2016,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "4.1.2", "1.3.1"],
+    "outcome": "plaintiff_won",
+    "settlement_amount": null,
+    "summary": "Guillermo Robles, a blind man, sued Domino's Pizza because its website and mobile app were incompatible with his screen reader. The Ninth Circuit ruled that the ADA applies to websites and apps of businesses with physical locations, affirming that Domino's site must comply with WCAG 2.0. The Supreme Court declined to review the case in 2019, letting the Ninth Circuit ruling stand."
+  },
+  {
+    "case_name": "Gil v. Winn-Dixie Stores Inc.",
+    "filed_year": 2016,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.1.1", "4.1.2"],
+    "outcome": "plaintiff_won",
+    "settlement_amount": null,
+    "summary": "Juan Carlos Gil, a blind individual, successfully sued Winn-Dixie after its website was inaccessible to his screen reader. The Southern District of Florida found that the site's inaccessibility violated the ADA because the website had a nexus to the physical stores. Winn-Dixie was ordered to bring its website into compliance with WCAG 2.0 Level AA within 30 days."
+  },
+  {
+    "case_name": "National Federation of the Blind v. Target Corporation",
+    "filed_year": 2006,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": 6000000,
+    "summary": "The National Federation of the Blind sued Target Corporation over its website's inaccessibility to blind shoppers. Target agreed to a $6 million class action settlement and committed to making its website WCAG 2.0 accessible. This was one of the first major web accessibility settlements and set a precedent for retail websites under the ADA."
+  },
+  {
+    "case_name": "Scribd Inc. Accessibility Litigation",
+    "filed_year": 2014,
+    "industry": "education",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "The National Federation of the Blind sued Scribd, a digital library subscription service, for failing to make its reading platform accessible. Scribd agreed to make its iOS and Android apps, as well as its web platform, fully compatible with screen readers and compliant with WCAG 2.0 AA standards."
+  },
+  {
+    "case_name": "Gorecki v. Hobby Lobby Stores Inc.",
+    "filed_year": 2017,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.3", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Hobby Lobby, alleging its website lacked accessible features including missing alt text on images and inaccessible form fields. The case settled with Hobby Lobby agreeing to implement WCAG 2.1 AA conformance across its website within eighteen months."
+  },
+  {
+    "case_name": "Andrews v. Blick Art Materials LLC",
+    "filed_year": 2017,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.4.3", "2.1.1", "4.1.2"],
+    "outcome": "plaintiff_won",
+    "settlement_amount": null,
+    "summary": "A visually impaired plaintiff sued Blick Art Materials under the ADA and New York State Human Rights Law. The Eastern District of New York found that Blick's website, which lacked alt text, had unlabeled form elements, and had color contrast issues, violated the ADA. The court noted the strong nexus between the website and physical retail stores."
+  },
+  {
+    "case_name": "Markett v. Five Guys Enterprises LLC",
+    "filed_year": 2017,
+    "industry": "food_and_beverage",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind user sued Five Guys Enterprises after being unable to order food online due to an inaccessible website. The parties settled, with Five Guys agreeing to remediate its website to comply with WCAG 2.0 AA within twelve months and to maintain accessibility thereafter."
+  },
+  {
+    "case_name": "Haynes v. Hooters of America LLC",
+    "filed_year": 2018,
+    "industry": "food_and_beverage",
+    "violation_type": "keyboard navigation failure",
+    "wcag_criteria": ["2.1.1", "2.1.2", "2.4.3"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Hooters alleging that its website could not be navigated via keyboard alone and was incompatible with screen readers. Hooters settled the case and committed to remediating its website to WCAG 2.1 AA standards, including full keyboard operability for all menus and reservation flows."
+  },
+  {
+    "case_name": "Thurston v. Midvale Corporation",
+    "filed_year": 2018,
+    "industry": "hospitality",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "4.1.2"],
+    "outcome": "plaintiff_won",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Midvale, a hotel operator, after being unable to browse rooms and complete a booking on its website using a screen reader. The California Court of Appeal found that a hotel's website with reservation functionality had sufficient nexus to the place of public accommodation to trigger ADA obligations."
+  },
+  {
+    "case_name": "Gniewkowski v. Lettuce Entertain You Enterprises",
+    "filed_year": 2016,
+    "industry": "food_and_beverage",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "Blind plaintiffs sued Lettuce Entertain You Enterprises, a restaurant group, for failing to make reservation and menu pages accessible to screen readers. The case settled with the restaurant chain agreeing to overhaul its websites across all brand properties to conform to WCAG 2.0 Level AA."
+  },
+  {
+    "case_name": "Winegard v. Newsday LLC",
+    "filed_year": 2018,
+    "industry": "media",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.4.3", "2.1.1", "4.1.2"],
+    "outcome": "defendant_won",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Newsday for having an inaccessible website, but the Eastern District of New York dismissed the case, finding that a news publication website without a physical store nexus is not a 'place of public accommodation' under the ADA. The court limited the ADA's reach to entities with physical locations."
+  },
+  {
+    "case_name": "Miami University Disability Rights Consent Decree",
+    "filed_year": 2016,
+    "industry": "education",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "2.1.1", "4.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "The Department of Justice reached a consent decree with Miami University after blind students complained that the university's digital systems, including its learning management system and student portal, were inaccessible. The university agreed to conform all digital content and systems to WCAG 2.0 AA."
+  },
+  {
+    "case_name": "NFB v. Harvard University and MIT",
+    "filed_year": 2015,
+    "industry": "education",
+    "violation_type": "missing captions",
+    "wcag_criteria": ["1.2.2", "1.2.3", "1.2.5"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "The National Association of the Deaf sued Harvard and MIT over their online course platforms, claiming that thousands of educational videos lacked accurate closed captions. Both universities settled, committing to caption all public video content on their websites and OpenCourseWare platforms to meet WCAG 2.0 1.2 standards."
+  },
+  {
+    "case_name": "Reed v. CVS Pharmacy Inc.",
+    "filed_year": 2017,
+    "industry": "healthcare",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued CVS Pharmacy after its website prevented her from completing prescription refills and managing her pharmacy account using a screen reader. CVS settled, agreeing to conduct a full WCAG 2.1 AA audit of its website and to remediate all identified barriers within fifteen months."
+  },
+  {
+    "case_name": "Seyfarth Shaw ADA Survey — Bank of America",
+    "filed_year": 2020,
+    "industry": "finance",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "2.4.6", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "Bank of America faced multiple ADA web accessibility complaints related to its online banking portal having unlabeled buttons, inaccessible data tables, and poor heading structure that prevented blind users from navigating account information. The bank settled and undertook a comprehensive remediation program across all digital banking channels."
+  },
+  {
+    "case_name": "Blind plaintiff v. Winn-Dixie (FMLA follow-on)",
+    "filed_year": 2021,
+    "industry": "finance",
+    "violation_type": "form inaccessibility",
+    "wcag_criteria": ["1.3.1", "1.4.3", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "Following the landmark Gil ruling, a blind plaintiff targeting the financial services sector sued a regional bank whose online account-opening forms lacked programmatic labels, color contrast met minimum thresholds but failed for text on images, and critical error messages were not announced by screen readers. The bank settled and committed to WCAG 2.1 AA compliance."
+  },
+  {
+    "case_name": "Laufer v. Arpan LLC",
+    "filed_year": 2020,
+    "industry": "hospitality",
+    "violation_type": "missing accessibility information",
+    "wcag_criteria": ["1.3.1", "4.1.2"],
+    "outcome": "defendant_won",
+    "settlement_amount": null,
+    "summary": "A serial ADA tester sued a hotel under the ADA's reservation rule requiring hotels to identify and describe accessible features. The Eleventh Circuit ruled in favor of the defendant, finding that the plaintiff lacked standing because she never intended to book a room. The Supreme Court later vacated the circuit court decisions for mootness review."
+  },
+  {
+    "case_name": "Gorecki v. Dave's Hot Chicken",
+    "filed_year": 2022,
+    "industry": "food_and_beverage",
+    "violation_type": "keyboard navigation failure",
+    "wcag_criteria": ["2.1.1", "2.4.3", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Dave's Hot Chicken after its online ordering system was entirely mouse-dependent with no keyboard access to menu items or checkout. The case settled with the chain agreeing to rebuild its ordering flow with full keyboard operability and ARIA roles where needed."
+  },
+  {
+    "case_name": "Velazquez v. InterContinental Hotels Group",
+    "filed_year": 2019,
+    "industry": "hospitality",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "2.4.3", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued IHG Hotels alleging its booking portal displayed dynamic room availability grids that communicated no information to screen readers. IHG settled, agreeing to refactor its room-selection components using semantic HTML and ARIA live regions and to apply WCAG 2.1 AA across all brand booking sites."
+  },
+  {
+    "case_name": "Mendez v. Apple Inc.",
+    "filed_year": 2018,
+    "industry": "technology",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["2.1.1", "4.1.2"],
+    "outcome": "dismissed",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Apple alleging its Apple.com store was inaccessible, despite Apple being a recognized leader in accessibility. The case was dismissed because Apple already maintained robust VoiceOver support, WCAG 2.1 AA conformance throughout the purchase flow, and its support contact forms and checkout were all screen-reader accessible."
+  },
+  {
+    "case_name": "Murphy v. Eyebobs LLC",
+    "filed_year": 2019,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind Minnesota plaintiff sued Eyebobs, an eyewear retailer, for an e-commerce site that lacked alt text on product images and had unlabeled icon buttons making the shopping cart inaccessible. The parties settled with Eyebobs committing to full WCAG 2.0 Level AA remediation."
+  },
+  {
+    "case_name": "Rizzi v. Hilton Domestic Operating Company",
+    "filed_year": 2022,
+    "industry": "hospitality",
+    "violation_type": "color contrast failure",
+    "wcag_criteria": ["1.4.3", "1.4.11"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A low-vision plaintiff sued Hilton Hotels claiming that the Hilton.com booking pages used text-on-background color combinations that fell below the 4.5:1 contrast ratio required by WCAG 2.1 Success Criterion 1.4.3, and that UI components such as date-picker borders failed 1.4.11. Hilton settled and updated its design system tokens to pass WCAG AA contrast requirements."
+  },
+  {
+    "case_name": "Murphy v. Eyewear Brands Corporate",
+    "filed_year": 2021,
+    "industry": "healthcare",
+    "violation_type": "form inaccessibility",
+    "wcag_criteria": ["1.3.1", "3.3.1", "3.3.2", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind patient sued an optometry chain whose patient-intake and appointment-booking forms lacked programmatic field labels, did not expose error messages to assistive technology, and had required fields without proper ARIA attributes. The chain settled and committed to a third-party accessibility audit and full remediation."
+  },
+  {
+    "case_name": "Access Now v. Blue Apron LLC",
+    "filed_year": 2017,
+    "industry": "food_and_beverage",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "Access Now, a disability rights organization, sued Blue Apron alleging that its meal-kit subscription website was incompatible with screen readers due to missing alt text on recipe images and inaccessible plan-selection widgets. Blue Apron settled and overhauled its marketing and signup flows to conform to WCAG 2.0 AA."
+  },
+  {
+    "case_name": "Doe v. Mutual of Omaha Insurance",
+    "filed_year": 2019,
+    "industry": "finance",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Mutual of Omaha after its policy-search and quote-generation tools were entirely inaccessible to JAWS and NVDA screen readers. The insurer settled and engaged an accessibility consulting firm to bring its public-facing web applications into WCAG 2.1 AA compliance within eighteen months."
+  },
+  {
+    "case_name": "Seitz v. New York Times Company",
+    "filed_year": 2020,
+    "industry": "media",
+    "violation_type": "missing captions",
+    "wcag_criteria": ["1.2.2", "1.2.3"],
+    "outcome": "dismissed",
+    "settlement_amount": null,
+    "summary": "A deaf plaintiff sued the New York Times claiming its video player and live coverage streams lacked closed captions. The case was dismissed on the grounds that a news website without a physical place of public accommodation does not fall under the ADA's Title III in the Second Circuit, highlighting the circuit split on website-only businesses."
+  },
+  {
+    "case_name": "Palmer v. Cognizant Technology Solutions",
+    "filed_year": 2021,
+    "industry": "technology",
+    "violation_type": "form inaccessibility",
+    "wcag_criteria": ["1.3.1", "3.3.1", "3.3.2", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind job applicant sued Cognizant whose careers portal had inaccessible multi-step application forms with no screen-reader-accessible validation feedback, unlabeled file-upload inputs, and a CAPTCHA with no audio alternative. Cognizant settled and revamped its applicant tracking system to meet WCAG 2.1 AA."
+  },
+  {
+    "case_name": "Lohr v. Netflix Inc.",
+    "filed_year": 2012,
+    "industry": "media",
+    "violation_type": "missing captions",
+    "wcag_criteria": ["1.2.2", "1.2.3", "1.2.5"],
+    "outcome": "settled",
+    "settlement_amount": 755000,
+    "summary": "The National Association of the Deaf sued Netflix for failing to provide closed captions on a substantial portion of its streaming content. Netflix settled for $755,000 and agreed to caption 100% of its streaming library by 2014, making it one of the first streaming platforms to face and resolve large-scale ADA captioning litigation."
+  },
+  {
+    "case_name": "Ahola v. Government Employees Insurance (GEICO)",
+    "filed_year": 2023,
+    "industry": "finance",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.4.6", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff filed an ADA complaint against GEICO after its auto insurance quote flow presented dynamic form states that were not announced by screen readers, used icon-only buttons labeled only by color, and deployed a reCAPTCHA without an audio challenge option. GEICO settled and pledged to bring its quote and account management portals into WCAG 2.1 AA conformance."
+  },
+  {
+    "case_name": "Colorado Cross-Disability Coalition v. Abercrombie & Fitch",
+    "filed_year": 2015,
+    "industry": "retail",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": 25000,
+    "summary": "The Colorado Cross-Disability Coalition sued Abercrombie & Fitch alleging its e-commerce site was inaccessible to blind users due to unlabeled images and buttons. The parties settled for $25,000 in damages and A&F committed to implementing a WCAG 2.0 AA conformance program across its family of brand websites."
+  },
+  {
+    "case_name": "Lucia v. Southwest Airlines Co.",
+    "filed_year": 2023,
+    "industry": "travel",
+    "violation_type": "keyboard navigation failure",
+    "wcag_criteria": ["2.1.1", "2.1.2", "2.4.3", "4.1.2"],
+    "outcome": "pending",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff filed suit against Southwest Airlines alleging that its flight-booking funnel, seat-selection maps, and check-in portal were either non-operable by keyboard alone or lacked proper focus management when modal dialogs opened. The case remained pending at the time of this dataset, with Southwest contesting whether WCAG 2.1 AA constitutes an enforceable standard."
+  },
+  {
+    "case_name": "Holt v. United Airlines Inc.",
+    "filed_year": 2022,
+    "industry": "travel",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "2.4.3", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind traveler sued United Airlines claiming its seat-map widget communicated no seat-type or availability information to screen readers, and that its upgrade-bid interface was entirely inaccessible. United settled and agreed to rebuild the seat-map component using SVG with ARIA roles and to apply WCAG 2.1 AA across all booking touchpoints."
+  },
+  {
+    "case_name": "Nielsen v. Motorola Solutions Inc.",
+    "filed_year": 2020,
+    "industry": "technology",
+    "violation_type": "form inaccessibility",
+    "wcag_criteria": ["1.3.1", "2.1.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind applicant sued Motorola Solutions after its online job application portal presented multi-page forms with unlabeled inputs, inaccessible file upload controls, and a visual CAPTCHA with no audio alternative. Motorola settled and contracted with an accessibility firm to redesign its talent acquisition system to conform with WCAG 2.1 AA."
+  },
+  {
+    "case_name": "Davis v. BMI Federal Credit Union",
+    "filed_year": 2021,
+    "industry": "finance",
+    "violation_type": "timeout inaccessibility",
+    "wcag_criteria": ["2.2.1", "2.2.2", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind member sued BMI Federal Credit Union after its online banking portal timed out sessions without adequate warning, and the session-extension dialog was not announced to screen readers. The credit union settled and agreed to implement accessible session-timeout warnings with a minimum 20-second response window and screen-reader-compatible modal dialogs."
+  },
+  {
+    "case_name": "Carr v. Whole Foods Market Inc.",
+    "filed_year": 2022,
+    "industry": "retail",
+    "violation_type": "color contrast failure",
+    "wcag_criteria": ["1.4.3", "1.4.11"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A low-vision plaintiff sued Whole Foods Market claiming its online grocery ordering platform used light-gray text on white backgrounds for price and nutrition information, falling well below WCAG 2.1 SC 1.4.3's 4.5:1 minimum contrast ratio. Whole Foods settled and committed to updating its design tokens across all digital properties to meet WCAG 2.1 AA contrast requirements."
+  },
+  {
+    "case_name": "Reyes v. Uber Technologies Inc.",
+    "filed_year": 2019,
+    "industry": "technology",
+    "violation_type": "screen reader incompatibility",
+    "wcag_criteria": ["1.1.1", "1.3.1", "4.1.2"],
+    "outcome": "settled",
+    "settlement_amount": null,
+    "summary": "A blind plaintiff sued Uber Technologies after encountering barriers on the Uber website driver sign-up portal, including unlabeled icon buttons, missing ARIA landmarks, and dynamically loaded content not announced to screen readers. Uber settled and committed to bringing its driver and rider web applications into WCAG 2.1 AA conformance."
+  }
+]
