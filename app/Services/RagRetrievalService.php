@@ -73,7 +73,7 @@ class RagRetrievalService
     /**
      * Find similar remediation patterns from previously resolved issues.
      *
-     * @return list<array{rule_key: string, wcag_criteria: string|null, description: string, resolution: string, outcome: string|null, score: float}>
+     * @return list<array{rule_key: string, wcag_criteria: string|null, description: string, resolution: string, outcome: string|null, resolved_count: int, score: float}>
      */
     public function findSimilarRemediations(string $query, int $limit = 5): array
     {
@@ -82,7 +82,7 @@ class RagRetrievalService
         $rows = RemediationEmbedding::query()
             ->get(['rule_key', 'wcag_criteria', 'description', 'resolution', 'outcome', 'embedding']);
 
-        return $this->rankBySimilarity($rows, $queryEmbedding, $limit, function ($row): array {
+        $ranked = $this->rankBySimilarity($rows, $queryEmbedding, $limit, function ($row): array {
             return [
                 'rule_key' => $row->rule_key,
                 'wcag_criteria' => $row->wcag_criteria,
@@ -91,6 +91,23 @@ class RagRetrievalService
                 'outcome' => $row->outcome,
             ];
         });
+
+        if (empty($ranked)) {
+            return [];
+        }
+
+        $counts = RemediationEmbedding::query()
+            ->whereIn('rule_key', array_column($ranked, 'rule_key'))
+            ->selectRaw('rule_key, COUNT(*) as total')
+            ->groupBy('rule_key')
+            ->pluck('total', 'rule_key')
+            ->toArray();
+
+        return array_map(function (array $r) use ($counts): array {
+            $r['resolved_count'] = (int) ($counts[$r['rule_key']] ?? 1);
+
+            return $r;
+        }, $ranked);
     }
 
     /**

@@ -41,6 +41,24 @@ class RemediationAgent implements Agent, HasStructuredOutput
                     'url' => $schema->string()->required(),
                 ])->withoutAdditionalProperties()
             )->required(),
+            'legal_precedents' => $schema->array()->items(
+                $schema->object([
+                    'case_name' => $schema->string()->required(),
+                    'year' => $schema->integer()->nullable()->required(),
+                    'outcome' => $schema->string()->required(),
+                    'industry_relevance' => $schema->string()->required(),
+                    'summary' => $schema->string()->required(),
+                ])->withoutAdditionalProperties()
+            )->required(),
+            'legal_risk_rating' => $schema->string()->enum(['high', 'medium', 'low'])->required(),
+            'wcag_grounding' => $schema->string()->required(),
+            'similar_resolutions' => $schema->array()->items(
+                $schema->object([
+                    'rule_key' => $schema->string()->required(),
+                    'approach' => $schema->string()->required(),
+                    'resolved_count' => $schema->integer()->required(),
+                ])->withoutAdditionalProperties()
+            )->required(),
         ];
     }
 }

@@ -30,6 +30,7 @@ function remediationBuildPrompt(AiRemediationService $service, Issue $issue): st
 it('includes issue details in the remediation prompt', function (): void {
     $mock = $this->mock(RagRetrievalService::class);
     $mock->shouldReceive('findWcagChunks')->andReturn([]);
+    $mock->shouldReceive('findLawsuits')->andReturn([]);
     $mock->shouldReceive('findSimilarRemediations')->andReturn([]);
 
     $issue = Issue::factory()->create([
@@ -61,6 +62,7 @@ it('includes WCAG guidance section when RAG returns chunks', function (): void {
             'score' => 0.95,
         ],
     ]);
+    $mock->shouldReceive('findLawsuits')->andReturn([]);
     $mock->shouldReceive('findSimilarRemediations')->andReturn([]);
 
     $issue = Issue::factory()->create([
@@ -82,6 +84,7 @@ it('includes WCAG guidance section when RAG returns chunks', function (): void {
 it('includes similar past remediations when RAG returns patterns', function (): void {
     $mock = $this->mock(RagRetrievalService::class);
     $mock->shouldReceive('findWcagChunks')->andReturn([]);
+    $mock->shouldReceive('findLawsuits')->andReturn([]);
     $mock->shouldReceive('findSimilarRemediations')->andReturn([
         [
             'rule_key' => 'image-alt',
@@ -89,6 +92,7 @@ it('includes similar past remediations when RAG returns patterns', function (): 
             'description' => 'Missing alt text',
             'resolution' => 'Add descriptive alt attributes to all img elements.',
             'outcome' => 'resolved',
+            'resolved_count' => 4,
             'score' => 0.9,
         ],
     ]);
@@ -106,12 +110,14 @@ it('includes similar past remediations when RAG returns patterns', function (): 
     expect($prompt)
         ->toContain('## Similar Past Remediations')
         ->toContain('`image-alt`')
+        ->toContain('[4 resolved]')
         ->toContain('Add descriptive alt attributes to all img elements.');
 });
 
 it('omits RAG sections when knowledge base is empty', function (): void {
     $mock = $this->mock(RagRetrievalService::class);
     $mock->shouldReceive('findWcagChunks')->andReturn([]);
+    $mock->shouldReceive('findLawsuits')->andReturn([]);
     $mock->shouldReceive('findSimilarRemediations')->andReturn([]);
 
     $issue = Issue::factory()->create([
@@ -124,5 +130,60 @@ it('omits RAG sections when knowledge base is empty', function (): void {
 
     expect($prompt)
         ->not->toContain('## WCAG Guidance (Knowledge Base)')
-        ->not->toContain('## Similar Past Remediations');
+        ->not->toContain('## Similar Past Remediations')
+        ->not->toContain('## Relevant ADA Lawsuit Precedents');
+});
+
+it('includes ADA lawsuit precedents section when RAG returns lawsuits', function (): void {
+    $mock = $this->mock(RagRetrievalService::class);
+    $mock->shouldReceive('findWcagChunks')->andReturn([]);
+    $mock->shouldReceive('findLawsuits')->andReturn([
+        [
+            'case_name' => 'Robles v. Dominos',
+            'filed_year' => 2016,
+            'industry' => 'retail',
+            'outcome' => 'plaintiff_won',
+            'settlement_amount' => null,
+            'summary' => 'Website inaccessible to blind users via screen reader.',
+            'score' => 0.88,
+        ],
+    ]);
+    $mock->shouldReceive('findSimilarRemediations')->andReturn([]);
+
+    $issue = Issue::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+        'rule_key' => 'image-alt',
+        'wcag_criteria' => '1.1.1 A',
+    ]);
+
+    $prompt = remediationBuildPrompt(app(AiRemediationService::class), $issue);
+
+    expect($prompt)
+        ->toContain('## Relevant ADA Lawsuit Precedents')
+        ->toContain('Robles v. Dominos')
+        ->toContain('plaintiff_won')
+        ->toContain('inaccessible to blind users');
+});
+
+it('includes the new schema fields in the prompt schema block', function (): void {
+    $mock = $this->mock(RagRetrievalService::class);
+    $mock->shouldReceive('findWcagChunks')->andReturn([]);
+    $mock->shouldReceive('findLawsuits')->andReturn([]);
+    $mock->shouldReceive('findSimilarRemediations')->andReturn([]);
+
+    $issue = Issue::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+    ]);
+
+    $prompt = remediationBuildPrompt(app(AiRemediationService::class), $issue);
+
+    expect($prompt)
+        ->toContain('"legal_precedents"')
+        ->toContain('"legal_risk_rating"')
+        ->toContain('"wcag_grounding"')
+        ->toContain('"similar_resolutions"');
 });

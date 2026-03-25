@@ -33,6 +33,10 @@ class AiRemediationService
      *     testing_guidance: string,
      *     estimated_effort: string,
      *     resources: list<array{title: string, url: string}>,
+     *     legal_precedents: list<array{case_name: string, year: int|null, outcome: string, industry_relevance: string, summary: string}>,
+     *     legal_risk_rating: string,
+     *     wcag_grounding: string,
+     *     similar_resolutions: list<array{rule_key: string, approach: string, resolved_count: int}>,
      * }
      */
     public function generate(Issue $issue): array
@@ -109,7 +113,9 @@ PROMPT;
         }
 
         $criterionNumber = (string) preg_replace('/\s+[A-Z]+$/', '', $wcagCriteria);
-        $ragContext = $this->buildRagContext($description, $criterionNumber);
+        $industryValue = $issue->property?->industry?->value;
+        $industries = $industryValue ? [$industryValue] : null;
+        $ragContext = $this->buildRagContext($description, $criterionNumber, $industries);
 
         if ($ragContext !== '') {
             $prompt .= $ragContext;
@@ -129,11 +135,33 @@ PROMPT;
   "estimated_effort": "<low|medium|high>",
   "resources": [
     {"title": "<resource title>", "url": "<URL>"}
+  ],
+  "legal_precedents": [
+    {
+      "case_name": "<ADA case name>",
+      "year": <year filed or null>,
+      "outcome": "<plaintiff_won|defendant_won|settled>",
+      "industry_relevance": "<why this case is relevant to this violation type or industry>",
+      "summary": "<brief summary of the ruling and its accessibility implications>"
+    }
+  ],
+  "legal_risk_rating": "<high|medium|low>",
+  "wcag_grounding": "<quote or close paraphrase of the specific WCAG criterion text that underpins this issue>",
+  "similar_resolutions": [
+    {
+      "rule_key": "<rule key from a past resolved issue>",
+      "approach": "<summary of the remediation approach that worked>",
+      "resolved_count": <integer count of issues resolved with this approach>
+    }
   ]
 }
 SCHEMA;
 
         $prompt .= "\n\n---\n\nGenerate a detailed remediation guide for this specific issue. ";
+        $prompt .= "Use the ADA lawsuit precedents from the context above to populate \`legal_precedents\` ";
+        $prompt .= "and set \`legal_risk_rating\` based on how often similar violations have been successfully litigated. ";
+        $prompt .= "Set \`wcag_grounding\` by quoting or closely paraphrasing the WCAG criterion text from the knowledge base. ";
+        $prompt .= "Populate \`similar_resolutions\` from the past remediations provided. ";
         $prompt .= "Respond with a single JSON object matching this exact schema (no prose, no markdown fences):\n\n{$schema}";
 
         return $prompt;
@@ -143,7 +171,7 @@ SCHEMA;
      * Build a supplementary context block from the RAG knowledge base.
      * Returns an empty string if the knowledge base is empty or unavailable.
      */
-    private function buildRagContext(string $description, string $criterion): string
+    private function buildRagContext(string $description, string $criterion, ?array $industries = null): string
     {
         try {
             $sections = '';
@@ -158,6 +186,17 @@ SCHEMA;
                 }
             }
 
+            $lawsuits = $this->ragService->findLawsuits($description, 3, $industries);
+
+            if (! empty($lawsuits)) {
+                $sections .= "\n\n## Relevant ADA Lawsuit Precedents\n";
+
+                foreach ($lawsuits as $lawsuit) {
+                    $year = $lawsuit['filed_year'] ?? 'unknown year';
+                    $sections .= "\n- **{$lawsuit['case_name']}** ({$year}, {$lawsuit['outcome']}): {$lawsuit['summary']}";
+                }
+            }
+
             $remediations = $this->ragService->findSimilarRemediations($description, 3);
 
             if (! empty($remediations)) {
@@ -165,7 +204,8 @@ SCHEMA;
 
                 foreach ($remediations as $rem) {
                     $wcag = $rem['wcag_criteria'] ? " ({$rem['wcag_criteria']})" : '';
-                    $sections .= "\n- `{$rem['rule_key']}`{$wcag}: {$rem['resolution']}";
+                    $count = $rem['resolved_count'] ?? 1;
+                    $sections .= "\n- `{$rem['rule_key']}`{$wcag} [{$count} resolved]: {$rem['resolution']}";
                 }
             }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
-import { AlertCircle, Bot, Clock, RefreshCw } from 'lucide-react';
+import { AlertCircle, BookOpen, Bot, Clock, History, RefreshCw, Scale } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -40,6 +40,20 @@ type AiSuggestions = {
     testing_guidance: string;
     estimated_effort: 'low' | 'medium' | 'high';
     resources: { title: string; url: string }[];
+    legal_precedents: {
+        case_name: string;
+        year: number | null;
+        outcome: string;
+        industry_relevance: string;
+        summary: string;
+    }[];
+    legal_risk_rating: 'high' | 'medium' | 'low';
+    wcag_grounding: string;
+    similar_resolutions: {
+        rule_key: string;
+        approach: string;
+        resolved_count: number;
+    }[];
 };
 
 type Issue = {
@@ -395,11 +409,34 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                                     >
                                         Level {issue.ai_suggestions.wcag_level}
                                     </Badge>
+                                    {issue.ai_suggestions.legal_risk_rating && (
+                                        <Badge
+                                            variant={
+                                                issue.ai_suggestions.legal_risk_rating === 'high'
+                                                    ? 'destructive'
+                                                    : issue.ai_suggestions.legal_risk_rating === 'medium'
+                                                      ? 'default'
+                                                      : 'secondary'
+                                            }
+                                            className="capitalize"
+                                        >
+                                            <Scale className="mr-1 h-3 w-3" />
+                                            {issue.ai_suggestions.legal_risk_rating} legal risk
+                                        </Badge>
+                                    )}
                                 </div>
                                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                     Why this is a problem
                                 </h3>
                                 <p className="text-sm leading-relaxed">{issue.ai_suggestions.explanation}</p>
+                                {issue.ai_suggestions.wcag_grounding && (
+                                    <blockquote className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3">
+                                        <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                        <p className="text-xs leading-relaxed text-muted-foreground italic">
+                                            {issue.ai_suggestions.wcag_grounding}
+                                        </p>
+                                    </blockquote>
+                                )}
                             </div>
 
                             {/* User Impact */}
@@ -466,6 +503,71 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                                 </h3>
                                 <p className="text-sm leading-relaxed">{issue.ai_suggestions.testing_guidance}</p>
                             </div>
+
+                            {/* Legal Precedents */}
+                            {issue.ai_suggestions.legal_precedents.length > 0 && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <Scale className="h-4 w-4 text-muted-foreground" />
+                                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Related ADA Precedents
+                                        </h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {issue.ai_suggestions.legal_precedents.map((precedent, i) => (
+                                            <div key={i} className="rounded-lg border bg-muted/30 p-4">
+                                                <div className="mb-1 flex flex-wrap items-center gap-2">
+                                                    <span className="text-sm font-medium">{precedent.case_name}</span>
+                                                    {precedent.year && (
+                                                        <span className="text-xs text-muted-foreground">({precedent.year})</span>
+                                                    )}
+                                                    <Badge
+                                                        variant={
+                                                            precedent.outcome === 'plaintiff_won'
+                                                                ? 'destructive'
+                                                                : precedent.outcome === 'defendant_won'
+                                                                  ? 'secondary'
+                                                                  : 'outline'
+                                                        }
+                                                        className="text-xs capitalize"
+                                                    >
+                                                        {precedent.outcome.replace('_', ' ')}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">{precedent.industry_relevance}</p>
+                                                <p className="mt-1 text-xs leading-relaxed">{precedent.summary}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Similar Resolutions */}
+                            {issue.ai_suggestions.similar_resolutions.length > 0 && (
+                                <div className="rounded-xl border bg-card p-6">
+                                    <div className="mb-3 flex items-center gap-2">
+                                        <History className="h-4 w-4 text-muted-foreground" />
+                                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Similar Resolved Issues
+                                        </h3>
+                                    </div>
+                                    <ul className="space-y-3">
+                                        {issue.ai_suggestions.similar_resolutions.map((res, i) => (
+                                            <li key={i} className="flex items-start gap-3">
+                                                <code className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                                                    {res.rule_key}
+                                                </code>
+                                                <div className="flex-1">
+                                                    <p className="text-xs leading-relaxed">{res.approach}</p>
+                                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                                        {res.resolved_count} issue{res.resolved_count !== 1 ? 's' : ''} resolved
+                                                    </p>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
                             {/* Resources */}
                             {issue.ai_suggestions.resources.length > 0 && (

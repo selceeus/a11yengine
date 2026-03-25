@@ -129,7 +129,37 @@ it('returns ranked remediations by cosine similarity', function (): void {
     expect($results)->toHaveCount(1)
         ->and($results[0]['rule_key'])->toBe('image-alt')
         ->and($results[0]['resolution'])->toContain('alt text')
-        ->and($results[0])->toHaveKey('score');
+        ->and($results[0])->toHaveKey('score')
+        ->and($results[0])->toHaveKey('resolved_count')
+        ->and($results[0]['resolved_count'])->toBe(1);
+});
+
+it('includes the correct resolved_count per rule_key', function (): void {
+    foreach (range(1, 3) as $i) {
+        RemediationEmbedding::create([
+            'rule_key' => 'image-alt',
+            'description' => "Variant {$i}",
+            'resolution' => "Fix {$i}",
+            'embedding' => [1.0, 0.0],
+        ]);
+    }
+
+    RemediationEmbedding::create([
+        'rule_key' => 'label',
+        'description' => 'Label missing',
+        'resolution' => 'Add label.',
+        'embedding' => [0.9, 0.1],
+    ]);
+
+    $this->mockEmbedding->allows('embed')->andReturn([1.0, 0.0]);
+
+    $results = $this->service->findSimilarRemediations('alt text', 5);
+
+    $imageAlt = collect($results)->firstWhere('rule_key', 'image-alt');
+    $label = collect($results)->firstWhere('rule_key', 'label');
+
+    expect($imageAlt['resolved_count'])->toBe(3)
+        ->and($label['resolved_count'])->toBe(1);
 });
 
 it('limits results to the requested count', function (): void {
