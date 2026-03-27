@@ -174,14 +174,18 @@ it('counts only critical-severity issues for critical_issue_count', function ():
 
 // ─── Lighthouse metrics ───────────────────────────────────────────────────────
 
-it('records lighthouse_accessibility_avg when lighthouse results exist', function (): void {
+it('records all four lighthouse averages when lighthouse results exist', function (): void {
     LighthouseResult::factory()->for($this->agency)->for($this->scan)->create([
         'accessibility_score' => 80,
         'performance_score' => 70,
+        'best_practices_score' => 60,
+        'seo_score' => 80,
     ]);
     LighthouseResult::factory()->for($this->agency)->for($this->scan)->create([
         'accessibility_score' => 60,
         'performance_score' => 90,
+        'best_practices_score' => 80,
+        'seo_score' => 60,
     ]);
 
     $this->service->handle($this->scan);
@@ -196,8 +200,20 @@ it('records lighthouse_accessibility_avg when lighthouse results exist', functio
         ->where('metric_name', 'lighthouse_performance_avg')
         ->value('metric_value');
 
+    $bestPractices = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $this->scan->id)
+        ->where('metric_name', 'lighthouse_best_practices_avg')
+        ->value('metric_value');
+
+    $seo = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $this->scan->id)
+        ->where('metric_name', 'lighthouse_seo_avg')
+        ->value('metric_value');
+
     expect($accessibility)->toBe(70.0)
-        ->and($performance)->toBe(80.0);
+        ->and($performance)->toBe(80.0)
+        ->and($bestPractices)->toBe(70.0)
+        ->and($seo)->toBe(70.0);
 });
 
 it('does not record lighthouse metrics when no lighthouse results exist', function (): void {
@@ -352,8 +368,11 @@ it('writes all expected scan-level metrics when prior scan has no lighthouse res
     expect($names)->toBe([
         'accessibility_risk_score',
         'critical_issue_count',
+        'experience_score',
         'lighthouse_accessibility_avg',
+        'lighthouse_best_practices_avg',
         'lighthouse_performance_avg',
+        'lighthouse_seo_avg',
         'new_issue_count',
         'resolved_issue_count',
         'risk_trend',
@@ -642,7 +661,7 @@ it('records a negative lighthouse_performance_delta when performance worsened', 
     expect($delta)->toBe(-30.0);
 });
 
-it('writes all 10 metrics when prior scan also has lighthouse results', function (): void {
+it('writes all metrics when prior scan also has lighthouse results', function (): void {
     ScanMetric::withoutGlobalScopes()->insert([
         ['agency_id' => $this->agency->id, 'scan_id' => $this->scan->id, 'page_id' => null, 'metric_name' => 'accessibility_risk_score', 'metric_value' => 90.0, 'metric_source' => 'axe', 'created_at' => now()],
         ['agency_id' => $this->agency->id, 'scan_id' => $this->scan->id, 'page_id' => null, 'metric_name' => 'lighthouse_accessibility_avg', 'metric_value' => 75.0, 'metric_source' => 'lighthouse', 'created_at' => now()],
@@ -668,13 +687,136 @@ it('writes all 10 metrics when prior scan also has lighthouse results', function
     expect($names)->toBe([
         'accessibility_risk_score',
         'critical_issue_count',
+        'experience_score',
         'lighthouse_accessibility_avg',
         'lighthouse_accessibility_delta',
+        'lighthouse_best_practices_avg',
         'lighthouse_performance_avg',
         'lighthouse_performance_delta',
+        'lighthouse_seo_avg',
         'new_issue_count',
         'resolved_issue_count',
         'risk_trend',
         'total_issue_count',
     ]);
+});
+
+// ─── Experience score ─────────────────────────────────────────────────────────
+
+it('computes experience_score correctly from all four pillars', function (): void {
+    // No findings → axe_score = 100
+    LighthouseResult::factory()->for($this->agency)->for($this->scan)->create([
+        'form_factor' => 'mobile',
+        'performance_score' => 60,
+        'accessibility_score' => 100,
+        'best_practices_score' => 80,
+        'seo_score' => 70,
+    ]);
+
+    $this->service->handle($this->scan);
+
+    // 0.40*100 + 0.25*60 + 0.20*80 + 0.15*70 = 40 + 15 + 16 + 10.5 = 81.5
+    $score = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $this->scan->id)
+        ->where('metric_name', 'experience_score')
+        ->value('metric_value');
+
+    expect($score)->toBe(81.5);
+});
+
+it('does not record experience_score when no lighthouse results exist', function (): void {
+    $this->service->handle($this->scan);
+
+    $count = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $this->scan->id)
+        ->where('metric_name', 'experience_score')
+        ->count();
+
+    expect($count)->toBe(0);
+});
+
+it('records experience_score_delta when a prior experience_score exists', function (): void {
+    ScanMetric::withoutGlobalScopes()->insert([
+        ['agency_id' => $this->agency->id, 'scan_id' => $this->scan->id, 'page_id' => null, 'metric_name' => 'accessibility_risk_score', 'metric_value' => 90.0, 'metric_source' => 'axe', 'created_at' => now()],
+        ['agency_id' => $this->agency->id, 'scan_id' => $this->scan->id, 'page_id' => null, 'metric_name' => 'experience_score', 'metric_value' => 70.0, 'metric_source' => 'experience', 'created_at' => now()],
+    ]);
+
+    $currentScan = Scan::factory()
+        ->for($this->agency)
+        ->for($this->organization)
+        ->for($this->property)
+        ->create();
+
+    // No findings → axe_score = 100; score = 0.40*100 + 0.25*60 + 0.20*80 + 0.15*70 = 81.5
+    LighthouseResult::factory()->for($this->agency)->for($currentScan)->create([
+        'form_factor' => 'mobile',
+        'performance_score' => 60,
+        'accessibility_score' => 100,
+        'best_practices_score' => 80,
+        'seo_score' => 70,
+    ]);
+
+    $this->service->handle($currentScan);
+
+    $delta = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $currentScan->id)
+        ->where('metric_name', 'experience_score_delta')
+        ->value('metric_value');
+
+    // 81.5 - 70.0 = 11.5
+    expect($delta)->toBe(11.5);
+});
+
+it('does not record experience_score_delta when no prior experience_score exists', function (): void {
+    ScanMetric::withoutGlobalScopes()->insert([
+        'agency_id' => $this->agency->id,
+        'scan_id' => $this->scan->id,
+        'page_id' => null,
+        'metric_name' => 'accessibility_risk_score',
+        'metric_value' => 90.0,
+        'metric_source' => 'axe',
+        'created_at' => now(),
+    ]);
+
+    $currentScan = Scan::factory()
+        ->for($this->agency)
+        ->for($this->organization)
+        ->for($this->property)
+        ->create();
+
+    LighthouseResult::factory()->for($this->agency)->for($currentScan)->create([
+        'form_factor' => 'mobile',
+        'performance_score' => 60,
+        'accessibility_score' => 100,
+        'best_practices_score' => 80,
+        'seo_score' => 70,
+    ]);
+
+    $this->service->handle($currentScan);
+
+    $metric = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $currentScan->id)
+        ->where('metric_name', 'experience_score_delta')
+        ->first();
+
+    expect($metric)->toBeNull();
+});
+
+it('records experience metrics with metric_source experience', function (): void {
+    LighthouseResult::factory()->for($this->agency)->for($this->scan)->create([
+        'form_factor' => 'mobile',
+        'performance_score' => 60,
+        'accessibility_score' => 100,
+        'best_practices_score' => 80,
+        'seo_score' => 70,
+    ]);
+
+    $this->service->handle($this->scan);
+
+    $source = ScanMetric::withoutGlobalScopes()
+        ->where('scan_id', $this->scan->id)
+        ->where('metric_name', 'experience_score')
+        ->value('metric_source');
+
+    expect($source)->toBe('experience');
 });

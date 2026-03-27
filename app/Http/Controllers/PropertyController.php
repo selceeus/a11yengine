@@ -11,6 +11,7 @@ use App\Models\Agency;
 use App\Models\Finding;
 use App\Models\LighthouseResult;
 use App\Models\Property;
+use App\Models\ScanMetric;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
@@ -154,12 +155,38 @@ class PropertyController extends Controller
                 ->toArray();
         }
 
+        $latestCompletedScanId = $property->scans()
+            ->where('status', ScanStatus::Completed)
+            ->latest()
+            ->value('id');
+
+        $latestExperienceScore = null;
+        $experienceScoreDelta = null;
+
+        if ($latestCompletedScanId !== null) {
+            $experienceMetrics = ScanMetric::query()
+                ->where('scan_id', $latestCompletedScanId)
+                ->whereIn('metric_name', ['experience_score', 'experience_score_delta'])
+                ->whereNull('page_id')
+                ->pluck('metric_value', 'metric_name');
+
+            $latestExperienceScore = isset($experienceMetrics['experience_score'])
+                ? (float) $experienceMetrics['experience_score']
+                : null;
+
+            $experienceScoreDelta = isset($experienceMetrics['experience_score_delta'])
+                ? (float) $experienceMetrics['experience_score_delta']
+                : null;
+        }
+
         return Inertia::render('properties/show', [
             'property' => $property,
             'recentScans' => $recentScans,
             'lighthouseAverages' => $lighthouseAverages,
             'severityBreakdown' => $severityBreakdown,
             'topRules' => $topRules,
+            'latestExperienceScore' => $latestExperienceScore,
+            'experienceScoreDelta' => $experienceScoreDelta,
             'scheduledScan' => $property->scheduledScan ? [
                 'id' => $property->scheduledScan->id,
                 'type' => $property->scheduledScan->type,

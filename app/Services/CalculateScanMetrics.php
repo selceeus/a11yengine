@@ -37,6 +37,12 @@ class CalculateScanMetrics
         if (! empty($lighthouseMetrics)) {
             $this->recorder->record($scan, null, $lighthouseMetrics, 'lighthouse');
         }
+
+        $experienceMetrics = $this->computeExperienceMetrics($axeMetrics, $lighthouseMetrics, $priorScanId);
+
+        if (! empty($experienceMetrics)) {
+            $this->recorder->record($scan, null, $experienceMetrics, 'experience');
+        }
     }
 
     /**
@@ -56,7 +62,9 @@ class CalculateScanMetrics
         $moderate = (int) ($counts[FindingSeverity::MODERATE->value] ?? 0);
         $minor = (int) ($counts[FindingSeverity::MINOR->value] ?? 0);
 
-        $score = max(0.0, 100.0 - ($critical * 5.0 + $serious * 3.0 + $moderate * 1.0 + $minor * 0.5));
+        $pages = max(1, $scan->pages_scanned ?? 1);
+
+        $score = max(0.0, 100.0 - (($critical * 5.0 + $serious * 3.0 + $moderate * 1.0 + $minor * 0.5) / $pages));
 
         $totalIssueCount = Finding::withoutGlobalScopes()
             ->where('scan_id', $scan->id)
@@ -93,15 +101,42 @@ class CalculateScanMetrics
             return [];
         }
 
-        $avgPerformance = LighthouseResult::withoutGlobalScopes()
+        $base = LighthouseResult::withoutGlobalScopes()
             ->where('scan_id', $scan->id)
-            ->where('form_factor', 'mobile')
-            ->avg('performance_score');
+            ->where('form_factor', 'mobile');
+
+        $avgPerformance = $base->avg('performance_score');
+        $avgBestPractices = $base->avg('best_practices_score');
+        $avgSeo = $base->avg('seo_score');
 
         return [
             'lighthouse_accessibility_avg' => round((float) $avgAccessibility, 4),
             'lighthouse_performance_avg' => round((float) $avgPerformance, 4),
+            'lighthouse_best_practices_avg' => round((float) $avgBestPractices, 4),
+            'lighthouse_seo_avg' => round((float) $avgSeo, 4),
         ];
+    }
+
+    /**
+     * @param  array<string, int|float>  $axeMetrics
+     * @param  array<string, int|float>  $lighthouseMetrics
+     */
+    private function computeExperienceScore(array $axeMetrics, array $lighthouseMetrics): ?float
+    {
+        if (
+            ! isset($lighthouseMetrics['lighthouse_performance_avg']) ||
+            ! isset($lighthouseMetrics['lighthouse_best_practices_avg']) ||
+            ! isset($lighthouseMetrics['lighthouse_seo_avg'])
+        ) {
+            return null;
+        }
+
+        $score = 0.40 * $axeMetrics['accessibility_risk_score']
+            + 0.25 * $lighthouseMetrics['lighthouse_performance_avg']
+            + 0.20 * $lighthouseMetrics['lighthouse_best_practices_avg']
+            + 0.15 * $lighthouseMetrics['lighthouse_seo_avg'];
+
+        return round($score, 2);
     }
 
     private function resolvePriorScanId(Scan $scan): ?int
@@ -162,25 +197,61 @@ class CalculateScanMetrics
 
         $priorMetrics = ScanMetric::withoutGlobalScopes()
             ->where('scan_id', $priorScanId)
-            ->whereIn('metric_name', ['lighthouse_accessibility_avg', 'lighthouse_performance_avg'])
+            ->whereIn('metric_name', [
+                'lighthouse_accessibility_avg',
+                'lighthouse_performance_avg',
+                'lighthouse_best_practices_avg',
+                'lighthouse_seo_avg',
+            ])
             ->pluck('metric_value', 'metric_name');
 
         $deltas = [];
 
-        if (isset($currentLighthouseMetrics['lighthouse_accessibility_avg']) && $priorMetrics->has('lighthouse_accessibility_avg')) {
-            $deltas['lighthouse_accessibility_delta'] = round(
-                $currentLighthouseMetrics['lighthouse_accessibility_avg'] - (float) $priorMetrics['lighthouse_accessibility_avg'],
-                4
-            );
-        }
+        $deltaMap = [
+            'lighthouse_accessibility_avg' => 'lighthouse_accessibility_delta',
+            'lighthouse_performance_avg' => 'lighthouse_performance_delta',
+            'lighthouse_best_practices_avg' => 'lighthouse_best_practices_delta',
+            'lighthouse_seo_avg' => 'lighthouse_seo_delta',
+        ];
 
-        if (isset($currentLighthouseMetrics['lighthouse_performance_avg']) && $priorMetrics->has('lighthouse_performance_avg')) {
-            $deltas['lighthouse_performance_delta'] = round(
-                $currentLighthouseMetrics['lighthouse_performance_avg'] - (float) $priorMetrics['lighthouse_performance_avg'],
-                4
-            );
+        foreach ($deltaMap as $avgKey => $deltaKey) {
+            if (isset($currentLighthouseMetrics[$avgKey]) && $priorMetrics->has($avgKey)) {
+                $deltas[$deltaKey] = round(
+                    $currentLighthouseMetrics[$avgKey] - (float) $priorMetrics[$avgKey],
+                    4
+                );
+            }
         }
 
         return $deltas;
+    }
+
+    /**
+     * @param  array<string, int|float>  $axeMetrics
+     * @param  array<string, int|float>  $lighthouseMetrics
+     * @return array<string, float>
+     */
+    private function computeExperienceMetrics(array $axeMetrics, array $lighthouseMetrics, ?int $priorScanId): array
+    {
+        $score = $this->computeExperienceScore($axeMetrics, $lighthouseMetrics);
+
+        if ($score === null) {
+            return [];
+        }
+
+        $metrics = ['experience_score' => $score];
+
+        if ($priorScanId !== null) {
+            $priorScore = ScanMetric::withoutGlobalScopes()
+                ->where('scan_id', $priorScanId)
+                ->where('metric_name', 'experience_score')
+                ->value('metric_value');
+
+            if ($priorScore !== null) {
+                $metrics['experience_score_delta'] = round($score - (float) $priorScore, 4);
+            }
+        }
+
+        return $metrics;
     }
 }

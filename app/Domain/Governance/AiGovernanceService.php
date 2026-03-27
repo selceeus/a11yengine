@@ -13,6 +13,7 @@ use App\Models\Property;
 use App\Models\PropertyRiskSnapshot;
 use App\Models\RiskAdvisory;
 use App\Models\Scan;
+use App\Models\ScanMetric;
 use App\Services\RagRetrievalService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -128,6 +129,15 @@ class AiGovernanceService
             ->pluck('total', 'severity')
             ->all();
 
+        $latestExperienceScore = ScanMetric::withoutGlobalScopes()
+            ->join('scans', 'scans.id', '=', 'scan_metrics.scan_id')
+            ->where('scans.property_id', $report->property_id)
+            ->whereBetween('scans.completed_at', [$periodFrom, $periodTo])
+            ->where('scan_metrics.metric_name', 'experience_score')
+            ->whereNull('scan_metrics.page_id')
+            ->orderByDesc('scan_metrics.scan_id')
+            ->value('scan_metrics.metric_value');
+
         $dataFields = [
             'risk_trend' => $snapshots,
             'severity_breakdown' => $severityBreakdown,
@@ -148,6 +158,7 @@ class AiGovernanceService
             'top_content_issues' => $topContentIssues,
             'advisory_id' => $latestAdvisory?->id,
             'content_audit_id' => $latestContentAudit?->id,
+            'experience_score' => $latestExperienceScore !== null ? (float) $latestExperienceScore : null,
         ];
 
         return [$scopeName, $context, $dataFields];
@@ -202,6 +213,14 @@ class AiGovernanceService
             'compliance_status' => $complianceStatus,
         ];
 
+        $avgExperienceScore = ScanMetric::withoutGlobalScopes()
+            ->join('scans', 'scans.id', '=', 'scan_metrics.scan_id')
+            ->where('scans.agency_id', $agencyId)
+            ->whereBetween('scans.completed_at', [$periodFrom, $periodTo])
+            ->where('scan_metrics.metric_name', 'experience_score')
+            ->whereNull('scan_metrics.page_id')
+            ->avg('scan_metrics.metric_value');
+
         $context = [
             'scope' => 'agency',
             'properties' => $properties->map->only(['id', 'name', 'base_url'])->values()->all(),
@@ -211,6 +230,7 @@ class AiGovernanceService
             'remediation_progress' => $remediationProgress,
             'compliance_status' => $complianceStatus,
             'open_issue_counts' => $openIssueCounts,
+            'experience_score_avg' => $avgExperienceScore !== null ? round((float) $avgExperienceScore, 2) : null,
         ];
 
         return [$scopeName, $context, $dataFields];

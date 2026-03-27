@@ -117,6 +117,8 @@ export default function Show({
     severityBreakdown,
     topRules,
     scheduledScan: initialScheduledScan,
+    latestExperienceScore,
+    experienceScoreDelta,
 }: {
     property: Property;
     recentScans: Scan[];
@@ -124,6 +126,8 @@ export default function Show({
     severityBreakdown: SeverityRow[];
     topRules: Record<string, number>;
     scheduledScan: ScheduledScan | null;
+    latestExperienceScore: number | null;
+    experienceScoreDelta: number | null;
 }) {
     const { delete: destroy, processing } = useForm();
     const [overview, setOverview] = useState<OverviewState>({ open: false });
@@ -359,6 +363,33 @@ export default function Show({
                             </dd>
                         </div>
                     )}                </dl>
+
+                {/* Experience Score */}
+                {latestExperienceScore !== null && (
+                    <div className="rounded-xl border bg-card p-5">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-sm font-semibold">Experience Score</h2>
+                            {experienceScoreDelta !== null && (
+                                <span
+                                    className={`text-sm font-medium tabular-nums ${
+                                        experienceScoreDelta > 0
+                                            ? 'text-green-600'
+                                            : experienceScoreDelta < 0
+                                              ? 'text-red-600'
+                                              : 'text-muted-foreground'
+                                    }`}
+                                >
+                                    {experienceScoreDelta > 0 ? '↑' : experienceScoreDelta < 0 ? '↓' : '→'}{' '}
+                                    {Math.abs(experienceScoreDelta).toFixed(1)} vs. last scan
+                                </span>
+                            )}
+                        </div>
+                        <GaugeCard label="Composite score (0–100)" score={Math.round(latestExperienceScore)} />
+                        <p className="mt-3 text-xs text-muted-foreground">
+                            Accessibility 40% · Performance 25% · Tech Quality 20% · Discoverability 15%
+                        </p>
+                    </div>
+                )}
 
                 {/* Lighthouse averages */}
                 {lighthouseAverages && (

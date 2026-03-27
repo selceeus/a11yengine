@@ -56,7 +56,16 @@ type Delta = {
     resolved_count: number;
     risk_trend: number | null;
     lighthouse_accessibility_delta: number | null;
+    experience_score_delta: number | null;
 };
+
+type ExperiencePillars = {
+    experience_score: number;
+    accessibility_score: number | null;
+    performance_score: number | null;
+    best_practices_score: number | null;
+    seo_score: number | null;
+} | null;
 
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
@@ -89,12 +98,14 @@ export default function Show({
     topRules,
     lighthouseResults,
     delta,
+    experiencePillars,
 }: {
     scan: Scan;
     severityBreakdown: SeverityRow[];
     topRules: Record<string, number>;
     lighthouseResults: LighthouseResult[];
     delta: Delta | null;
+    experiencePillars: ExperiencePillars;
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
@@ -181,6 +192,14 @@ export default function Show({
                                 <span className="text-muted-foreground">a11y score</span>
                             </div>
                         )}
+                        {delta.experience_score_delta !== null && (
+                            <div className="flex items-center gap-1.5">
+                                <span className={delta.experience_score_delta >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                    {delta.experience_score_delta >= 0 ? '+' : ''}{delta.experience_score_delta.toFixed(1)}
+                                </span>
+                                <span className="text-muted-foreground">experience</span>
+                            </div>
+                        )}
                         <Link
                             href={`/scans/${scan.id}/diff`}
                             className="ml-auto text-primary hover:underline"
@@ -262,6 +281,24 @@ export default function Show({
                         </div>
                     );
                 })()}
+
+                 {/* Experience Score pillar breakdown */}
+                {scan.status === 'completed' && experiencePillars !== null && (
+                    <div>
+                        <h3 className="mb-3 text-sm font-semibold">Experience Score</h3>
+                        <div className="rounded-xl border bg-card p-5">
+                            <div className="mb-4">
+                                <GaugeCard label="Composite score (0–100)" score={Math.round(experiencePillars.experience_score)} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                <PillarCard label="Accessibility" weight="40%" score={experiencePillars.accessibility_score} />
+                                <PillarCard label="Performance" weight="25%" score={experiencePillars.performance_score} />
+                                <PillarCard label="Tech Quality" weight="20%" score={experiencePillars.best_practices_score} />
+                                <PillarCard label="Discoverability" weight="15%" score={experiencePillars.seo_score} />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                  {/* Breakdown — only show once completed */}
                 {scan.status === 'completed' && severityBreakdown.length > 0 && (
@@ -557,6 +594,40 @@ function GaugeCard({ label, score }: { label: string; score: number | null }) {
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                     className={`h-2 rounded-full transition-all ${barColour}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function PillarCard({ label, weight, score }: { label: string; weight: string; score: number | null }) {
+    const pct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
+
+    const barColour =
+        score === null ? 'bg-slate-300' :
+        score >= 90 ? 'bg-green-500' :
+        score >= 50 ? 'bg-orange-500' :
+        'bg-red-500';
+
+    const textColour =
+        score === null ? 'text-muted-foreground' :
+        score >= 90 ? 'text-green-600' :
+        score >= 50 ? 'text-orange-500' :
+        'text-red-600';
+
+    return (
+        <div className="flex flex-col gap-1.5 rounded-xl border bg-muted/30 p-3">
+            <div className="flex items-center justify-between">
+                <p className="text-xs font-medium">{label}</p>
+                <span className="text-xs text-muted-foreground">{weight}</span>
+            </div>
+            <p className={`text-xl font-bold tabular-nums leading-none ${textColour}`}>
+                {score !== null ? Math.round(score) : '—'}
+            </p>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                    className={`h-1.5 rounded-full transition-all ${barColour}`}
                     style={{ width: `${pct}%` }}
                 />
             </div>

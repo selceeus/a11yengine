@@ -119,11 +119,23 @@ class ScanController extends Controller
             ->get();
 
         $delta = null;
+        $experiencePillars = null;
 
         if ($scan->status === ScanStatus::Completed) {
             $metrics = ScanMetric::query()
                 ->where('scan_id', $scan->id)
-                ->whereIn('metric_name', ['new_issue_count', 'resolved_issue_count', 'risk_trend', 'lighthouse_accessibility_delta'])
+                ->whereIn('metric_name', [
+                    'new_issue_count',
+                    'resolved_issue_count',
+                    'risk_trend',
+                    'lighthouse_accessibility_delta',
+                    'experience_score',
+                    'experience_score_delta',
+                    'accessibility_risk_score',
+                    'lighthouse_performance_avg',
+                    'lighthouse_best_practices_avg',
+                    'lighthouse_seo_avg',
+                ])
                 ->whereNull('page_id')
                 ->pluck('metric_value', 'metric_name');
 
@@ -135,6 +147,27 @@ class ScanController extends Controller
                     'lighthouse_accessibility_delta' => isset($metrics['lighthouse_accessibility_delta'])
                         ? (float) $metrics['lighthouse_accessibility_delta']
                         : null,
+                    'experience_score_delta' => isset($metrics['experience_score_delta'])
+                        ? (float) $metrics['experience_score_delta']
+                        : null,
+                ];
+            }
+
+            if ($metrics->has('experience_score')) {
+                $experiencePillars = [
+                    'experience_score' => (float) $metrics['experience_score'],
+                    'accessibility_score' => isset($metrics['accessibility_risk_score'])
+                        ? (float) $metrics['accessibility_risk_score']
+                        : null,
+                    'performance_score' => isset($metrics['lighthouse_performance_avg'])
+                        ? (float) $metrics['lighthouse_performance_avg']
+                        : null,
+                    'best_practices_score' => isset($metrics['lighthouse_best_practices_avg'])
+                        ? (float) $metrics['lighthouse_best_practices_avg']
+                        : null,
+                    'seo_score' => isset($metrics['lighthouse_seo_avg'])
+                        ? (float) $metrics['lighthouse_seo_avg']
+                        : null,
                 ];
             }
         }
@@ -145,6 +178,7 @@ class ScanController extends Controller
             'topRules' => $topRules,
             'lighthouseResults' => $lighthouseResults,
             'delta' => $delta,
+            'experiencePillars' => $experiencePillars,
         ]);
     }
 
