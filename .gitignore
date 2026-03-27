@@ -31,6 +31,9 @@ yarn-error.log
 /.vscode
 /.zed
 /test_junit.xml
+/test_*.xml
 /test_results.txt
+/build_exit.txt
+/build_result.txt
 /conversation-*.txt
 bash.exe.stackdump

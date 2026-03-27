@@ -104,6 +104,7 @@ class ScanController extends Controller
             ->where('scan_id', $scan->id)
             ->select([
                 'url',
+                'form_factor',
                 'performance_score',
                 'accessibility_score',
                 'best_practices_score',
@@ -113,6 +114,8 @@ class ScanController extends Controller
                 'total_blocking_time',
                 'cumulative_layout_shift',
             ])
+            ->orderBy('url')
+            ->orderBy('form_factor')
             ->get();
 
         $delta = null;
@@ -158,7 +161,9 @@ class ScanController extends Controller
 
         $lighthouseResults = LighthouseResult::withoutGlobalScopes()
             ->where('scan_id', $scan->id)
-            ->select(['url', 'performance_score', 'accessibility_score', 'best_practices_score', 'seo_score', 'first_contentful_paint', 'largest_contentful_paint', 'total_blocking_time', 'cumulative_layout_shift'])
+            ->select(['url', 'form_factor', 'performance_score', 'accessibility_score', 'best_practices_score', 'seo_score', 'first_contentful_paint', 'largest_contentful_paint', 'total_blocking_time', 'cumulative_layout_shift'])
+            ->orderBy('url')
+            ->orderBy('form_factor')
             ->get();
 
         if ($format === 'csv') {
@@ -194,6 +199,7 @@ class ScanController extends Controller
             ])->all(),
             'lighthouse' => $lighthouseResults->map(fn (LighthouseResult $l) => [
                 'url' => $l->url,
+                'form_factor' => $l->form_factor,
                 'performance_score' => $l->performance_score,
                 'accessibility_score' => $l->accessibility_score,
                 'best_practices_score' => $l->best_practices_score,

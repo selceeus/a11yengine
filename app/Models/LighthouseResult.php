@@ -15,6 +15,7 @@ class LighthouseResult extends Model
         'agency_id',
         'scan_id',
         'url',
+        'form_factor',
         'performance_score',
         'accessibility_score',
         'best_practices_score',

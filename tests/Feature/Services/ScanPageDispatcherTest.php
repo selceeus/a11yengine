@@ -126,7 +126,24 @@ it('dispatches RunAxeScanPageJob and RunLighthouseScanJob per page when lighthou
         $axeJobs = $batch->jobs->filter(fn ($job) => $job instanceof RunAxeScanPageJob);
         $lighthouseJobs = $batch->jobs->filter(fn ($job) => $job instanceof RunLighthouseScanJob);
 
-        return $axeJobs->count() === 2 && $lighthouseJobs->count() === 2;
+        // 2 pages × 2 form factors = 4 Lighthouse jobs
+        return $axeJobs->count() === 2 && $lighthouseJobs->count() === 4;
+    });
+});
+
+it('dispatches both mobile and desktop Lighthouse jobs per page', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => true]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    Bus::assertBatched(function (PendingBatch $batch): bool {
+        $lighthouseJobs = $batch->jobs->filter(fn ($job) => $job instanceof RunLighthouseScanJob);
+        $formFactors = $lighthouseJobs->map(fn ($job) => $job->formFactor)->sort()->values()->all();
+
+        return $formFactors === ['desktop', 'mobile'];
     });
 });
 

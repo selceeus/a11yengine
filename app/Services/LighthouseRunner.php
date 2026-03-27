@@ -13,23 +13,31 @@ class LighthouseRunner
      * The Lighthouse process is invoked with `--output=json --output-path=stdout`
      * so that the full JSON report is written to stdout. Only the eight key
      * category scores and Core Web Vital metrics are extracted and returned.
+     * Pass $formFactor='desktop' to use the Lighthouse desktop preset.
      *
      * @param  string  $url  The page URL to audit.
      * @param  int  $timeout  Maximum seconds to wait for the process.
+     * @param  string  $formFactor  Either 'mobile' (default) or 'desktop'.
      * @return array{url: string, performance_score: int, accessibility_score: int, best_practices_score: int, seo_score: int, first_contentful_paint: float, largest_contentful_paint: float, total_blocking_time: float, cumulative_layout_shift: float, raw_metrics: array<string, mixed>}
      *
      * @throws ScanProcessException When the process fails or returns invalid output.
      */
-    public function run(string $url, int $timeout): array
+    public function run(string $url, int $timeout, string $formFactor = 'mobile'): array
     {
-        $result = Process::timeout($timeout)->run([
+        $command = [
             config('lighthouse.binary'),
             $url,
             '--output=json',
             '--output-path=stdout',
             '--quiet',
             '--chrome-flags=--headless --no-sandbox --disable-gpu',
-        ]);
+        ];
+
+        if ($formFactor === 'desktop') {
+            $command[] = '--preset=desktop';
+        }
+
+        $result = Process::timeout($timeout)->run($command);
 
         if ($result->failed()) {
             throw new ScanProcessException(

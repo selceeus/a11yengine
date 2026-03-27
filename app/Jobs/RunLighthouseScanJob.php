@@ -34,7 +34,11 @@ class RunLighthouseScanJob implements ShouldQueue
      */
     public array $backoff = [30];
 
-    public function __construct(public Scan $scan, public string $pageUrl) {}
+    public function __construct(
+        public Scan $scan,
+        public string $pageUrl,
+        public string $formFactor = 'mobile',
+    ) {}
 
     /**
      * Execute the job.
@@ -49,11 +53,12 @@ class RunLighthouseScanJob implements ShouldQueue
     public function handle(LighthouseRunner $runner): void
     {
         try {
-            $metrics = $runner->run($this->pageUrl, config('lighthouse.timeout', 120));
+            $metrics = $runner->run($this->pageUrl, config('lighthouse.timeout', 120), $this->formFactor);
 
             LighthouseResult::create([
                 'agency_id' => $this->scan->agency_id,
                 'scan_id' => $this->scan->id,
+                'form_factor' => $this->formFactor,
                 ...$metrics,
             ]);
         } catch (Throwable $e) {

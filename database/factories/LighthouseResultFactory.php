@@ -19,6 +19,7 @@ class LighthouseResultFactory extends Factory
                 'agency_id' => $attributes['agency_id'],
             ]),
             'url' => fake()->url(),
+            'form_factor' => 'mobile',
             'performance_score' => fake()->numberBetween(0, 100),
             'accessibility_score' => fake()->numberBetween(0, 100),
             'best_practices_score' => fake()->numberBetween(0, 100),

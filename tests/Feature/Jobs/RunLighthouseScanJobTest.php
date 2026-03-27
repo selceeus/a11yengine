@@ -149,6 +149,30 @@ it('links the result to the correct agency and scan', function (): void {
         ->and($result->scan_id)->toBe($this->scan->id);
 });
 
+it('stores the form_factor on the result', function (): void {
+    $runner = Mockery::mock(LighthouseRunner::class);
+    $runner->expects('run')->twice()->andReturn([
+        'url' => 'https://example.com/',
+        'performance_score' => 80,
+        'accessibility_score' => 80,
+        'best_practices_score' => 80,
+        'seo_score' => 80,
+        'first_contentful_paint' => 1000.0,
+        'largest_contentful_paint' => 2000.0,
+        'total_blocking_time' => 100.0,
+        'cumulative_layout_shift' => 0.01,
+        'raw_metrics' => [],
+    ]);
+
+    (new RunLighthouseScanJob($this->scan, 'https://example.com/', 'mobile'))->handle($runner);
+    (new RunLighthouseScanJob($this->scan, 'https://example.com/', 'desktop'))->handle($runner);
+
+    $results = LighthouseResult::withoutGlobalScopes()->orderBy('form_factor')->get();
+    expect($results->count())->toBe(2)
+        ->and($results->first()->form_factor)->toBe('desktop')
+        ->and($results->last()->form_factor)->toBe('mobile');
+});
+
 // ─── Soft failure ────────────────────────────────────────────────────────────
 
 it('does not persist a result when the runner throws ScanProcessException', function (): void {

@@ -60,7 +60,8 @@ class ScanPageDispatcher
             $jobs[] = new RunAxeScanPageJob($scan, $pageResult['url'], $pageResult['violations']);
 
             if ($lighthouseEnabled) {
-                $jobs[] = new RunLighthouseScanJob($scan, $pageResult['url']);
+                $jobs[] = new RunLighthouseScanJob($scan, $pageResult['url'], 'mobile');
+                $jobs[] = new RunLighthouseScanJob($scan, $pageResult['url'], 'desktop');
             }
         }
 

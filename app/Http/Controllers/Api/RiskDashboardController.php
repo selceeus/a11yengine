@@ -89,6 +89,7 @@ class RiskDashboardController extends Controller
 
         $averages = LighthouseResult::withoutGlobalScopes()
             ->where('scan_id', $scan->id)
+            ->where('form_factor', 'mobile')
             ->selectRaw('AVG(accessibility_score) as avg_accessibility, AVG(performance_score) as avg_performance, AVG(best_practices_score) as avg_best_practices')
             ->first();
 

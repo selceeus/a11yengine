@@ -31,6 +31,7 @@ class ScanOverviewController extends Controller
 
         $lighthouseResults = LighthouseResult::query()
             ->where('scan_id', $scan->id)
+            ->where('form_factor', 'mobile')
             ->select(['performance_score', 'accessibility_score', 'best_practices_score', 'seo_score'])
             ->get();
 

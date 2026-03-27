@@ -86,6 +86,7 @@ class CalculateScanMetrics
     {
         $avgAccessibility = LighthouseResult::withoutGlobalScopes()
             ->where('scan_id', $scan->id)
+            ->where('form_factor', 'mobile')
             ->avg('accessibility_score');
 
         if ($avgAccessibility === null) {
@@ -94,6 +95,7 @@ class CalculateScanMetrics
 
         $avgPerformance = LighthouseResult::withoutGlobalScopes()
             ->where('scan_id', $scan->id)
+            ->where('form_factor', 'mobile')
             ->avg('performance_score');
 
         return [

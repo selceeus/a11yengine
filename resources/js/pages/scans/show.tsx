@@ -40,6 +40,7 @@ type Scan = {
 
 type LighthouseResult = {
     url: string;
+    form_factor: 'mobile' | 'desktop';
     performance_score: number | null;
     accessibility_score: number | null;
     best_practices_score: number | null;
@@ -98,6 +99,10 @@ export default function Show({
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
     const [tab, setTab] = useState<'wcag' | 'lighthouse'>('wcag');
+    const [lighthouseFormFactor, setLighthouseFormFactor] = useState<'mobile' | 'desktop'>('mobile');
+
+    const mobileLighthouse = lighthouseResults.filter((r) => r.form_factor === 'mobile');
+    const desktopLighthouse = lighthouseResults.filter((r) => r.form_factor === 'desktop');
 
     useEffect(() => {
         if (isActive) {
@@ -223,18 +228,36 @@ export default function Show({
 
                 {/* Lighthouse averages — only show once completed */}
                 {scan.status === 'completed' && lighthouseResults.length > 0 && (() => {
-                    const avg = (pick: (r: LighthouseResult) => number | null) => {
-                        const vals = lighthouseResults.map(pick).filter((v): v is number => v !== null);
+                    const avgFor = (results: LighthouseResult[], pick: (r: LighthouseResult) => number | null) => {
+                        const vals = results.map(pick).filter((v): v is number => v !== null);
                         return vals.length > 0 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
                     };
                     return (
                         <div>
                             <h3 className="mb-3 text-sm font-semibold">Lighthouse Averages</h3>
-                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                                <GaugeCard label="Performance" score={avg((r) => r.performance_score)} />
-                                <GaugeCard label="Accessibility" score={avg((r) => r.accessibility_score)} />
-                                <GaugeCard label="Best Practices" score={avg((r) => r.best_practices_score)} />
-                                <GaugeCard label="SEO" score={avg((r) => r.seo_score)} />
+                            <div className="flex flex-col gap-4">
+                                {mobileLighthouse.length > 0 && (
+                                    <div>
+                                        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Mobile</p>
+                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                            <GaugeCard label="Performance" score={avgFor(mobileLighthouse, (r) => r.performance_score)} />
+                                            <GaugeCard label="Accessibility" score={avgFor(mobileLighthouse, (r) => r.accessibility_score)} />
+                                            <GaugeCard label="Best Practices" score={avgFor(mobileLighthouse, (r) => r.best_practices_score)} />
+                                            <GaugeCard label="SEO" score={avgFor(mobileLighthouse, (r) => r.seo_score)} />
+                                        </div>
+                                    </div>
+                                )}
+                                {desktopLighthouse.length > 0 && (
+                                    <div>
+                                        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Desktop</p>
+                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                            <GaugeCard label="Performance" score={avgFor(desktopLighthouse, (r) => r.performance_score)} />
+                                            <GaugeCard label="Accessibility" score={avgFor(desktopLighthouse, (r) => r.accessibility_score)} />
+                                            <GaugeCard label="Best Practices" score={avgFor(desktopLighthouse, (r) => r.best_practices_score)} />
+                                            <GaugeCard label="SEO" score={avgFor(desktopLighthouse, (r) => r.seo_score)} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
@@ -354,59 +377,87 @@ export default function Show({
 
                         {/* Lighthouse tab */}
                         {tab === 'lighthouse' && lighthouseResults.length > 0 && (
-                            <div className="rounded-xl border">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <caption className="px-4 py-3">Lighthouse Scoring Results</caption>
-                                        <thead className="border-b bg-muted/50">
-                                            <tr className="text-xs text-muted-foreground">
-                                                <th className="px-4 py-3 text-left font-medium">Page URL</th>
-                                                <th className="px-4 py-3 text-right font-medium">Perf</th>
-                                                <th className="px-4 py-3 text-right font-medium">A11y</th>
-                                                <th className="px-4 py-3 text-right font-medium">Best Practices</th>
-                                                <th className="px-4 py-3 text-right font-medium">SEO</th>
-                                                <th className="px-4 py-3 text-right font-medium">LCP (ms)</th>
-                                                <th className="px-4 py-3 text-right font-medium">FCP (ms)</th>
-                                                <th className="px-4 py-3 text-right font-medium">TBT (ms)</th>
-                                                <th className="px-4 py-3 text-right font-medium">CLS</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {lighthouseResults.map((result) => (
-                                                <tr key={result.url} className="transition-colors hover:bg-muted/30">
-                                                    <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
-                                                        <a href={result.url} target="_blank" rel="noreferrer" className="hover:underline">
-                                                            {result.url}
-                                                        </a>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        <ScoreChip score={result.performance_score} />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        <ScoreChip score={result.accessibility_score} />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        <ScoreChip score={result.best_practices_score} />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        <ScoreChip score={result.seo_score} />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                        {result.largest_contentful_paint?.toFixed(0) ?? '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                        {result.first_contentful_paint?.toFixed(0) ?? '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                        {result.total_blocking_time?.toFixed(0) ?? '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                                        {result.cumulative_layout_shift?.toFixed(3) ?? '—'}
-                                                    </td>
+                            <div className="flex flex-col gap-3">
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setLighthouseFormFactor('mobile')}
+                                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            lighthouseFormFactor === 'mobile'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Mobile
+                                    </button>
+                                    <button
+                                        onClick={() => setLighthouseFormFactor('desktop')}
+                                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            lighthouseFormFactor === 'desktop'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Desktop
+                                    </button>
+                                </div>
+                                <div className="rounded-xl border">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <caption className="px-4 py-3">
+                                                Lighthouse Scoring Results — {lighthouseFormFactor === 'mobile' ? 'Mobile' : 'Desktop'}
+                                            </caption>
+                                            <thead className="border-b bg-muted/50">
+                                                <tr className="text-xs text-muted-foreground">
+                                                    <th className="px-4 py-3 text-left font-medium">Page URL</th>
+                                                    <th className="px-4 py-3 text-right font-medium">Perf</th>
+                                                    <th className="px-4 py-3 text-right font-medium">A11y</th>
+                                                    <th className="px-4 py-3 text-right font-medium">Best Practices</th>
+                                                    <th className="px-4 py-3 text-right font-medium">SEO</th>
+                                                    <th className="px-4 py-3 text-right font-medium">LCP (ms)</th>
+                                                    <th className="px-4 py-3 text-right font-medium">FCP (ms)</th>
+                                                    <th className="px-4 py-3 text-right font-medium">TBT (ms)</th>
+                                                    <th className="px-4 py-3 text-right font-medium">CLS</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {lighthouseResults
+                                                    .filter((r) => r.form_factor === lighthouseFormFactor)
+                                                    .map((result) => (
+                                                    <tr key={result.url} className="transition-colors hover:bg-muted/30">
+                                                        <td className="max-w-sm truncate px-4 py-3 font-mono text-xs">
+                                                            <a href={result.url} target="_blank" rel="noreferrer" className="hover:underline">
+                                                                {result.url}
+                                                            </a>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums">
+                                                            <ScoreChip score={result.performance_score} />
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums">
+                                                            <ScoreChip score={result.accessibility_score} />
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums">
+                                                            <ScoreChip score={result.best_practices_score} />
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums">
+                                                            <ScoreChip score={result.seo_score} />
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                            {result.largest_contentful_paint?.toFixed(0) ?? '—'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                            {result.first_contentful_paint?.toFixed(0) ?? '—'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                            {result.total_blocking_time?.toFixed(0) ?? '—'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                            {result.cumulative_layout_shift?.toFixed(3) ?? '—'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         )}
