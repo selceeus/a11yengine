@@ -16,7 +16,8 @@ An enterprise web accessibility auditing and risk management platform. It automa
 - **AI Content Auditing** — Analyses live page HTML for content-level issues beyond automated rules: alt text, link text, headings, form labels, readability, and suggested alt attribute values for missing image descriptions
 - **AI Governance Reports** — Executive-facing reports with narrative summaries, risk trends, severity breakdowns, remediation progress, legal risk ratings, ADA legal precedents, and compliance status; exportable as JSON, CSV, or PDF
 - **RAG-Augmented AI** — WCAG standards, ADA lawsuit precedents, and remediation patterns are indexed as vector embeddings (pgvector) and injected into AI prompts at runtime for grounded, legally-aware responses
-- **Performance Auditing** — Per-page Lighthouse scores (performance, accessibility, SEO, best practices) and Core Web Vitals stored as immutable time-series metrics
+- **Performance Auditing** — Per-page Lighthouse scores (performance, accessibility, SEO, best practices) and Core Web Vitals stored as immutable time-series metrics; each page is audited for both **mobile and desktop** form factors with separate gauge rows and a form-factor toggle in the UI
+- **Experience Score** — Composite KPI combining four weighted pillars: Accessibility (40%), Performance (25%), Tech Quality / Best Practices (20%), and Discoverability / SEO (15%); normalised per page scanned, tracked over time with a delta chip, and surfaced on the scan detail and property overview pages; also fed into AI Governance reports as a top-level context signal
 - **Risk Scoring & Trending** — Weighted risk scores at property, organisation, and agency level with point-in-time snapshots and trend visualisation
 - **Project Management Integrations** — Push issues to Jira, GitHub Issues, Linear, Asana, Wrike, ClickUp, Monday.com, Azure DevOps, Trello, Notion, or Basecamp; bidirectional status sync via webhooks
 - **MCP Server** — Model Context Protocol endpoint exposing issues, risk summaries, scan findings, and remediation guidance to any MCP-compatible AI tool
@@ -73,7 +74,7 @@ Agency
             └── LighthouseResult  (Lighthouse performance metrics)
 ```
 
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` and `RunLighthouseScanJob` per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at property, organisation, and agency levels, and `GenerateAiAuditJob` is optionally dispatched.
+Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` and two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at property, organisation, and agency levels, and `GenerateAiAuditJob` is optionally dispatched.
 
 AI features run as independent on-demand jobs: `GenerateIssueClusteringJob`, `GenerateRiskAdvisoryJob`, `GenerateContentAuditJob`, and `GenerateGovernanceReportJob`. All AI jobs are scope-aware (property / organisation / agency) and store results as first-class model records.
 
@@ -347,7 +348,8 @@ The Accessibility Insights Platform helps agencies monitor, audit, and report on
 - **Role-Based Access Control** — Six roles: SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, Viewer — assignable at any scope level
 - **Team Management** — Invite team members via 7-day email tokens with role pre-assignment; forced password reset on first login
 - **Notification System** — In-app and email notifications for issue assignments, @mentions, scan completions, and a weekly digest; per-user opt-out preferences
-- **Performance Auditing** — Per-page Lighthouse results including performance, accessibility, SEO, and best-practices scores alongside Core Web Vitals with immutable time-series scan metrics
+- **Performance Auditing** — Per-page Lighthouse results including performance, accessibility, SEO, and best-practices scores alongside Core Web Vitals; each page is audited in both **mobile and desktop** form factors, with separate gauges and a form-factor toggle in the scan view
+- **Experience Score** — Composite KPI combining Accessibility (40%), Performance (25%), Tech Quality (20%), and Discoverability (15%) into a single normalised per-page score, tracked with a scan-over-scan delta and surfaced on the property overview and scan detail pages
 - **Two-Factor Authentication** — Fortify-powered 2FA with recovery codes
 - **Scheduled Scans** — Configurable recurring scans with automated risk snapshot recording
 
@@ -394,7 +396,7 @@ Agency
             └── LighthouseResult  (performance metrics)
 ```
 
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + `RunLighthouseScanJob` per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
+Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
 
 The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
 
@@ -505,7 +507,7 @@ composer run dev
 
 1. A `Scan` is created with status `pending`
 2. `RunScanJob` is dispatched; invokes the Node.js crawler to discover all pages
-3. A `Bus::batch()` of `RunAxeScanPageJob` + `RunLighthouseScanJob` is dispatched per discovered page
+3. A `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) is dispatched per discovered page
 4. On batch completion the scan transitions to `completed`; risk snapshots are recorded at property, organisation, and agency levels
 5. If `AI_AUTO_GENERATE_AUDIT=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
 6. Any batch failure transitions the scan to `failed`
@@ -603,7 +605,7 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 | ----------------------------- | ------------------------------------------------------- | ---------------------- | ------- |
 | `RunScanJob`                  | Orchestrates full scan lifecycle                        | 3 (10s / 30s backoff)  | 600s    |
 | `RunAxeScanPageJob`           | Runs axe-core audit on a single page                    | batch                  | —       |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page      | batch                  | —       |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | batch | — |
 | `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data          | 2 (60s / 120s backoff) | 300s    |
 | `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue        | —                      | —       |
 | `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                 | —                      | —       |
