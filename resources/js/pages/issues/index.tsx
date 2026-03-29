@@ -47,6 +47,7 @@ type Filters = {
     date_from?: string;
     date_to?: string;
     assigned_user_id?: string;
+    search?: string;
 };
 
 // in the component props:
@@ -200,6 +201,14 @@ function filter(patch: Partial<Filters>, current: Filters) {
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3">
+                    <Input
+                        type="search"
+                        className="w-56"
+                        placeholder="Search issues…"
+                        value={filters.search ?? ''}
+                        onChange={(e) => filter({ search: e.target.value }, filters)}
+                        aria-label="Search issues"
+                    />
                     <Select
                         value={filters.status ?? 'all'}
                         onValueChange={(v) => filter({ status: v === 'all' ? '' : v }, filters)}

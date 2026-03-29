@@ -30,11 +30,16 @@ class PropertyController extends Controller
 
         $properties = Property::query()
             ->with('organization:id,name')
+            ->when(request('search'), fn ($q, $s) => $q->where(fn ($sub) => $sub
+                ->where('name', 'like', '%'.$s.'%')
+                ->orWhere('base_url', 'like', '%'.$s.'%')
+            ))
             ->orderBy('name')
             ->get();
 
         return Inertia::render('properties/index', [
             'properties' => $properties,
+            'filters' => request()->only(['search']),
         ]);
     }
 

@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\RiskDashboardController;
 use App\Http\Controllers\Api\RiskMapController;
 use App\Http\Controllers\Api\ScanOverviewController;
 use App\Http\Controllers\Api\ScheduledScanController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\UserAssignedIssuesController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ContentAuditController;
@@ -224,6 +225,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/organizations/{organization}/properties/top-risk', OrgTopRiskPropertiesController::class)
         ->name('api.organizations.properties.top-risk');
+
+    Route::get('api/search', SearchController::class)
+        ->name('api.search');
 
     Route::get('api/notifications', [NotificationController::class, 'index'])
         ->name('api.notifications.index');

@@ -28,11 +28,16 @@ class OrganizationController extends Controller
 
         $organizations = Organization::query()
             ->withCount('properties')
+            ->when(request('search'), fn ($q, $s) => $q->where(fn ($sub) => $sub
+                ->where('name', 'like', '%'.$s.'%')
+                ->orWhere('domain', 'like', '%'.$s.'%')
+            ))
             ->orderBy('name')
             ->get();
 
         return Inertia::render('organizations/index', [
             'organizations' => $organizations,
+            'filters' => request()->only(['search']),
         ]);
     }
 

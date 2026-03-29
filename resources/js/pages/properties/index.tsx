@@ -1,7 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -38,7 +39,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Properties', href: PropertyController.index().url },
 ];
 
-export default function Index({ properties }: { properties: Property[] }) {
+export default function Index({ properties, filters = {} }: { properties: Property[]; filters?: { search?: string } }) {
+    function search(value: string) {
+        router.get(PropertyController.index().url, value ? { search: value } : {}, { preserveState: true, replace: true });
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Properties" />
@@ -50,6 +55,15 @@ export default function Index({ properties }: { properties: Property[] }) {
                         <Link href={PropertyController.create().url}>Add property</Link>
                     </Button>
                 </div>
+
+                <Input
+                    type="search"
+                    className="w-64"
+                    placeholder="Search properties…"
+                    defaultValue={filters.search ?? ''}
+                    onChange={(e) => search(e.target.value)}
+                    aria-label="Search properties"
+                />
 
                 <div className="rounded-xl border">
                     <table className="w-full text-sm">

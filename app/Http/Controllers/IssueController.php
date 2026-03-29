@@ -37,6 +37,12 @@ class IssueController extends Controller
             ->when(request('date_from'), fn ($q, $date) => $q->whereDate('last_detected_at', '>=', $date))
             ->when(request('date_to'), fn ($q, $date) => $q->whereDate('last_detected_at', '<=', $date))
             ->when(request('assigned_user_id'), fn ($q, $userId) => $q->where('assigned_user_id', $userId))
+            ->when(request('search'), fn ($q, $s) => $q->where(fn ($sub) => $sub
+                ->where('description', 'like', '%'.$s.'%')
+                ->orWhere('rule_key', 'like', '%'.$s.'%')
+                ->orWhere('wcag_criteria', 'like', '%'.$s.'%')
+                ->orWhere('page_url', 'like', '%'.$s.'%')
+            ))
             ->latest('last_detected_at')
             ->paginate(50)
             ->withQueryString();
@@ -53,7 +59,7 @@ class IssueController extends Controller
 
         return Inertia::render('issues/index', [
             'issues' => $issues,
-            'filters' => request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to', 'assigned_user_id']),
+            'filters' => request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to', 'assigned_user_id', 'search']),
             'statuses' => IssueStatus::cases(),
             'properties' => $properties,
             'teamMembers' => $teamMembers,
