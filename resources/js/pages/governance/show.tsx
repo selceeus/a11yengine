@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import * as d3 from 'd3';
+import { ChartOptions } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import {
     ArrowLeft,
     ChevronDown,
@@ -134,72 +135,57 @@ function severityColor(sev: string): string {
 // ── Inline risk-trend mini-chart (static data) ─────────────────────────────
 
 function RiskTrendMiniChart({ data }: { data: RiskTrendPoint[] }) {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!svgRef.current || !containerRef.current || data.length === 0) return;
-
-        const MARGIN = { top: 12, right: 12, bottom: 32, left: 44 };
-        const HEIGHT = 200;
-        const totalWidth = containerRef.current.getBoundingClientRect().width || 640;
-        const innerW = totalWidth - MARGIN.left - MARGIN.right;
-        const innerH = HEIGHT - MARGIN.top - MARGIN.bottom;
-
-        type Parsed = RiskTrendPoint & { dateObj: Date };
-        const parsed: Parsed[] = data.map((p) => ({ ...p, dateObj: new Date(p.date + 'T00:00:00') }));
-
-        const xScale = d3
-            .scaleTime()
-            .domain(d3.extent(parsed, (d) => d.dateObj) as [Date, Date])
-            .range([0, innerW]);
-
-        const maxRisk = d3.max(parsed, (d) => d.risk_score) ?? 1;
-        const yScale = d3.scaleLinear().domain([0, Math.max(maxRisk, 1)]).nice().range([innerH, 0]);
-
-        const svg = d3.select(svgRef.current).attr('width', totalWidth).attr('height', HEIGHT);
-
-        let g = svg.select<SVGGElement>('g.chart-root');
-        if (g.empty()) {
-            g = svg.append('g').attr('class', 'chart-root').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
-            g.append('g').attr('class', 'area-group');
-            g.append('g').attr('class', 'line-group');
-            g.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${innerH})`);
-            g.append('g').attr('class', 'y-axis');
-        }
-
-        const xAxis = d3.axisBottom(xScale).ticks(Math.min(parsed.length, 7)).tickFormat((d) => d3.timeFormat('%b %d')(d as Date));
-        const yAxis = d3.axisLeft(yScale).ticks(4).tickSize(-innerW);
-
-        g.select<SVGGElement>('.x-axis')
-            .call(xAxis)
-            .call((ax) => ax.select('.domain').attr('stroke', 'var(--border)'))
-            .call((ax) => ax.selectAll('.tick line').attr('stroke', 'var(--border)'))
-            .call((ax) => ax.selectAll('.tick text').attr('fill', 'var(--muted-foreground)').attr('font-size', '11'));
-
-        g.select<SVGGElement>('.y-axis')
-            .call(yAxis)
-            .call((ax) => ax.select('.domain').remove())
-            .call((ax) => ax.selectAll('.tick line').attr('stroke', 'var(--border)').attr('stroke-dasharray', '3,3').attr('opacity', 0.4))
-            .call((ax) => ax.selectAll('.tick text').attr('fill', 'var(--muted-foreground)').attr('font-size', '11'));
-
-        const areaGen = d3.area<Parsed>().x((d) => xScale(d.dateObj)).y0(innerH).y1((d) => yScale(d.risk_score)).curve(d3.curveCatmullRom.alpha(0.5));
-        const lineGen = d3.line<Parsed>().x((d) => xScale(d.dateObj)).y((d) => yScale(d.risk_score)).curve(d3.curveCatmullRom.alpha(0.5));
-
-        const areaPath = g.select<SVGGElement>('.area-group').selectAll<SVGPathElement, null>('path').data([null]);
-        areaPath.enter().append('path').attr('fill', '#7c3aed').attr('opacity', 0.08).merge(areaPath).attr('d', areaGen(parsed) ?? '');
-
-        const linePath = g.select<SVGGElement>('.line-group').selectAll<SVGPathElement, null>('path').data([null]);
-        linePath.enter().append('path').attr('fill', 'none').attr('stroke', '#7c3aed').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').merge(linePath).attr('d', lineGen(parsed) ?? '');
-    }, [data]);
-
     if (data.length === 0) {
         return <p className="py-8 text-center text-sm text-muted-foreground">No risk trend data for this period.</p>;
     }
 
+    const chartData = {
+        labels: data.map((p) =>
+            new Date(p.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        ),
+        datasets: [
+            {
+                label: 'Risk score',
+                data: data.map((p) => p.risk_score),
+                borderColor: '#7c3aed',
+                backgroundColor: 'rgba(124,58,237,0.08)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: '#7c3aed',
+                pointBorderColor: 'white',
+                pointBorderWidth: 2,
+            },
+        ],
+    };
+
+    const options: ChartOptions<'line'> = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (item) => {
+                        const pt = data[item.dataIndex];
+                        return [`Risk score: ${pt.risk_score}`, `Open issues: ${pt.open_issues}`];
+                    },
+                },
+            },
+        },
+        scales: {
+            x: { grid: { display: false } },
+            y: {
+                min: 0,
+                ticks: { color: 'var(--muted-foreground)' as string },
+                grid: { color: 'rgba(0,0,0,0.06)' },
+            },
+        },
+    };
+
     return (
-        <div ref={containerRef} className="w-full">
-            <svg ref={svgRef} className="w-full overflow-visible" role="img" aria-label="Risk score trend line chart" />
+        <div className="w-full">
+            <Line data={chartData} options={options} aria-label="Risk score trend line chart" role="img" />
         </div>
     );
 }
