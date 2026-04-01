@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agency;
 use App\Models\Scan;
 use App\Models\ScheduledScan;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -12,6 +13,8 @@ use Inertia\Response;
 class ScheduledScansController extends Controller
 {
     use AuthorizesRequests;
+
+    public function __construct(private readonly Agency $agency) {}
 
     public function index(): Response
     {
@@ -42,7 +45,7 @@ class ScheduledScansController extends Controller
 
         return Inertia::render('settings/scheduled-scans', [
             'scheduledScans' => $scheduledScans,
-            'properties' => app('currentAgency')->properties()
+            'properties' => $this->agency->properties()
                 ->select(['id', 'name'])
                 ->orderBy('name')
                 ->get(),
