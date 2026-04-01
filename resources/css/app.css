@@ -137,6 +137,10 @@
         @apply border-border;
     }
 
+    html {
+        font-size: 112.5%; /* 18px base (112.5% of browser default 16px) */
+    }
+
     body {
         @apply bg-background text-foreground;
     }
