@@ -16,5 +16,5 @@ export function AppShell({ children, variant = 'header' }: Props) {
         );
     }
 
-    return <SidebarProvider defaultOpen={isOpen} className="mx-auto max-w-7xl">{children}</SidebarProvider>;
+    return <SidebarProvider defaultOpen={isOpen} className="mx-auto max-w-7xl translate-x-0">{children}</SidebarProvider>;
 }
