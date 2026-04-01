@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import Heading from '@/components/heading';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
 import type { BreadcrumbItem } from '@/types';
 import { index as scheduledScansIndex } from '@/routes/scheduled-scans';
+import ScheduledScansController from '@/actions/App/Http/Controllers/Settings/ScheduledScansController';
 
 type Organization = { id: number; name: string };
 type Property = { id: number; name: string; base_url: string };
@@ -70,15 +69,11 @@ export default function ScheduledScansIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Scheduled Scans" />
 
-            <h1 className="sr-only">Scheduled Scans Settings</h1>
-
-            <SettingsLayout>
-                <div className="space-y-6">
-                    <Heading
-                        variant="small"
-                        title="Scheduled Scans"
-                        description="View and manage all automated scan schedules across your agency"
-                    />
+            <div className="flex flex-col gap-6 p-6">
+                <div>
+                    <h1 className="text-xl font-semibold">Scheduled Scans</h1>
+                    <p className="text-sm text-muted-foreground">View and manage all automated scan schedules across your agency.</p>
+                </div>
 
                     {scans.length === 0 ? (
                         <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
@@ -95,7 +90,7 @@ export default function ScheduledScansIndex({
                                         <th className="px-4 py-3 text-left font-medium">Next Run</th>
                                         <th className="px-4 py-3 text-left font-medium">Last Run</th>
                                         <th className="px-4 py-3 text-left font-medium">Status</th>
-                                        <th className="px-4 py-3"></th>
+                                        <th className="px-4 py-3 text-right font-medium">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -140,18 +135,26 @@ export default function ScheduledScansIndex({
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-right">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    disabled={toggling === scan.id}
-                                                    onClick={() => toggleScan(scan)}
-                                                >
-                                                    {toggling === scan.id
-                                                        ? '…'
-                                                        : scan.is_active
-                                                          ? 'Pause'
-                                                          : 'Resume'}
-                                                </Button>
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <Link
+                                                        href={ScheduledScansController.show(scan.id).url}
+                                                        className="text-sm text-primary hover:underline"
+                                                    >
+                                                        View
+                                                    </Link>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        disabled={toggling === scan.id}
+                                                        onClick={() => toggleScan(scan)}
+                                                    >
+                                                        {toggling === scan.id
+                                                            ? '…'
+                                                            : scan.is_active
+                                                              ? 'Pause'
+                                                              : 'Resume'}
+                                                    </Button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -159,8 +162,7 @@ export default function ScheduledScansIndex({
                             </table>
                         </div>
                     )}
-                </div>
-            </SettingsLayout>
+            </div>
         </AppLayout>
     );
 }
