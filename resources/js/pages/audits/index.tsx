@@ -30,7 +30,7 @@ type PaginatedAudits = {
     prev_page_url: string | null;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'AI Audits', href: '/audits' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Audits', href: '/audits' }];
 
 function statusVariant(status: Audit['status']): 'default' | 'secondary' | 'destructive' | 'outline' {
     switch (status) {
@@ -68,13 +68,13 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="AI Audits" />
+            <Head title="Audits" />
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-semibold">AI Accessibility Audits</h1>
-                        <p className="text-sm text-muted-foreground">AI-generated accessibility analysis for your properties.</p>
+                        <h1 className="text-xl font-semibold">Accessibility Audits</h1>
+                        <p className="text-sm text-muted-foreground">Automated accessibility analysis for your properties.</p>
                     </div>
                     <Button onClick={() => setDialogOpen(true)}>
                         <Bot className="mr-2 h-4 w-4" />
@@ -159,7 +159,7 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
             <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) reset(); }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Generate AI Audit</DialogTitle>
+                        <DialogTitle>Generate Audit</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={submit} className="flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5">

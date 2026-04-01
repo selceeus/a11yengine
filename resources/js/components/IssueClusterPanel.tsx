@@ -162,7 +162,7 @@ export function IssueClusterPanel({ propertyId }: IssueClusterPanelProps) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-sm font-semibold">AI Issue Clusters</h3>
+                    <h3 className="text-sm font-semibold">Issue Clusters</h3>
                     {hasResult && report.generated_at && (
                         <p className="text-xs text-muted-foreground">
                             {report.total_clusters} clusters &middot; {report.open_issues_analyzed} issues analysed &middot;{' '}
@@ -194,7 +194,7 @@ export function IssueClusterPanel({ propertyId }: IssueClusterPanelProps) {
                     {Array.from({ length: 3 }).map((_, i) => (
                         <Skeleton key={i} className="h-24 w-full rounded-lg" />
                     ))}
-                    <p className="animate-pulse text-xs text-muted-foreground">AI is analysing your open issues&hellip;</p>
+                    <p className="animate-pulse text-xs text-muted-foreground">Analysing your open issues&hellip;</p>
                 </div>
             )}
 

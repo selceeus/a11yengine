@@ -196,7 +196,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-sm font-semibold">AI Content Audit</h3>
+                    <h3 className="text-sm font-semibold">Content Audit</h3>
                     {hasResult && report.generated_at && (
                         <p className="text-xs text-muted-foreground">
                             {report.total_issues} issues &middot; {report.pages_analyzed} pages analysed

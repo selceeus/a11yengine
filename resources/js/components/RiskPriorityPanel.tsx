@@ -229,7 +229,7 @@ export function RiskPriorityPanel({ propertyId }: RiskPriorityPanelProps) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-sm font-semibold">AI Risk Priorities</h3>
+                    <h3 className="text-sm font-semibold">Risk Priorities</h3>
                     {hasResult && report.generated_at && (
                         <p className="text-xs text-muted-foreground">
                             {report.total_recommendations} recommendations &middot; {report.issues_analyzed} issues analysed &middot;{' '}
@@ -261,7 +261,7 @@ export function RiskPriorityPanel({ propertyId }: RiskPriorityPanelProps) {
                     {Array.from({ length: 5 }).map((_, i) => (
                         <Skeleton key={i} className="h-12 w-full rounded-lg" />
                     ))}
-                    <p className="animate-pulse text-xs text-muted-foreground">AI is analysing and ranking your open issues&hellip;</p>
+                    <p className="animate-pulse text-xs text-muted-foreground">Analysing and ranking your open issues&hellip;</p>
                 </div>
             )}
 

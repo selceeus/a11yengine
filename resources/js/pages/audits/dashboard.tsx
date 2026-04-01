@@ -28,7 +28,7 @@ type PaginatedAudits = {
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'AI Audits', href: '/audits' },
+    { title: 'Audits', href: '/audits' },
     { title: 'Audit Dashboard', href: '/audits/dashboard' },
 ];
 

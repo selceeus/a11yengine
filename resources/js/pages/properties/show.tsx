@@ -469,30 +469,30 @@ export default function Show({
                     </Card>
                 </div>
 
-                {/* AI Issue Clusters */}
+                {/* Issue Clusters */}
                 <Card id="ai-clusters">
                     <CardHeader>
-                        <CardTitle>AI Issue Clusters</CardTitle>
+                        <CardTitle>Issue Clusters</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <IssueClusterPanel propertyId={property.id} />
                     </CardContent>
                 </Card>
 
-                {/* AI Risk Advisory */}
+                {/* Risk Advisory */}
                 <Card id="ai-risk-advisory">
                     <CardHeader>
-                        <CardTitle>AI Risk Advisory</CardTitle>
+                        <CardTitle>Risk Advisory</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <RiskPriorityPanel propertyId={property.id} />
                     </CardContent>
                 </Card>
 
-                {/* AI Content Audit */}
+                {/* Content Audit */}
                 <Card id="ai-content-audit">
                     <CardHeader>
-                        <CardTitle>AI Content Audit</CardTitle>
+                        <CardTitle>Content Audit</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <ContentAuditPanel propertyId={property.id} />

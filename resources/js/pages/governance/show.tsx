@@ -262,7 +262,7 @@ export default function Show({ report }: PageProps) {
 
                 {/* Print header (only visible in print) */}
                 <div className="hidden print:block">
-                    <h1 className="text-2xl font-bold">AI Governance Report — {scopeLabel}</h1>
+                    <h1 className="text-2xl font-bold">Governance Report — {scopeLabel}</h1>
                     <p className="text-sm text-muted-foreground">Period: {report.period_from} to {report.period_to}</p>
                     {report.generated_at && (
                         <p className="text-sm text-muted-foreground">Generated: {new Date(report.generated_at).toLocaleDateString()}</p>

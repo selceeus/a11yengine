@@ -81,7 +81,7 @@ export default function Index({ properties }: PageProps) {
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">AI Content Audit</h1>
+                    <h1 className="text-xl font-semibold">Content Audit</h1>
                     <p className="text-sm text-muted-foreground">
                         Detect content-level accessibility issues that automated scanners miss — vague links, missing alt
                         text, unlabelled forms, and poor heading structure.

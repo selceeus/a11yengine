@@ -183,9 +183,9 @@ export default function Index({ reports, properties }: PageProps) {
                 {/* Page header */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold">AI Governance Reports</h1>
+                        <h1 className="text-xl font-semibold">Governance Reports</h1>
                         <p className="text-sm text-muted-foreground">
-                            Executive-ready accessibility governance reports with AI-generated narratives, risk trends,
+                            Executive-ready accessibility governance reports with generated narratives, risk trends,
                             and traceable recommendations.
                         </p>
                     </div>

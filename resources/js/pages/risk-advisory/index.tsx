@@ -90,9 +90,9 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">AI Risk Advisory</h1>
+                    <h1 className="text-xl font-semibold">Risk Advisory</h1>
                     <p className="text-sm text-muted-foreground">
-                        AI-ranked accessibility fixes ordered by risk-reduction potential and user impact, per property.
+                        Ranked accessibility fixes ordered by risk-reduction potential and user impact, per property.
                     </p>
                 </div>
 

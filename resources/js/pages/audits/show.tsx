@@ -49,7 +49,7 @@ type Trend = {
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'AI Audits', href: '/audits' },
+    { title: 'Audits', href: '/audits' },
     { title: 'Audit', href: '#' },
 ];
 
@@ -181,7 +181,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                     <div className="flex flex-col items-center gap-4 rounded-xl border bg-card py-16">
                         <Spinner className="h-8 w-8 text-primary" />
                         <p className="font-medium">
-                            {audit.status === 'processing' ? 'AI is analysing your site…' : 'Waiting to start…'}
+                            {audit.status === 'processing' ? 'Analysing your site…' : 'Waiting to start…'}
                         </p>
                         <p className="text-sm text-muted-foreground">This page will refresh automatically.</p>
                     </div>

@@ -342,23 +342,23 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                     </div>
                 </div>
 
-                {/* AI Remediation Guide */}
+                {/* Remediation Guide */}
                 <div>
-                    <h2 className="mb-3 font-medium">AI Remediation Guide</h2>
+                    <h2 className="mb-3 font-medium">Remediation Guide</h2>
 
                     {/* Not yet generated */}
                     {!issue.ai_remediation_status && (
                         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed bg-muted/30 p-10 text-center">
                             <Bot className="h-8 w-8 text-muted-foreground" />
                             <div>
-                                <p className="font-medium">No AI remediation guide yet</p>
+                                <p className="font-medium">No remediation guide yet</p>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    Generate an AI-powered fix explanation, code snippet, and step-by-step remediation guide for this issue.
+                                    Generate a fix explanation, code snippet, and step-by-step remediation guide for this issue.
                                 </p>
                             </div>
                             <Button onClick={generateRemediation} size="sm">
                                 <Bot className="mr-2 h-4 w-4" />
-                                Generate AI Remediation
+                                Generate Remediation
                             </Button>
                         </div>
                     )}
@@ -367,7 +367,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                     {isProcessing && (
                         <div className="flex flex-col items-center gap-4 rounded-xl border bg-card py-12 text-center">
                             <Spinner className="h-7 w-7 text-primary" />
-                            <p className="font-medium">Generating AI remediation guide…</p>
+                            <p className="font-medium">Generating remediation guide…</p>
                             <p className="text-sm text-muted-foreground">This may take up to a minute.</p>
                         </div>
                     )}
@@ -379,7 +379,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                             <div className="flex-1">
                                 <p className="font-medium text-destructive">Generation failed</p>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    The AI was unable to generate a remediation guide. Check your AI provider configuration and try again.
+                                    Unable to generate a remediation guide. Check your provider configuration and try again.
                                 </p>
                             </div>
                             <Button variant="outline" size="sm" onClick={generateRemediation}>
