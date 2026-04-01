@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BarChart2, BookOpen, Bot, Building2, CircleAlert, FileText, Folder, Globe, Layers, LayoutGrid, ScanSearch, ScrollText, ShieldAlert, Users } from 'lucide-react';
+import { BarChart2, BookOpen, File, Building2, CircleAlert, FileText, Folder, Globe, Boxes, LayoutGrid, ScanSearch, ScrollText, ShieldAlert, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -61,7 +61,7 @@ const scanningNavItems: NavItem[] = [
     {
         title: 'Issue Clusters',
         href: '/issue-clusters',
-        icon: Layers,
+        icon: Boxes,
     },
 ];
 
@@ -74,7 +74,7 @@ const auditNavItems: NavItem[] = [
     {
         title: 'Audit Reports',
         href: '/audits',
-        icon: Bot,
+        icon: File,
     },
     {
         title: 'Content Audit',
