@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
-import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,7 +7,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
 import type { BreadcrumbItem } from '@/types';
 import { index } from '@/routes/api-keys';
 
@@ -80,17 +78,14 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="API Keys" />
-            <h1 className="sr-only">API Keys Settings</h1>
 
-            <SettingsLayout>
-                <div className="space-y-6">
-                    <div className="flex items-start justify-between">
-                        <Heading
-                            variant="small"
-                            title="API Keys"
-                            description="Manage API keys for CI/CD pipelines, MCP clients, and WordPress integrations"
-                        />
-                        <Dialog open={open} onOpenChange={setOpen}>
+            <div className="space-y-6 p-6">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold">API Keys</h1>
+                        <p className="text-muted-foreground mt-1 text-sm">Manage API keys for CI/CD pipelines, MCP clients, and WordPress integrations</p>
+                    </div>
+                    <Dialog open={open} onOpenChange={setOpen}>
                             <DialogTrigger asChild>
                                 <Button size="sm">New API Key</Button>
                             </DialogTrigger>
@@ -248,8 +243,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                             </table>
                         </div>
                     )}
-                </div>
-            </SettingsLayout>
+            </div>
         </AppLayout>
     );
 }

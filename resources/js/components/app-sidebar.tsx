@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BarChart2, BookOpen, CalendarClock, File, Building2, CircleAlert, FileText, Folder, Globe, Boxes, LayoutGrid, Plug, ScanSearch, ScrollText, ShieldAlert, Users } from 'lucide-react';
+import { BarChart2, BookOpen, CalendarClock, File, Building2, CircleAlert, FileText, Folder, Globe, Boxes, KeyRound, LayoutGrid, Plug, ScanSearch, ScrollText, ShieldAlert, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -17,6 +17,7 @@ import AppLogo from './app-logo';
 import { dashboard } from '@/routes';
 import { index as scheduledScansIndex } from '@/routes/scheduled-scans';
 import { index as integrationsIndex } from '@/routes/integrations';
+import { index as apiKeysIndex } from '@/routes/api-keys';
 import IssueController from '@/actions/App/Http/Controllers/IssueController';
 import OrganizationController from '@/actions/App/Http/Controllers/OrganizationController';
 import PropertyController from '@/actions/App/Http/Controllers/PropertyController';
@@ -108,6 +109,11 @@ const appSettingsNavItems: NavItem[] = [
         title: 'Integrations',
         href: integrationsIndex(),
         icon: Plug,
+    },
+    {
+        title: 'API Keys',
+        href: apiKeysIndex(),
+        icon: KeyRound,
     },
 ];
 

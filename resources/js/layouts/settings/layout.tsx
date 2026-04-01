@@ -11,7 +11,6 @@ import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { edit as editNotifications } from '@/routes/notification-preferences';
-import { index as apiKeysIndex } from '@/routes/api-keys';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -37,11 +36,6 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Notifications',
         href: editNotifications(),
-        icon: null,
-    },
-    {
-        title: 'API Keys',
-        href: apiKeysIndex(),
         icon: null,
     },
 ];
