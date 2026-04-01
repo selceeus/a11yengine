@@ -242,7 +242,6 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                             </div>
                         </div>
                     )}
-                </div>
             </div>
 
             {/* Connect dialog */}
