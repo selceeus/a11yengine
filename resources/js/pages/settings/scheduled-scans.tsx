@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { index as scheduledScansIndex } from '@/routes/scheduled-scans';
 import ScheduledScansController from '@/actions/App/Http/Controllers/Settings/ScheduledScansController';
 
+type SimpleProperty = { id: number; name: string };
 type Organization = { id: number; name: string };
 type Property = { id: number; name: string; base_url: string };
 
@@ -33,11 +37,82 @@ function frequencyLabel(scan: ScheduledScan): string {
 
 export default function ScheduledScansIndex({
     scheduledScans: initialScans,
+    properties,
 }: {
     scheduledScans: ScheduledScan[];
+    properties: SimpleProperty[];
 }) {
     const [scans, setScans] = useState(initialScans);
     const [toggling, setToggling] = useState<number | null>(null);
+
+    // Schedule scan dialog state
+    const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [schedulePropertyId, setSchedulePropertyId] = useState('');
+    const [scheduleType, setScheduleType] = useState<'once' | 'recurring'>('recurring');
+    const [scheduleFrequency, setScheduleFrequency] = useState('weekly');
+    const [scheduleTime, setScheduleTime] = useState('09:00');
+    const [scheduleDayOfWeek, setScheduleDayOfWeek] = useState('1');
+    const [scheduleDayOfMonth, setScheduleDayOfMonth] = useState('1');
+    const [scheduleAt, setScheduleAt] = useState('');
+    const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+    const [scheduleError, setScheduleError] = useState<string | null>(null);
+
+    function openScheduleDialog() {
+        setSchedulePropertyId('');
+        setScheduleType('recurring');
+        setScheduleFrequency('weekly');
+        setScheduleTime('09:00');
+        setScheduleDayOfWeek('1');
+        setScheduleDayOfMonth('1');
+        setScheduleAt('');
+        setScheduleError(null);
+        setScheduleOpen(true);
+    }
+
+    async function submitSchedule(e: React.FormEvent) {
+        e.preventDefault();
+        setScheduleSubmitting(true);
+        setScheduleError(null);
+
+        const body: Record<string, string | number> = {
+            type: scheduleType,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
+        if (scheduleType === 'once') {
+            body.scheduled_at = new Date(scheduleAt).toISOString();
+        } else {
+            body.frequency = scheduleFrequency;
+            body.run_time = scheduleTime;
+            if (scheduleFrequency === 'weekly') {
+                body.run_day_of_week = Number(scheduleDayOfWeek);
+            }
+            if (scheduleFrequency === 'monthly' || scheduleFrequency === 'quarterly') {
+                body.run_day_of_month = Number(scheduleDayOfMonth);
+            }
+        }
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        const res = await fetch(`/api/properties/${schedulePropertyId}/scheduled-scan`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrf,
+            },
+            body: JSON.stringify(body),
+        });
+
+        setScheduleSubmitting(false);
+
+        if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            setScheduleError(json.message ?? 'Failed to save schedule.');
+            return;
+        }
+
+        setScheduleOpen(false);
+        router.reload();
+    }
 
     async function toggleScan(scan: ScheduledScan) {
         setToggling(scan.id);
@@ -70,9 +145,12 @@ export default function ScheduledScansIndex({
             <Head title="Scheduled Scans" />
 
             <div className="flex flex-col gap-6 p-6">
-                <div>
-                    <h1 className="text-xl font-semibold">Scheduled Scans</h1>
-                    <p className="text-sm text-muted-foreground">View and manage all automated scan schedules across your agency.</p>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-xl font-semibold">Scheduled Scans</h1>
+                        <p className="text-sm text-muted-foreground">View and manage all automated scan schedules across your agency.</p>
+                    </div>
+                    <Button size="sm" onClick={openScheduleDialog}>Schedule Scan</Button>
                 </div>
 
                     {scans.length === 0 ? (
@@ -163,6 +241,108 @@ export default function ScheduledScansIndex({
                         </div>
                     )}
             </div>
+            <Dialog open={scheduleOpen} onOpenChange={(open) => { if (!open) setScheduleOpen(false); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Schedule a scan</DialogTitle>
+                    </DialogHeader>
+
+                    <form onSubmit={submitSchedule} className="flex flex-col gap-5 pt-1">
+                        <div className="flex flex-col gap-1.5">
+                            <Label htmlFor="schedule-property">Property</Label>
+                            <Select value={schedulePropertyId} onValueChange={setSchedulePropertyId} required>
+                                <SelectTrigger id="schedule-property">
+                                    <SelectValue placeholder="Select a property…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {properties.map((p) => (
+                                        <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                            <Label>Scan type</Label>
+                            <div className="flex gap-4">
+                                {(['recurring', 'once'] as const).map((t) => (
+                                    <label key={t} className="flex cursor-pointer items-center gap-2 text-sm">
+                                        <input type="radio" name="s-type" value={t} checked={scheduleType === t} onChange={() => setScheduleType(t)} className="accent-primary" />
+                                        <span className="capitalize">{t === 'once' ? 'One-time' : 'Recurring'}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {scheduleType === 'recurring' && (
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="s-frequency">Frequency</Label>
+                                    <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
+                                        <SelectTrigger id="s-frequency"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="daily">Daily</SelectItem>
+                                            <SelectItem value="weekly">Weekly</SelectItem>
+                                            <SelectItem value="monthly">Monthly</SelectItem>
+                                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {scheduleFrequency === 'weekly' && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="s-dow">Day of week</Label>
+                                        <Select value={scheduleDayOfWeek} onValueChange={setScheduleDayOfWeek}>
+                                            <SelectTrigger id="s-dow"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0">Sunday</SelectItem>
+                                                <SelectItem value="1">Monday</SelectItem>
+                                                <SelectItem value="2">Tuesday</SelectItem>
+                                                <SelectItem value="3">Wednesday</SelectItem>
+                                                <SelectItem value="4">Thursday</SelectItem>
+                                                <SelectItem value="5">Friday</SelectItem>
+                                                <SelectItem value="6">Saturday</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                {(scheduleFrequency === 'monthly' || scheduleFrequency === 'quarterly') && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="s-dom">{scheduleFrequency === 'quarterly' ? 'Day of month (per quarter)' : 'Day of month'}</Label>
+                                        <Select value={scheduleDayOfMonth} onValueChange={setScheduleDayOfMonth}>
+                                            <SelectTrigger id="s-dom"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {Array.from({ length: 28 }, (_, i) => (
+                                                    <SelectItem key={i + 1} value={String(i + 1)}>{i + 1}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="s-time">Time</Label>
+                                    <input id="s-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                                </div>
+                            </div>
+                        )}
+
+                        {scheduleType === 'once' && (
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="s-at">Date &amp; time</Label>
+                                <input id="s-at" type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                            </div>
+                        )}
+
+                        {scheduleError && <p className="text-xs text-destructive">{scheduleError}</p>}
+
+                        <div className="ml-auto flex gap-2">
+                            <Button type="button" variant="outline" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={scheduleSubmitting || !schedulePropertyId}>
+                                {scheduleSubmitting ? 'Saving…' : 'Save schedule'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

@@ -42,6 +42,10 @@ class ScheduledScansController extends Controller
 
         return Inertia::render('settings/scheduled-scans', [
             'scheduledScans' => $scheduledScans,
+            'properties' => app('currentAgency')->properties()
+                ->select(['id', 'name'])
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
