@@ -21,12 +21,15 @@ import PropertyController from '@/actions/App/Http/Controllers/PropertyControlle
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import TeamController from '@/actions/App/Http/Controllers/TeamController';
 
-const mainNavItems: NavItem[] = [
+const overviewNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
+];
+
+const accountNavItems: NavItem[] = [
     {
         title: 'Organizations',
         href: OrganizationController.index(),
@@ -38,6 +41,14 @@ const mainNavItems: NavItem[] = [
         icon: Globe,
     },
     {
+        title: 'Team',
+        href: TeamController.index(),
+        icon: Users,
+    },
+];
+
+const scanningNavItems: NavItem[] = [
+    {
         title: 'Scans',
         href: ScanController.index(),
         icon: ScanSearch,
@@ -48,34 +59,35 @@ const mainNavItems: NavItem[] = [
         icon: CircleAlert,
     },
     {
-        title: 'Team',
-        href: TeamController.index(),
-        icon: Users,
+        title: 'Issue Clusters',
+        href: '/issue-clusters',
+        icon: Layers,
     },
-    {
-        title: 'AI Audits',
-        href: '/audits',
-        icon: Bot,
-    },
+];
+
+const auditNavItems: NavItem[] = [
     {
         title: 'Audit Dashboard',
         href: '/audits/dashboard',
         icon: BarChart2,
     },
     {
-        title: 'Issue Clusters',
-        href: '/issue-clusters',
-        icon: Layers,
-    },
-    {
-        title: 'Risk Advisory',
-        href: '/risk-advisory',
-        icon: ShieldAlert,
+        title: 'Audit Reports',
+        href: '/audits',
+        icon: Bot,
     },
     {
         title: 'Content Audit',
         href: '/content-audit',
         icon: FileText,
+    },
+];
+
+const riskNavItems: NavItem[] = [
+    {
+        title: 'Risk Advisory',
+        href: '/risk-advisory',
+        icon: ShieldAlert,
     },
     {
         title: 'Governance',
@@ -113,7 +125,11 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={overviewNavItems} label="Overview" />
+                <NavMain items={accountNavItems} label="Account & Access" />
+                <NavMain items={scanningNavItems} label="Scanning & Issues" />
+                <NavMain items={auditNavItems} label="Auditing" />
+                <NavMain items={riskNavItems} label="Risk & Compliance" />
             </SidebarContent>
 
             <SidebarFooter>
