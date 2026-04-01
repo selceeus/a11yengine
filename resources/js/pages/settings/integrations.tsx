@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
-import Heading from '@/components/heading';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
 import type { BreadcrumbItem } from '@/types';
 import { index } from '@/routes/integrations';
+import { show as integrationShow } from '@/actions/App/Http/Controllers/Settings/IntegrationController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Integrations', href: index().url },
@@ -118,15 +117,12 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Integrations" />
-            <h1 className="sr-only">Integrations Settings</h1>
 
-            <SettingsLayout>
-                <div className="space-y-8">
-                    <Heading
-                        variant="small"
-                        title="Integrations"
-                        description="Connect accessibility issues to your project management tools"
-                    />
+            <div className="space-y-8 p-6">
+                <div>
+                    <h1 className="text-xl font-semibold">Integrations</h1>
+                    <p className="text-muted-foreground mt-1 text-sm">Connect accessibility issues to your project management tools</p>
+                </div>
 
                     {/* Connected integrations */}
                     {integrations.length > 0 && (
@@ -175,6 +171,9 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2">
+                                                        <Button size="sm" variant="ghost" asChild>
+                                                            <Link href={integrationShow(integration.id).url}>View</Link>
+                                                        </Button>
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
@@ -244,7 +243,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                         </div>
                     )}
                 </div>
-            </SettingsLayout>
+            </div>
 
             {/* Connect dialog */}
             <Dialog open={connectingProvider !== null} onOpenChange={(open) => { if (!open) setConnectingProvider(null); }}>

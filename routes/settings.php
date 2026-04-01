@@ -60,6 +60,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('settings/integrations', [IntegrationController::class, 'store'])
         ->name('integrations.store');
 
+    Route::get('settings/integrations/{integration}', [IntegrationController::class, 'show'])
+        ->name('integrations.show');
+
     Route::delete('settings/integrations/{integration}', [IntegrationController::class, 'destroy'])
         ->name('integrations.destroy');
 

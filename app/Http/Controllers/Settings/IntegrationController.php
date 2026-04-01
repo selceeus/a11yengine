@@ -82,6 +82,28 @@ class IntegrationController extends Controller
         return redirect()->route('integrations.index');
     }
 
+    public function show(Integration $integration): Response
+    {
+        $integration->load('property:id,name');
+
+        return Inertia::render('settings/integration-show', [
+            'integration' => [
+                'id' => $integration->id,
+                'provider' => $integration->provider->value,
+                'provider_label' => $integration->provider->label(),
+                'name' => $integration->name,
+                'status' => $integration->status->value,
+                'status_label' => $integration->status->label(),
+                'error_message' => $integration->error_message,
+                'last_synced_at' => $integration->last_synced_at?->toIso8601String(),
+                'property' => $integration->property ? [
+                    'id' => $integration->property->id,
+                    'name' => $integration->property->name,
+                ] : null,
+            ],
+        ]);
+    }
+
     public function test(Integration $integration): JsonResponse
     {
         $provider = IntegrationProviderRegistry::make($integration->provider);
