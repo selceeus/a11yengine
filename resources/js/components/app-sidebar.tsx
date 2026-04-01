@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BarChart2, BookOpen, File, Building2, CircleAlert, FileText, Folder, Globe, Boxes, LayoutGrid, ScanSearch, ScrollText, ShieldAlert, Users } from 'lucide-react';
+import { BarChart2, BookOpen, CalendarClock, File, Building2, CircleAlert, FileText, Folder, Globe, Boxes, LayoutGrid, Plug, ScanSearch, ScrollText, ShieldAlert, Users } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -15,6 +15,8 @@ import {
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { dashboard } from '@/routes';
+import { index as scheduledScansIndex } from '@/routes/scheduled-scans';
+import { index as integrationsIndex } from '@/routes/integrations';
 import IssueController from '@/actions/App/Http/Controllers/IssueController';
 import OrganizationController from '@/actions/App/Http/Controllers/OrganizationController';
 import PropertyController from '@/actions/App/Http/Controllers/PropertyController';
@@ -96,6 +98,19 @@ const riskNavItems: NavItem[] = [
     },
 ];
 
+const appSettingsNavItems: NavItem[] = [
+    {
+        title: 'Scheduled Scans',
+        href: scheduledScansIndex(),
+        icon: CalendarClock,
+    },
+    {
+        title: 'Integrations',
+        href: integrationsIndex(),
+        icon: Plug,
+    },
+];
+
 const footerNavItems: NavItem[] = [
     {
         title: 'Repository',
@@ -130,6 +145,7 @@ export function AppSidebar() {
                 <NavMain items={scanningNavItems} label="Scanning & Issues" />
                 <NavMain items={auditNavItems} label="Auditing" />
                 <NavMain items={riskNavItems} label="Risk & Compliance" />
+                <NavMain items={appSettingsNavItems} label="Settings" />
             </SidebarContent>
 
             <SidebarFooter>

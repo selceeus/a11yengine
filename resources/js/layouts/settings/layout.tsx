@@ -8,12 +8,10 @@ import { cn, toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
-import { index as scheduledScansIndex } from '@/routes/scheduled-scans';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { edit as editNotifications } from '@/routes/notification-preferences';
 import { index as apiKeysIndex } from '@/routes/api-keys';
-import { index as integrationsIndex } from '@/routes/integrations';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -37,11 +35,6 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
-        title: 'Scheduled Scans',
-        href: scheduledScansIndex(),
-        icon: null,
-    },
-    {
         title: 'Notifications',
         href: editNotifications(),
         icon: null,
@@ -49,11 +42,6 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'API Keys',
         href: apiKeysIndex(),
-        icon: null,
-    },
-    {
-        title: 'Integrations',
-        href: integrationsIndex(),
         icon: null,
     },
 ];
