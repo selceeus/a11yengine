@@ -24,7 +24,7 @@ export default function Login({
 }: Props) {
     return (
         <AuthLayout
-            title="Log in to Accessibility Insights"
+            title="Log in to A11y Engine"
             description="Enter your email and password below to log in"
         >
             <Head title="Log in" />
