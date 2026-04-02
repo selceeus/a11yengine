@@ -33,26 +33,26 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 ## Tech Stack
 
-| Layer                 | Technology                                              |
-| --------------------- | ------------------------------------------------------- |
-| **Language**          | PHP 8.2                                                 |
-| **Framework**         | Laravel 12                                              |
-| **Authentication**    | Laravel Fortify v1                                      |
-| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                 |
-| **Styling**           | Tailwind CSS v4                                         |
-| **UI Components**     | Radix UI, Headless UI                                   |
-| **Visualisation**     | D3.js v7, Three.js                                      |
-| **Type-Safe Routing** | Laravel Wayfinder v0                                    |
-| **Crawler**           | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13 |
-| **Build Tool**        | Vite 7                                                  |
-| **Database**          | PostgreSQL with pgvector (vector embeddings)            |
-| **Queue**             | Laravel Queues (database driver)                        |
-| **Testing**           | Pest v3, PHPUnit v11                                    |
-| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                    |
-| **Dev Environment**   | Laravel Sail (Docker)                                   |
-| **Monitoring**        | Laravel Telescope v5                                    |
-| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet             |
-| **MCP**               | Laravel MCP v0                                          |
+| Layer                 | Technology                                               |
+| --------------------- | -------------------------------------------------------- |
+| **Language**          | PHP 8.2                                                  |
+| **Framework**         | Laravel 12                                               |
+| **Authentication**    | Laravel Fortify v1                                       |
+| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                  |
+| **Styling**           | Tailwind CSS v4                                          |
+| **UI Components**     | Radix UI, Headless UI                                    |
+| **Visualisation**     | D3.js v7, Three.js                                       |
+| **Type-Safe Routing** | Laravel Wayfinder v0                                     |
+| **Crawler**           | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13  |
+| **Build Tool**        | Vite 7                                                   |
+| **Database**          | PostgreSQL with pgvector (vector embeddings)             |
+| **Queue**             | Laravel Queues (database driver)                         |
+| **Testing**           | Pest v3, PHPUnit v11, Jest 30                            |
+| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                     |
+| **Dev Environment**   | Laravel Sail (Docker)                                    |
+| **Monitoring**        | Laravel Telescope v5                                     |
+| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet              |
+| **MCP**               | Laravel MCP v0                                           |
 
 ---
 
@@ -66,21 +66,23 @@ Agency
     └── Property
         └── Scan
             ├── ScanPage          (per-page crawl record)
-            ├── ScanMetric        (immutable time-series metrics)
+            ├── ScanMetric        (immutable time-series metrics per page)
             ├── Finding           (raw axe-core violation)
             ├── Issue             (deduplicated, tracked violation)
             │   ├── IssueActivity (comment / status / assignment log)
             │   └── IssueLink     (linked external PM ticket)
-            └── LighthouseResult  (Lighthouse performance metrics)
+            └── LighthouseResult  (performance metrics)
 ```
 
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` and two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at property, organisation, and agency levels, and `GenerateAiAuditJob` is optionally dispatched.
+Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
 
-AI features run as independent on-demand jobs: `GenerateIssueClusteringJob`, `GenerateRiskAdvisoryJob`, `GenerateContentAuditJob`, and `GenerateGovernanceReportJob`. All AI jobs are scope-aware (property / organisation / agency) and store results as first-class model records.
+The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
+
+Issues can be forwarded to any connected project management tool via `PushIssueToIntegrationJob`. The resulting `IssueLink` record stores the external ticket ID and URL; a webhook endpoint (`POST /api/webhooks/integrations/{integration}`) handles bidirectional status sync.
 
 The RAG pipeline indexes WCAG standards, ADA lawsuit precedents, and successful remediation patterns as 1536-dimension vectors (OpenAI text-embedding-3-small) stored in PostgreSQL via pgvector with HNSW indexes. At inference time, `RagRetrievalService` performs cosine-similarity search and injects the most relevant chunks into AI prompts.
 
-Issues can be forwarded to any connected PM tool via `PushIssueToIntegrationJob`. An `IssueLink` record stores the external ticket ID and URL; `POST /api/webhooks/integrations/{integration}` handles bidirectional status sync.
+An MCP server at `/mcp/property-accessibility` exposes property issues, risk summaries, and scan findings to any MCP-compatible AI tool, authenticated via a scoped API key.
 
 ---
 
@@ -191,321 +193,6 @@ composer run dev
 ### Scan Lifecycle
 
 1. A `Scan` record is created with status `pending`
-2. `RunScanJob` invokes the Node.js crawler to discover all pages
-3. A `Bus::batch()` of `RunAxeScanPageJob` + `RunLighthouseScanJob` is dispatched per discovered page
-4. On batch completion the scan transitions to `completed`; risk snapshots are recorded at property, organisation, and agency level
-5. If `AI_AUTO_GENERATE_AUDIT=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
-6. Any batch failure transitions the scan to `failed`
-
-### Issue Lifecycle
-
-Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. Issues flow through: `open` → `in_progress` → `resolved` (or `ignored` / `false_positive`). Issues can be assigned to team members, carry AI-generated remediation guidance with code fixes and legal precedents, and log a full activity trail.
-
-### Scan Diff
-
-`CompareAuditTrends` compares two scans by normalising findings per page and rule, then classifying each violation as **new**, **resolved**, or **persisting**.
-
----
-
-## AI Features
-
-### Agents
-
-All agents use Laravel AI with structured JSON output and a 300-second timeout.
-
-| Agent               | Input                                       | Output                                                                                                      |
-| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents` |
-| `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `legal_precedents`          |
-| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                   |
-| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                |
-| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages`                     |
-| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `legal_risk_rating`, `legal_precedents`, `recommendations`                           |
-
-### RAG Knowledge Base
-
-Three embedding stores (pgvector, HNSW index, 1536 dimensions):
-
-- **`WcagEmbedding`** — WCAG 2.1/2.2 success criteria chunks (117 records)
-- **`LawsuitEmbedding`** — ADA lawsuit precedents with case name, year, outcome, and industry (36 records)
-- **`RemediationEmbedding`** — Successful remediation patterns indexed per rule key (2 records)
-
-`RagRetrievalService` exposes `findWcagChunks()`, `findLawsuits()`, and `findSimilarRemediations()` for cosine-similarity lookup at inference time.
-
----
-
-## Content Audit
-
-The content audit analyses live page HTML for accessibility issues that axe-core cannot detect automatically. For each issue it reports:
-
-- `category` — `alt_text`, `link_text`, `heading_structure`, `form_label`, or `readability`
-- `issue_type` — short human-readable label
-- `element_html` — the offending element
-- `suggestion` — actionable recommendation
-- **`suggested_alt_text`** — for `alt_text` issues: the exact string to place in the `alt` attribute, written from the user's perspective; empty string `""` for decorative images; `null` for all other categories
-- `writer_note` — guidance for content editors
-- `developer_note` — guidance for developers
-- `wcag_criteria` — applicable WCAG criterion (e.g. 1.1.1)
-- `severity` — `critical`, `serious`, `moderate`, or `minor`
-
-Reading metrics (Flesch-Kincaid grade, reading time, word count, Flesch score) are calculated per page and averaged across the property.
-
----
-
-## MCP Server
-
-**Endpoint:** `POST /mcp/property-accessibility`  
-**Authentication:** scoped API key with the `mcp` scope
-
-### Tools
-
-| Tool                         | Parameters                              | Returns                                           |
-| ---------------------------- | --------------------------------------- | ------------------------------------------------- |
-| `GetPropertyIssuesTool`      | `property_slug`, `severity?`, `status?` | Property metadata + filtered issues               |
-| `GetIssueRemediationTool`    | `issue_id`                              | Full remediation guidance with legal precedents   |
-| `GetScanFindingsTool`        | `scan_id`, `page_url?`                  | Raw findings with element HTML and help URLs      |
-| `GetRelatedLawsuitsTool`     | `issue_id` or `rule_key`                | Relevant ADA lawsuit cases and outcomes           |
-| `GetSimilarRemediationsTool` | `issue_id` or `rule_key`                | Remediation patterns from similar resolved issues |
-
----
-
-## Exports
-
-Reports can be exported in three formats via the `Exportable` concern:
-
-| Resource           | Formats        |
-| ------------------ | -------------- |
-| AI Audit Reports   | JSON, CSV, PDF |
-| Governance Reports | JSON, CSV, PDF |
-| Content Audits     | JSON, CSV      |
-
----
-
-## Integrations
-
-PM tool credentials are stored encrypted per property. Issues are pushed via `PushIssueToIntegrationJob` and status is synced bidirectionally via `POST /api/webhooks/integrations/{integration}`.
-
-Supported tools: **Jira**, **GitHub Issues**, **Linear**, **Asana**, **Wrike**, **ClickUp**, **Monday.com**, **Azure DevOps**, **Trello**, **Notion**, **Basecamp**
-
----
-
-## Testing
-
-```bash
-# Run all tests
-php artisan test --compact
-
-# Run a specific file
-php artisan test --compact tests/Feature/Jobs/GenerateContentAuditJobTest.php
-
-# Run a specific test
-php artisan test --compact --filter="it persists legal_precedents"
-```
-
-Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http::fake()` for HTTP mocking, and `RefreshDatabase` for database isolation.
-
----
-
-## Crawler CLI
-
-```bash
-node crawler/scan.js <url> \
-  [--max-pages 50] \
-  [--wcag-version wcag21|wcag22] \
-  [--include <pattern>]... \
-  [--exclude <pattern>]...
-```
-
-Output is a JSON payload piped to the Laravel `CrawlerRunner` service. All diagnostic output is written to stderr only.
-
-An enterprise web accessibility audit and risk management platform that automatically scans digital properties for WCAG violations, tracks remediation over time, and generates AI-powered governance reports.
-
----
-
-## Overview
-
-The Accessibility Insights Platform helps agencies monitor, audit, and report on the accessibility compliance of their clients' digital properties. It crawls websites using headless Puppeteer, runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on every discovered page, deduplicates raw violations into trackable issues, and generates governance reports with risk scores, trend analysis, and AI-powered remediation recommendations.
-
----
-
-## Features
-
-- **Automated Crawling & Scanning** — Discovers all pages on a domain and runs axe-core and Lighthouse audits on each page via headless Puppeteer
-- **Issue Deduplication & Tracking** — Aggregates raw findings into unique issues with occurrence counts, severity, WCAG category, criteria, tags, help URLs, element HTML, and lifecycle status (open → in progress → resolved)
-- **Issue Activity Log** — Full audit trail per issue tracking status changes, assignments, due date updates, bulk actions, and comments
-- **Scan Diff** — Side-by-side comparison of any two consecutive scans showing new, resolved, and unchanged findings
-- **AI-Powered Audits & Remediation** — Generates executive audit summaries and per-issue remediation guidance via OpenAI GPT-4o or Anthropic Claude
-- **AI Issue Clustering** — Groups similar open issues into thematic clusters to surface systemic patterns and prioritise remediation effort
-- **AI Risk Advisory** — Produces prioritised remediation recommendations from open issue data at property, organisation, or agency scope
-- **AI Content Auditing** — Analyses scanned page content for accessibility and readability issues beyond automated rule checks
-- **Risk Scoring & Trending** — Calculates weighted risk scores at property, organisation, and agency levels with point-in-time snapshots for trend visualisation
-- **Governance Reporting** — AI-generated executive reports with narrative summaries, risk trends, severity breakdowns, remediation progress, compliance status, and actionable recommendations; exportable as JSON, CSV, or PDF
-- **Audit Trend Tracking** — Tracks AI-generated audit scores over time and compares trends across consecutive audits
-- **Project Management Integrations** — Push accessibility issues directly to Jira, GitHub Issues, Linear, Asana, Wrike, ClickUp, Monday.com, Azure DevOps, Trello, Notion, or Basecamp; bidirectional status sync via webhooks
-- **MCP Server** — Model Context Protocol endpoint exposing property issues, risk summaries, scan findings, and AI remediation prompts to any MCP-compatible AI tool
-- **Scoped API Keys** — Machine-to-machine API keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients
-- **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly isolated by tenant
-- **Role-Based Access Control** — Six roles: SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, Viewer — assignable at any scope level
-- **Team Management** — Invite team members via 7-day email tokens with role pre-assignment; forced password reset on first login
-- **Notification System** — In-app and email notifications for issue assignments, @mentions, scan completions, and a weekly digest; per-user opt-out preferences
-- **Performance Auditing** — Per-page Lighthouse results including performance, accessibility, SEO, and best-practices scores alongside Core Web Vitals; each page is audited in both **mobile and desktop** form factors, with separate gauges and a form-factor toggle in the scan view
-- **Experience Score** — Composite KPI combining Accessibility (40%), Performance (25%), Tech Quality (20%), and Discoverability (15%) into a single normalised per-page score, tracked with a scan-over-scan delta and surfaced on the property overview and scan detail pages
-- **Two-Factor Authentication** — Fortify-powered 2FA with recovery codes
-- **Scheduled Scans** — Configurable recurring scans with automated risk snapshot recording
-
----
-
-## Tech Stack
-
-| Layer                 | Technology                                               |
-| --------------------- | -------------------------------------------------------- |
-| **Language**          | PHP 8.2                                                  |
-| **Framework**         | Laravel 12                                               |
-| **Authentication**    | Laravel Fortify v1                                       |
-| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                  |
-| **Styling**           | Tailwind CSS v4                                          |
-| **UI Components**     | Radix UI, Headless UI                                    |
-| **Visualisation**     | D3 v7, Three.js                                          |
-| **Type-Safe Routing** | Laravel Wayfinder v0                                     |
-| **Crawler**           | Node.js >=18, Puppeteer 24, axe-core 4.10, Lighthouse 13 |
-| **Build**             | Vite 7                                                   |
-| **Testing**           | Pest v3, PHPUnit v11, Jest 30                            |
-| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                     |
-| **Dev Environment**   | Laravel Sail (Docker)                                    |
-| **Monitoring**        | Laravel Telescope v5                                     |
-| **AI**                | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet              |
-| **MCP**               | Laravel MCP v0                                           |
-
----
-
-## Architecture
-
-The application follows a multi-tenant domain-driven structure:
-
-```
-Agency
-└── Organization
-    └── Property
-        └── Scan
-            ├── ScanPage          (per-page crawl record)
-            ├── ScanMetric        (immutable time-series metrics per page)
-            ├── Finding           (raw axe violation)
-            ├── Issue             (deduplicated, tracked violation)
-            │   ├── IssueActivity (comment / status / assignment log)
-            │   └── IssueLink     (linked external PM ticket)
-            └── LighthouseResult  (performance metrics)
-```
-
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
-
-The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
-
-Issues can be forwarded to any connected project management tool via `PushIssueToIntegrationJob`. The resulting `IssueLink` record stores the external ticket ID and URL; a webhook endpoint (`POST /api/webhooks/integrations/{integration}`) handles bidirectional status sync.
-
-An MCP server at `/mcp/property-accessibility` exposes property issues, risk summaries, and scan findings to any MCP-compatible AI tool, authenticated via a scoped API key.
-
----
-
-## Installation
-
-### Prerequisites
-
-- PHP 8.2
-- Composer
-- Node.js >= 18
-- MySQL or PostgreSQL
-- A Chromium-compatible browser (for Puppeteer / Lighthouse)
-
-### Quick Setup
-
-```bash
-# Install all dependencies, copy .env, generate key, migrate, and build
-composer run setup
-cd crawler && npm install && cd ..
-```
-
-Or step by step:
-
-```bash
-# Install dependencies
-composer install
-npm install
-cd crawler && npm install && cd ..
-
-# Environment
-cp .env.example .env
-php artisan key:generate
-
-# Database
-php artisan migrate --seed
-
-# Build frontend assets
-npm run build
-```
-
-### Development
-
-```bash
-# Start all services concurrently: HTTP server, queue worker, Vite, and Pail log viewer
-composer run dev
-```
-
-### Environment Variables
-
-**Application**
-
-| Variable  | Purpose                            |
-| --------- | ---------------------------------- |
-| `APP_URL` | Application base URL               |
-| `APP_KEY` | Laravel application encryption key |
-
-**AI Integration**
-
-| Variable                 | Purpose                                                    |
-| ------------------------ | ---------------------------------------------------------- |
-| `AI_DRIVER`              | Provider to use: `openai` or `anthropic`                   |
-| `OPENAI_API_KEY`         | OpenAI API key (when using `openai` driver)                |
-| `ANTHROPIC_API_KEY`      | Anthropic API key (when using `anthropic` driver)          |
-| `AI_AUTO_GENERATE_AUDIT` | Auto-generate AI audit on scan completion (`true`/`false`) |
-
-**Crawler**
-
-| Variable                   | Purpose                                                |
-| -------------------------- | ------------------------------------------------------ |
-| `CRAWLER_SCRIPT_PATH`      | Path to `crawler/scan.js` (default: `crawler/scan.js`) |
-| `CRAWLER_TIMEOUT`          | Max seconds for a full crawl (default: `300`)          |
-| `CRAWLER_MAX_PAGES`        | Maximum pages to crawl per scan (default: `50`)        |
-| `CRAWLER_MAX_DEPTH`        | Maximum link depth to follow (default: `5`)            |
-| `CRAWLER_PAGE_TIMEOUT_MS`  | Page load timeout in milliseconds (default: `30000`)   |
-| `CRAWLER_NAV_TIMEOUT_MS`   | Navigation timeout in milliseconds (default: `60000`)  |
-| `CRAWLER_REQUEST_DELAY_MS` | Delay between page requests (default: `500`)           |
-
-**Lighthouse**
-
-| Variable             | Purpose                                         |
-| -------------------- | ----------------------------------------------- |
-| `LIGHTHOUSE_BINARY`  | Path to Lighthouse CLI binary                   |
-| `LIGHTHOUSE_TIMEOUT` | Max seconds per Lighthouse run (default: `120`) |
-| `LIGHTHOUSE_ENABLED` | Toggle Lighthouse performance audits on/off     |
-
----
-
-## Domain
-
-### Roles
-
-| Role          | Description                                               |
-| ------------- | --------------------------------------------------------- |
-| `SuperUser`   | Full platform access across all agencies                  |
-| `AgencyAdmin` | Manages all organisations and properties within an agency |
-| `OrgAdmin`    | Manages all properties within an organisation             |
-| `PropAdmin`   | Manages a single property                                 |
-| `Editor`      | Can create scans and update issues                        |
-| `Viewer`      | Read-only access                                          |
-
-### Scan Lifecycle
-
-1. A `Scan` is created with status `pending`
 2. `RunScanJob` is dispatched; invokes the Node.js crawler to discover all pages
 3. A `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) is dispatched per discovered page
 4. On batch completion the scan transitions to `completed`; risk snapshots are recorded at property, organisation, and agency levels
@@ -514,7 +201,7 @@ composer run dev
 
 ### Issue Lifecycle
 
-Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records. Issues are enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. They flow through: `open` → `in_progress` → `resolved`. Issues can be assigned to team members, carry AI-generated remediation suggestions, and log a full activity trail covering status changes, assignments, due date updates, bulk actions, and comments.
+Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. Issues flow through: `open` → `in_progress` → `resolved` (or `ignored` / `false_positive`). Issues can be assigned to team members, carry AI-generated remediation guidance with code fixes and legal precedents, and log a full activity trail covering status changes, assignments, due date updates, bulk actions, and comments.
 
 ### Scan Diff
 
@@ -526,10 +213,10 @@ Four AI analysis types sit above the scan layer, each scoped to a property, orga
 
 | Type                  | Model              | Description                                                                                                                 |
 | --------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| **Audit**             | `Audit`            | Executive summary of a scan's findings with pass/fail scoring                                                               |
+| **Audit**             | `Audit`            | Executive summary of a scan's findings with pass/fail compliance scoring                                                    |
 | **Issue Clusters**    | `IssueCluster`     | Groups open issues into thematic clusters to reveal systemic problems                                                       |
-| **Risk Advisory**     | `RiskAdvisory`     | Prioritised list of remediation recommendations ranked by impact                                                            |
-| **Content Audit**     | `ContentAudit`     | Prose-level analysis of page content for accessibility and readability                                                      |
+| **Risk Advisory**     | `RiskAdvisory`     | Prioritised list of remediation recommendations ranked by impact and ease of fix                                            |
+| **Content Audit**     | `ContentAudit`     | Prose-level analysis of page content for accessibility and readability issues beyond automated rule checks                  |
 | **Governance Report** | `GovernanceReport` | Comprehensive executive report with narrative, risk trends, severity breakdown, remediation progress, and compliance status |
 
 Governance reports support configurable date ranges and can be scheduled alongside scans. They are exportable in JSON, CSV, and PDF formats.
@@ -556,20 +243,22 @@ Integrations are configured per agency in **Settings → Integrations**. Webhook
 
 ### MCP Server
 
-The platform exposes a Model Context Protocol server at `/mcp/property-accessibility`, authenticated via an API key with the `mcp` scope. It provides:
+The platform exposes a Model Context Protocol server at `/mcp/property-accessibility`, authenticated via an API key with the `mcp` scope.
 
-| Type     | Name                          | Description                                         |
-| -------- | ----------------------------- | --------------------------------------------------- |
-| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property      |
-| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation for a specific issue |
-| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan    |
-| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug        |
-| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                   |
-| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific violation  |
+| Type     | Name                          | Description                                                       |
+| -------- | ----------------------------- | ----------------------------------------------------------------- |
+| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property                    |
+| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation guidance for a specific issue      |
+| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan                  |
+| Tool     | `GetRelatedLawsuitsTool`      | Retrieve relevant ADA lawsuit cases and outcomes for a rule       |
+| Tool     | `GetSimilarRemediationsTool`  | Find remediation patterns from similar previously resolved issues |
+| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug                      |
+| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                                 |
+| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation   |
 
 ### API Keys
 
-Scoped API keys allow machine-to-machine access without user credentials. Keys are managed in **Settings → API Keys** and support the following scopes:
+Scoped API keys allow machine-to-machine access without user credentials. Keys are managed in **Settings → API Keys**.
 
 | Scope           | Purpose                           |
 | --------------- | --------------------------------- |
@@ -581,8 +270,6 @@ Scoped API keys allow machine-to-machine access without user credentials. Keys a
 | `wordpress`     | Authenticate the WordPress plugin |
 
 ### Notifications
-
-The platform sends notifications for the following events:
 
 | Notification                 | Trigger                                         |
 | ---------------------------- | ----------------------------------------------- |
@@ -599,20 +286,79 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 
 ---
 
+## AI Agents
+
+All agents use Laravel AI with structured JSON output and a 300-second timeout.
+
+| Agent               | Input                                       | Output                                                                                                      |
+| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents` |
+| `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `wcag_reference`, `wcag_level`, `user_impact`, `severity_rating`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `estimated_effort`, `resources` |
+| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                   |
+| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                |
+| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages`                     |
+| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `summary_cards`, `recommendations`, `source_refs`                                    |
+
+### RAG Knowledge Base
+
+Three embedding stores (pgvector, HNSW index, 1536 dimensions):
+
+| Store                 | Contents                                                                    |
+| --------------------- | --------------------------------------------------------------------------- |
+| `WcagEmbedding`       | WCAG 2.1/2.2 success criteria chunks                                        |
+| `LawsuitEmbedding`    | ADA lawsuit precedents with case name, year, outcome, and industry          |
+| `RemediationEmbedding`| Successful remediation patterns indexed per rule key                        |
+
+`RagRetrievalService` exposes `findWcagChunks()`, `findLawsuits()`, and `findSimilarRemediations()` for cosine-similarity lookup at inference time.
+
+---
+
+## Content Audit
+
+The content audit analyses live page HTML for accessibility issues that axe-core cannot detect automatically. For each issue it reports:
+
+| Field              | Description                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `category`         | `alt_text`, `link_text`, `heading_structure`, `form_label`, or `readability`                              |
+| `issue_type`       | Short human-readable label                                                                                |
+| `element_html`     | The offending element                                                                                     |
+| `suggestion`       | Actionable recommendation                                                                                 |
+| `suggested_alt_text` | For `alt_text` issues: exact string for the `alt` attribute; `""` for decorative images; `null` otherwise |
+| `writer_note`      | Guidance for content editors                                                                              |
+| `developer_note`   | Guidance for developers                                                                                   |
+| `wcag_criteria`    | Applicable WCAG criterion (e.g. `1.1.1`)                                                                  |
+| `severity`         | `critical`, `serious`, `moderate`, or `minor`                                                             |
+
+Reading metrics (Flesch-Kincaid grade, reading time, word count, Flesch score) are calculated per page and averaged across the property.
+
+---
+
+## Exports
+
+Reports can be exported via the `Exportable` concern:
+
+| Resource           | Formats        |
+| ------------------ | -------------- |
+| AI Audit Reports   | JSON, CSV, PDF |
+| Governance Reports | JSON, CSV, PDF |
+| Content Audits     | JSON, CSV      |
+
+---
+
 ## Background Jobs
 
-| Job                           | Purpose                                                 | Retries                | Timeout |
-| ----------------------------- | ------------------------------------------------------- | ---------------------- | ------- |
-| `RunScanJob`                  | Orchestrates full scan lifecycle                        | 3 (10s / 30s backoff)  | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                    | batch                  | —       |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | batch | — |
-| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data          | 2 (60s / 120s backoff) | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue        | —                      | —       |
-| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                 | —                      | —       |
-| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI        | —                      | —       |
-| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages | —                      | —       |
-| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report         | —                      | —       |
-| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                  | 3 (30s / 120s backoff) | —       |
+| Job                           | Purpose                                                                                                  | Retries                | Timeout |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------- | ------- |
+| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                         | 3 (10s / 30s backoff)  | 600s    |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                                     | batch                  | —       |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop)      | batch                  | —       |
+| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                           | 2 (60s / 120s backoff) | 300s    |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                         | —                      | —       |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                                  | —                      | —       |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                         | —                      | —       |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                                  | —                      | —       |
+| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                          | 2 (60s / 120s backoff) | 300s    |
+| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                                   | 3 (30s / 120s backoff) | —       |
 
 ---
 
@@ -634,12 +380,14 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 The Node.js crawler in `crawler/` is a standalone CLI tool invoked by `RunScanJob`:
 
 ```bash
-node crawler/scan.js <url> [maxDepth] [maxPages]
+node crawler/scan.js <url> \
+  [--max-pages 50] \
+  [--wcag-version wcag21|wcag22] \
+  [--include <pattern>]... \
+  [--exclude <pattern>]...
 ```
 
-It uses headless Puppeteer to crawl the target domain, respects `robots.txt` and domain boundaries, and outputs per-page axe-core results as JSON to stdout.
-
-**Key files:**
+It uses headless Puppeteer to crawl the target domain, respects `robots.txt` and domain boundaries, and outputs per-page axe-core results as JSON to stdout. All diagnostic output is written to stderr only.
 
 | File                    | Purpose                                                |
 | ----------------------- | ------------------------------------------------------ |
@@ -680,8 +428,11 @@ npm run types           # TypeScript type check
 # Run all tests
 php artisan test --compact
 
-# Run a specific test file or filter by name
-php artisan test --compact --filter=ScanTest
+# Run a specific file
+php artisan test --compact tests/Feature/Jobs/GenerateContentAuditJobTest.php
+
+# Run a specific test by name
+php artisan test --compact --filter="it persists legal_precedents"
 
 # Full suite with lint check
 composer run test
@@ -692,6 +443,8 @@ Crawler unit tests (Jest):
 ```bash
 cd crawler && npm test
 ```
+
+Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http::fake()` for HTTP mocking, and `RefreshDatabase` for database isolation.
 
 ---
 
@@ -707,8 +460,6 @@ cd crawler && npm test
 ---
 
 ## Settings
-
-The following settings pages are available to authenticated users:
 
 | Page            | Route                       | Description                                        |
 | --------------- | --------------------------- | -------------------------------------------------- |
