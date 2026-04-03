@@ -256,6 +256,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                 <button
                                     key={cat.key}
                                     onClick={() => setActiveCategory(cat.key)}
+                                    aria-pressed={activeCategory === cat.key}
                                     className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                                         activeCategory === cat.key
                                             ? 'bg-primary text-primary-foreground'
@@ -307,6 +308,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                         onClick={() =>
                                                             setExpandedIssue(isExpanded ? null : globalIdx)
                                                         }
+                                                        aria-expanded={isExpanded}
                                                     >
                                                         <Badge
                                                             variant={severityVariant(issue.severity)}
@@ -355,8 +357,9 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                                             onClick={() =>
                                                                                 handleCopy(issue.element_html!, globalIdx)
                                                                             }
+                                                                            aria-label={copiedIndex === globalIdx ? 'Copied!' : 'Copy element HTML'}
                                                                         >
-                                                                            <Copy className="h-3 w-3" />
+                                                                            <Copy className="h-3 w-3" aria-hidden="true" />
                                                                             {copiedIndex === globalIdx
                                                                                 ? 'Copied!'
                                                                                 : 'Copy'}
@@ -391,8 +394,9 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                                                     globalIdx + 10000,
                                                                                 )
                                                                             }
+                                                                            aria-label={copiedIndex === globalIdx + 10000 ? 'Copied!' : 'Copy suggested alt text'}
                                                                         >
-                                                                            <Copy className="h-3 w-3" />
+                                                                            <Copy className="h-3 w-3" aria-hidden="true" />
                                                                             {copiedIndex === globalIdx + 10000 ? 'Copied!' : 'Copy'}
                                                                         </button>
                                                                     </div>

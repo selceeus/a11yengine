@@ -33,26 +33,26 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 ## Tech Stack
 
-| Layer                 | Technology                                               |
-| --------------------- | -------------------------------------------------------- |
-| **Language**          | PHP 8.2                                                  |
-| **Framework**         | Laravel 12                                               |
-| **Authentication**    | Laravel Fortify v1                                       |
-| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                  |
-| **Styling**           | Tailwind CSS v4                                          |
-| **UI Components**     | Radix UI, Headless UI                                    |
-| **Visualisation**     | D3.js v7, Three.js                                       |
-| **Type-Safe Routing** | Laravel Wayfinder v0                                     |
-| **Crawler**           | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13  |
-| **Build Tool**        | Vite 7                                                   |
-| **Database**          | PostgreSQL with pgvector (vector embeddings)             |
-| **Queue**             | Laravel Queues (database driver)                         |
-| **Testing**           | Pest v3, PHPUnit v11, Jest 30                            |
-| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                     |
-| **Dev Environment**   | Laravel Sail (Docker)                                    |
-| **Monitoring**        | Laravel Telescope v5                                     |
-| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet              |
-| **MCP**               | Laravel MCP v0                                           |
+| Layer                 | Technology                                              |
+| --------------------- | ------------------------------------------------------- |
+| **Language**          | PHP 8.2                                                 |
+| **Framework**         | Laravel 12                                              |
+| **Authentication**    | Laravel Fortify v1                                      |
+| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                 |
+| **Styling**           | Tailwind CSS v4                                         |
+| **UI Components**     | Radix UI, Headless UI                                   |
+| **Visualisation**     | D3.js v7, Three.js                                      |
+| **Type-Safe Routing** | Laravel Wayfinder v0                                    |
+| **Crawler**           | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13 |
+| **Build Tool**        | Vite 7                                                  |
+| **Database**          | PostgreSQL with pgvector (vector embeddings)            |
+| **Queue**             | Laravel Queues (database driver)                        |
+| **Testing**           | Pest v3, PHPUnit v11, Jest 30                           |
+| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                    |
+| **Dev Environment**   | Laravel Sail (Docker)                                   |
+| **Monitoring**        | Laravel Telescope v5                                    |
+| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet             |
+| **MCP**               | Laravel MCP v0                                          |
 
 ---
 
@@ -254,7 +254,7 @@ The platform exposes a Model Context Protocol server at `/mcp/property-accessibi
 | Tool     | `GetSimilarRemediationsTool`  | Find remediation patterns from similar previously resolved issues |
 | Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug                      |
 | Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                                 |
-| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation   |
+| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation  |
 
 ### API Keys
 
@@ -290,24 +290,24 @@ Weighted risk scores are calculated and snapshotted at three levels: `PropertyRi
 
 All agents use Laravel AI with structured JSON output and a 300-second timeout.
 
-| Agent               | Input                                       | Output                                                                                                      |
-| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents` |
+| Agent               | Input                                       | Output                                                                                                                                                                            |
+| ------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents`                                                                       |
 | `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `wcag_reference`, `wcag_level`, `user_impact`, `severity_rating`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `estimated_effort`, `resources` |
-| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                   |
-| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                |
-| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages`                     |
-| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `summary_cards`, `recommendations`, `source_refs`                                    |
+| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                                                                                         |
+| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                                                                                      |
+| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages`                                                                                           |
+| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `summary_cards`, `recommendations`, `source_refs`                                                                                                          |
 
 ### RAG Knowledge Base
 
 Three embedding stores (pgvector, HNSW index, 1536 dimensions):
 
-| Store                 | Contents                                                                    |
-| --------------------- | --------------------------------------------------------------------------- |
-| `WcagEmbedding`       | WCAG 2.1/2.2 success criteria chunks                                        |
-| `LawsuitEmbedding`    | ADA lawsuit precedents with case name, year, outcome, and industry          |
-| `RemediationEmbedding`| Successful remediation patterns indexed per rule key                        |
+| Store                  | Contents                                                           |
+| ---------------------- | ------------------------------------------------------------------ |
+| `WcagEmbedding`        | WCAG 2.1/2.2 success criteria chunks                               |
+| `LawsuitEmbedding`     | ADA lawsuit precedents with case name, year, outcome, and industry |
+| `RemediationEmbedding` | Successful remediation patterns indexed per rule key               |
 
 `RagRetrievalService` exposes `findWcagChunks()`, `findLawsuits()`, and `findSimilarRemediations()` for cosine-similarity lookup at inference time.
 
@@ -317,17 +317,17 @@ Three embedding stores (pgvector, HNSW index, 1536 dimensions):
 
 The content audit analyses live page HTML for accessibility issues that axe-core cannot detect automatically. For each issue it reports:
 
-| Field              | Description                                                                                               |
-| ------------------ | --------------------------------------------------------------------------------------------------------- |
-| `category`         | `alt_text`, `link_text`, `heading_structure`, `form_label`, or `readability`                              |
-| `issue_type`       | Short human-readable label                                                                                |
-| `element_html`     | The offending element                                                                                     |
-| `suggestion`       | Actionable recommendation                                                                                 |
+| Field                | Description                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `category`           | `alt_text`, `link_text`, `heading_structure`, `form_label`, or `readability`                              |
+| `issue_type`         | Short human-readable label                                                                                |
+| `element_html`       | The offending element                                                                                     |
+| `suggestion`         | Actionable recommendation                                                                                 |
 | `suggested_alt_text` | For `alt_text` issues: exact string for the `alt` attribute; `""` for decorative images; `null` otherwise |
-| `writer_note`      | Guidance for content editors                                                                              |
-| `developer_note`   | Guidance for developers                                                                                   |
-| `wcag_criteria`    | Applicable WCAG criterion (e.g. `1.1.1`)                                                                  |
-| `severity`         | `critical`, `serious`, `moderate`, or `minor`                                                             |
+| `writer_note`        | Guidance for content editors                                                                              |
+| `developer_note`     | Guidance for developers                                                                                   |
+| `wcag_criteria`      | Applicable WCAG criterion (e.g. `1.1.1`)                                                                  |
+| `severity`           | `critical`, `serious`, `moderate`, or `minor`                                                             |
 
 Reading metrics (Flesch-Kincaid grade, reading time, word count, Flesch score) are calculated per page and averaged across the property.
 
@@ -347,18 +347,18 @@ Reports can be exported via the `Exportable` concern:
 
 ## Background Jobs
 
-| Job                           | Purpose                                                                                                  | Retries                | Timeout |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------- | ------- |
-| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                         | 3 (10s / 30s backoff)  | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                                     | batch                  | —       |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop)      | batch                  | —       |
-| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                           | 2 (60s / 120s backoff) | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                         | —                      | —       |
-| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                                  | —                      | —       |
-| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                         | —                      | —       |
-| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                                  | —                      | —       |
-| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                          | 2 (60s / 120s backoff) | 300s    |
-| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                                   | 3 (30s / 120s backoff) | —       |
+| Job                           | Purpose                                                                                            | Retries                | Timeout |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------- | ------- |
+| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                   | 3 (10s / 30s backoff)  | 600s    |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                               | batch                  | —       |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | batch                  | —       |
+| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                     | 2 (60s / 120s backoff) | 300s    |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                   | —                      | —       |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                            | —                      | —       |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                   | —                      | —       |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | —                      | —       |
+| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff) | 300s    |
+| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff) | —       |
 
 ---
 
