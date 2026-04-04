@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\RemediateViolationPrompt;
+use App\Mcp\Resources\PendingAlertsResource;
 use App\Mcp\Resources\PropertyComplianceResource;
 use App\Mcp\Resources\PropertyIssuesResource;
 use App\Mcp\Resources\PropertyLegalRiskResource;
@@ -39,6 +40,7 @@ class PropertyAccessibilityServer extends Server
         PropertyRiskSummaryResource::class,
         PropertyLegalRiskResource::class,
         PropertyComplianceResource::class,
+        PendingAlertsResource::class,
     ];
 
     protected array $prompts = [

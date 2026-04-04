@@ -14,7 +14,9 @@ class NotificationPreferencesController extends Controller
 {
     private const NOTIFICATION_TYPES = [
         'scan_completed' => 'Scan Completed',
+        'scan_failed' => 'Scan Failed',
         'issue_assigned' => 'Issue Assigned',
+        'issue_mentioned' => 'Issue Mentioned',
         'weekly_digest' => 'Weekly Digest',
     ];
 

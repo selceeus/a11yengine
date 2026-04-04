@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Domain\Scans\Scan as ScanDomain;
 use App\Domain\Scans\ScanConfig;
 use App\Enums\ScanStatus;
+use App\Events\ScanFailed;
 use App\Models\Scan;
 use App\Services\CrawlerRunner;
 use App\Services\ScanPageDispatcher;
@@ -96,6 +97,10 @@ class RunScanJob implements ShouldQueue
 
         if ($scan && $scan->status !== ScanStatus::Failed) {
             (new ScanDomain)->fail($scan, $exception->getMessage());
+        }
+
+        if ($scan) {
+            ScanFailed::dispatch($scan->fresh());
         }
     }
 }

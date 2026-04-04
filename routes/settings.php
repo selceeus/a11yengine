@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Settings\ApiKeyController;
 use App\Http\Controllers\Settings\IntegrationController;
+use App\Http\Controllers\Settings\NotificationEmailRouteController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
+use App\Http\Controllers\Settings\NotificationWebhookRouteController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\ScheduledScansController;
@@ -68,4 +70,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('settings/integrations/{integration}/test', [IntegrationController::class, 'test'])
         ->name('integrations.test');
+
+    Route::get('settings/notification-email-routes', [NotificationEmailRouteController::class, 'index'])
+        ->name('notification-email-routes.index');
+
+    Route::post('settings/notification-email-routes', [NotificationEmailRouteController::class, 'store'])
+        ->name('notification-email-routes.store');
+
+    Route::delete('settings/notification-email-routes/{notificationEmailRoute}', [NotificationEmailRouteController::class, 'destroy'])
+        ->name('notification-email-routes.destroy');
+
+    Route::get('settings/notification-webhook-routes', [NotificationWebhookRouteController::class, 'index'])
+        ->name('notification-webhook-routes.index');
+
+    Route::post('settings/notification-webhook-routes', [NotificationWebhookRouteController::class, 'store'])
+        ->name('notification-webhook-routes.store');
+
+    Route::delete('settings/notification-webhook-routes/{notificationWebhookRoute}', [NotificationWebhookRouteController::class, 'destroy'])
+        ->name('notification-webhook-routes.destroy');
 });

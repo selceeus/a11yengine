@@ -3,11 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Enums\IssueStatus;
+use App\Enums\NotificationEmailCategory;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\NotificationPreference;
 use App\Models\Scan;
 use App\Notifications\WeeklyDigestNotification;
+use App\Services\RoutedEmailNotifier;
+use App\Services\WebhookNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -73,6 +76,29 @@ class SendWeeklyDigestCommand extends Command
 
                 $sent++;
             }
+
+            $digestData = [
+                'agency_name' => $agency->name,
+                'new_issues' => $newIssues,
+                'resolved_issues' => $resolvedIssues,
+                'scans_completed' => $scansCompleted,
+                'assigned_open' => 0,
+                'period_from' => $periodFrom->toDateString(),
+                'period_to' => $periodTo->toDateString(),
+            ];
+
+            app(RoutedEmailNotifier::class)->notify(
+                $agency->id,
+                NotificationEmailCategory::Reports->value,
+                new WeeklyDigestNotification($digestData),
+            );
+
+            app(WebhookNotifier::class)->notify(
+                $agency->id,
+                NotificationEmailCategory::Reports->value,
+                "Weekly digest: {$agency->name}",
+                "{$newIssues} new issues, {$resolvedIssues} resolved, {$scansCompleted} scans — {$periodFrom->toDateString()} to {$periodTo->toDateString()}.",
+            );
         }
 
         $this->info("Sent weekly digest to {$sent} users.");

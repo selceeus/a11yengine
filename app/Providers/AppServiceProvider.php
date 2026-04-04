@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Events\ScanCompleted;
+use App\Events\ScanFailed;
 use App\Listeners\GenerateAuditOnScanCompleted;
 use App\Listeners\NotifyScanCompleted;
+use App\Listeners\NotifyScanFailed;
 use App\Models\Issue;
 use App\Observers\IssueObserver;
 use Carbon\CarbonImmutable;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(ScanCompleted::class, GenerateAuditOnScanCompleted::class);
         Event::listen(ScanCompleted::class, NotifyScanCompleted::class);
+        Event::listen(ScanFailed::class, NotifyScanFailed::class);
     }
 
     /**

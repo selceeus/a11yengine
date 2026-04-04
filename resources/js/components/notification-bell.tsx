@@ -42,8 +42,14 @@ function notificationTitle(n: Notification): string {
     if (n.type.includes('ScanCompleted')) {
         return `Scan completed: ${n.data.property_name ?? 'Unknown'}`;
     }
+    if (n.type.includes('ScanFailed')) {
+        return `Scan failed: ${n.data.property_name ?? 'Unknown'}`;
+    }
     if (n.type.includes('IssueAssigned')) {
         return `Issue assigned: ${n.data.rule_key ?? 'Unknown'}`;
+    }
+    if (n.type.includes('IssueMentioned')) {
+        return `Mentioned in issue: ${n.data.rule_key ?? 'Unknown'}`;
     }
     return 'Notification';
 }
@@ -52,8 +58,14 @@ function notificationDescription(n: Notification): string {
     if (n.type.includes('ScanCompleted')) {
         return `${n.data.total_violations ?? 0} violations found`;
     }
+    if (n.type.includes('ScanFailed')) {
+        return n.data.error_message as string ?? 'An error occurred during the scan.';
+    }
     if (n.type.includes('IssueAssigned')) {
         return `${n.data.severity ?? ''} severity — assigned by ${n.data.assigner_name ?? 'someone'}`;
+    }
+    if (n.type.includes('IssueMentioned')) {
+        return `${n.data.severity ?? ''} severity — mentioned by ${(n.data.mentioned_by_name as string) ?? 'someone'}`;
     }
     return '';
 }
@@ -95,9 +107,10 @@ export function NotificationBell() {
         return () => clearInterval(interval);
     }, [fetchNotifications]);
 
-    // Real-time: refresh notifications when a scan completes or progress updates
+    // Real-time: refresh notifications when a scan completes, fails, or progress updates
     useEchoPrivate(agencyId ? `agency.${agencyId}` : null, {
         ScanCompleted: () => fetchNotifications(),
+        ScanFailed: () => fetchNotifications(),
         ScanProgressUpdated: () => fetchNotifications(),
     });
 

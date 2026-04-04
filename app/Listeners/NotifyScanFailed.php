@@ -3,15 +3,15 @@
 namespace App\Listeners;
 
 use App\Enums\NotificationEmailCategory;
-use App\Events\ScanCompleted;
+use App\Events\ScanFailed;
 use App\Models\User;
-use App\Notifications\ScanCompletedNotification;
+use App\Notifications\ScanFailedNotification;
 use App\Services\RoutedEmailNotifier;
 use App\Services\WebhookNotifier;
 
-class NotifyScanCompleted
+class NotifyScanFailed
 {
-    public function handle(ScanCompleted $event): void
+    public function handle(ScanFailed $event): void
     {
         $scan = $event->scan;
         $property = $scan->property;
@@ -19,22 +19,21 @@ class NotifyScanCompleted
         $recipients = User::where('agency_id', $scan->agency_id)->get();
 
         foreach ($recipients as $recipient) {
-            $recipient->notify(new ScanCompletedNotification($scan));
+            $recipient->notify(new ScanFailedNotification($scan));
         }
 
-        $title = "Scan completed: {$property->name}";
-        $violations = $scan->total_violations ?? 0;
-        $body = "{$violations} violations found across {$scan->pages_scanned} pages.";
+        $title = "Scan failed: {$property->name}";
+        $body = $scan->error_message ?? 'An unexpected error occurred during the scan.';
 
         app(RoutedEmailNotifier::class)->notify(
             $scan->agency_id,
-            NotificationEmailCategory::Scans->value,
-            new ScanCompletedNotification($scan),
+            NotificationEmailCategory::ScanFailures->value,
+            new ScanFailedNotification($scan),
         );
 
         app(WebhookNotifier::class)->notify(
             $scan->agency_id,
-            NotificationEmailCategory::Scans->value,
+            NotificationEmailCategory::ScanFailures->value,
             $title,
             $body,
         );
