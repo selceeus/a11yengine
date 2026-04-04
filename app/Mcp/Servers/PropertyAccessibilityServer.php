@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\RemediateViolationPrompt;
+use App\Mcp\Resources\PropertyComplianceResource;
 use App\Mcp\Resources\PropertyIssuesResource;
 use App\Mcp\Resources\PropertyLegalRiskResource;
 use App\Mcp\Resources\PropertyRiskSummaryResource;
@@ -11,6 +12,8 @@ use App\Mcp\Tools\GetPropertyIssuesTool;
 use App\Mcp\Tools\GetRelatedLawsuitsTool;
 use App\Mcp\Tools\GetScanFindingsTool;
 use App\Mcp\Tools\GetSimilarRemediationsTool;
+use App\Mcp\Tools\TriggerScanTool;
+use App\Mcp\Tools\UpdateIssueStatusTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -27,12 +30,15 @@ class PropertyAccessibilityServer extends Server
         GetScanFindingsTool::class,
         GetRelatedLawsuitsTool::class,
         GetSimilarRemediationsTool::class,
+        UpdateIssueStatusTool::class,
+        TriggerScanTool::class,
     ];
 
     protected array $resources = [
         PropertyIssuesResource::class,
         PropertyRiskSummaryResource::class,
         PropertyLegalRiskResource::class,
+        PropertyComplianceResource::class,
     ];
 
     protected array $prompts = [
