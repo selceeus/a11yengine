@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\MessagingPlatform;
 use App\Jobs\SendWebhookNotificationJob;
 use App\Models\Agency;
 use App\Models\NotificationWebhookRoute;
-use Illuminate\Notifications\Notification;
 
 class WebhookNotifier
 {
