@@ -1,6 +1,6 @@
 # Accessibility Insights Platform
 
-An enterprise web accessibility auditing and risk management platform. It automatically crawls digital properties, runs WCAG and Lighthouse audits, tracks violations as managed issues, and generates AI-powered governance reports, risk advisories, content audits, and per-issue remediation guidance — all within a strict multi-tenant agency hierarchy.
+An enterprise web accessibility auditing and risk management platform. It automatically crawls digital properties, runs WCAG and Lighthouse audits, tracks violations as managed issues, generates AI-powered governance reports, risk advisories, content audits, and per-issue remediation guidance — and routes notifications to any email address or Slack/Teams/Discord webhook — all within a strict multi-tenant agency hierarchy.
 
 ---
 
@@ -20,12 +20,14 @@ An enterprise web accessibility auditing and risk management platform. It automa
 - **Experience Score** — Composite KPI combining four weighted pillars: Accessibility (40%), Performance (25%), Tech Quality / Best Practices (20%), and Discoverability / SEO (15%); normalised per page scanned, tracked over time with a delta chip, and surfaced on the scan detail and property overview pages; also fed into AI Governance reports as a top-level context signal
 - **Risk Scoring & Trending** — Weighted risk scores at property, organisation, and agency level with point-in-time snapshots and trend visualisation
 - **Project Management Integrations** — Push issues to Jira, GitHub Issues, Linear, Asana, Wrike, ClickUp, Monday.com, Azure DevOps, Trello, Notion, or Basecamp; bidirectional status sync via webhooks
-- **MCP Server** — Model Context Protocol endpoint exposing issues, risk summaries, scan findings, and remediation guidance to any MCP-compatible AI tool
+- **Notification Email Routing** — Route scan, failure, report, and issue notifications by category to any number of non-user email addresses per agency (complements per-user preferences)
+- **Notification Webhook Routing** — Route the same notification categories to Slack (Block Kit), Microsoft Teams (Adaptive Cards), or Discord (embeds) webhooks; URLs are stored encrypted at rest
+- **MCP Server** — Model Context Protocol endpoint exposing issues, risk summaries, scan findings, remediation guidance, compliance status, legal risk, and a real-time pending-alerts feed to any MCP-compatible AI tool; includes tools to trigger scans and update issue status
 - **Scoped API Keys** — Machine-to-machine keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients
 - **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly tenant-isolated
 - **Six-Role RBAC** — SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, and Viewer roles assignable at any scope level
 - **Team Management** — Invite team members via 7-day email tokens with role pre-assignment and forced password reset on first login
-- **Notifications** — In-app and email notifications for scan completions, issue assignments, @mentions, and a weekly digest with per-user opt-out preferences
+- **Notifications** — In-app, email, and webhook notifications for scan completions, scan failures, issue assignments, @mentions, and a weekly digest with per-user opt-out preferences
 - **Two-Factor Authentication** — Fortify-powered 2FA with recovery codes
 - **Scheduled Scans** — Configurable once-off or recurring scans (daily / weekly / monthly / quarterly)
 
@@ -196,8 +198,9 @@ composer run dev
 2. `RunScanJob` is dispatched; invokes the Node.js crawler to discover all pages
 3. A `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) is dispatched per discovered page
 4. On batch completion the scan transitions to `completed`; risk snapshots are recorded at property, organisation, and agency levels
-5. If `AI_AUTO_GENERATE_AUDIT=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
-6. Any batch failure transitions the scan to `failed`
+5. `ScanCompleted` is fired — notifies users, sends routed emails, and dispatches webhook payloads
+6. If `AI_AUTO_GENERATE_AUDIT=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
+7. Any batch failure transitions the scan to `failed` and fires `ScanFailed`, which notifies all agency users and triggers routed email and webhook deliveries
 
 ### Issue Lifecycle
 
@@ -245,16 +248,21 @@ Integrations are configured per agency in **Settings → Integrations**. Webhook
 
 The platform exposes a Model Context Protocol server at `/mcp/property-accessibility`, authenticated via an API key with the `mcp` scope.
 
-| Type     | Name                          | Description                                                       |
-| -------- | ----------------------------- | ----------------------------------------------------------------- |
-| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property                    |
-| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation guidance for a specific issue      |
-| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan                  |
-| Tool     | `GetRelatedLawsuitsTool`      | Retrieve relevant ADA lawsuit cases and outcomes for a rule       |
-| Tool     | `GetSimilarRemediationsTool`  | Find remediation patterns from similar previously resolved issues |
-| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug                      |
-| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                                 |
-| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation  |
+| Type     | Name                          | Description                                                                  |
+| -------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property                               |
+| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation guidance for a specific issue                 |
+| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan                             |
+| Tool     | `GetRelatedLawsuitsTool`      | Retrieve relevant ADA lawsuit cases and outcomes for a rule                  |
+| Tool     | `GetSimilarRemediationsTool`  | Find remediation patterns from similar previously resolved issues            |
+| Tool     | `TriggerScanTool`             | Initiate a new accessibility scan for a property                             |
+| Tool     | `UpdateIssueStatusTool`       | Update the status of an issue with optional resolution notes                 |
+| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug                                 |
+| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                                            |
+| Resource | `PropertyComplianceResource`  | WCAG compliance breakdown (A/AA/AAA pass/fail counts) for a property         |
+| Resource | `PropertyLegalRiskResource`   | Issues with high legal exposure mapped to ADA lawsuit precedents             |
+| Resource | `PendingAlertsResource`       | Real-time feed of failed scans, critical issues, overdue properties, and running scans |
+| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation             |
 
 ### API Keys
 
@@ -271,14 +279,42 @@ Scoped API keys allow machine-to-machine access without user credentials. Keys a
 
 ### Notifications
 
-| Notification                 | Trigger                                         |
-| ---------------------------- | ----------------------------------------------- |
-| `IssueAssignedNotification`  | An issue is assigned to the user                |
-| `IssueMentionedNotification` | The user is @mentioned in an issue comment      |
-| `ScanCompletedNotification`  | A scan completes on a property the user follows |
-| `WeeklyDigestNotification`   | Weekly summary of new/resolved issues and scans |
+#### Per-User Notification Preferences
 
 Users manage preferences per notification type and channel in **Settings → Notifications** using an opt-out model (enabled by default).
+
+| Notification                 | Trigger                                         |
+| ---------------------------- | ----------------------------------------------- |
+| `ScanCompletedNotification`  | A scan completes on a property the user follows |
+| `ScanFailedNotification`     | A scan fails for any reason                     |
+| `IssueAssignedNotification`  | An issue is assigned to the user                |
+| `IssueMentionedNotification` | The user is @mentioned in an issue comment      |
+| `WeeklyDigestNotification`   | Weekly summary of new/resolved issues and scans |
+
+#### Agency-Level Notification Routing
+
+In addition to per-user preferences, agencies can route notifications by category to any number of additional recipients via **Settings → Notification Emails** and **Settings → Notification Webhooks**.
+
+**Notification categories:**
+
+| Category       | Covers                                        |
+| -------------- | --------------------------------------------- |
+| `scans`        | Scan completion notifications                 |
+| `scan_failures`| Scan failure alerts                           |
+| `reports`      | Weekly digest and governance report events    |
+| `issues`       | Issue assignment and @mention notifications   |
+
+**Email routing** (`NotificationEmailRoute`) — add one or more email addresses per category. Each address receives a clone of the same notification email sent to individual users.
+
+**Webhook routing** (`NotificationWebhookRoute`) — add one or more webhook endpoints per category. Webhook URLs are stored encrypted at rest. Supported platforms:
+
+| Platform          | Payload format                  |
+| ----------------- | ------------------------------- |
+| Slack             | Block Kit (`blocks` array)      |
+| Microsoft Teams   | Adaptive Card (`attachments`)   |
+| Discord           | Embeds (`embeds` array)         |
+
+Delivery is handled by `SendWebhookNotificationJob` (queued, 3 attempts, 30 s / 60 s backoff).
 
 ### Risk Scoring
 
@@ -359,6 +395,7 @@ Reports can be exported via the `Exportable` concern:
 | `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | —                      | —       |
 | `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff) | 300s    |
 | `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff) | —       |
+| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                         | 3 (30s / 60s backoff)  | —       |
 
 ---
 
@@ -461,13 +498,15 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 ## Settings
 
-| Page            | Route                       | Description                                        |
-| --------------- | --------------------------- | -------------------------------------------------- |
-| Profile         | `/settings/profile`         | Name, email, and account details                   |
-| Password        | `/settings/password`        | Change account password                            |
-| Two-Factor Auth | `/settings/two-factor`      | Enable/disable 2FA and manage recovery codes       |
-| Appearance      | `/settings/appearance`      | Theme and UI preferences                           |
-| Notifications   | `/settings/notifications`   | Per-channel notification opt-out preferences       |
-| Scheduled Scans | `/settings/scheduled-scans` | Manage recurring scans                             |
-| API Keys        | `/settings/api-keys`        | Create and revoke scoped API keys                  |
-| Integrations    | `/settings/integrations`    | Connect and manage project management integrations |
+| Page                    | Route                                    | Description                                          |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------------- |
+| Profile                 | `/settings/profile`                      | Name, email, and account details                     |
+| Password                | `/settings/password`                     | Change account password                              |
+| Two-Factor Auth         | `/settings/two-factor`                   | Enable/disable 2FA and manage recovery codes         |
+| Appearance              | `/settings/appearance`                   | Theme and UI preferences                             |
+| Notifications           | `/settings/notifications`                | Per-channel notification opt-out preferences         |
+| Notification Emails     | `/settings/notification-email-routes`    | Route notification categories to additional emails   |
+| Notification Webhooks   | `/settings/notification-webhook-routes`  | Route notification categories to Slack/Teams/Discord |
+| Scheduled Scans         | `/settings/scheduled-scans`              | Manage recurring scans                               |
+| API Keys                | `/settings/api-keys`                     | Create and revoke scoped API keys                    |
+| Integrations            | `/settings/integrations`                 | Connect and manage project management integrations   |
