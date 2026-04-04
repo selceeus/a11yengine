@@ -1,55 +1,70 @@
 <?php
 
+use App\Enums\UserRole as UserRoleEnum;
+use App\Models\Agency;
+use App\Models\Organization;
+use App\Models\Property;
 use App\Models\Scan;
 use App\Models\User;
-use App\Policies\ScanPolicy;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-function scanUser(int $agencyId): User
-{
-    $user = new User;
-    $user->agency_id = $agencyId;
+uses(Tests\TestCase::class, RefreshDatabase::class);
 
-    return $user;
-}
-
-function scanModel(int $agencyId): Scan
-{
-    $scan = new Scan;
-    $scan->agency_id = $agencyId;
-
-    return $scan;
-}
-
-$policy = new ScanPolicy;
+beforeEach(function (): void {
+    $this->agency = Agency::factory()->create();
+    $this->otherAgency = Agency::factory()->create();
+    $this->organization = Organization::factory()->create(['agency_id' => $this->agency->id]);
+    $this->property = Property::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+    ]);
+    $this->scan = Scan::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+    ]);
+});
 
 // ─── viewAny ─────────────────────────────────────────────────────────────────
 
-it('allows any authenticated user to view the scan list', function () use ($policy): void {
-    expect($policy->viewAny(scanUser(1)))->toBeTrue();
+it('allows any authenticated user to view the scan list', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    expect($user->can('viewAny', Scan::class))->toBeTrue();
 });
 
 // ─── create ──────────────────────────────────────────────────────────────────
 
-it('allows any authenticated user to create a scan', function () use ($policy): void {
-    expect($policy->create(scanUser(1)))->toBeTrue();
+it('allows an editor to create a scan for their property', function (): void {
+    $user = User::factory()->withRole(UserRoleEnum::Editor, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    expect($user->can('create', [Scan::class, $this->property]))->toBeTrue();
+});
+
+it('denies a viewer from creating a scan', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    expect($user->can('create', [Scan::class, $this->property]))->toBeFalse();
 });
 
 // ─── view ────────────────────────────────────────────────────────────────────
 
-it('allows a user to view a scan belonging to their agency', function () use ($policy): void {
-    expect($policy->view(scanUser(1), scanModel(1)))->toBeTrue();
+it('allows a user to view a scan belonging to their agency', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    expect($user->can('view', $this->scan))->toBeTrue();
 });
 
-it('denies a user from viewing a scan belonging to another agency', function () use ($policy): void {
-    expect($policy->view(scanUser(1), scanModel(2)))->toBeFalse();
+it('denies a user from viewing a scan belonging to another agency', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->otherAgency->id]);
+    expect($user->can('view', $this->scan))->toBeFalse();
 });
 
 // ─── delete ──────────────────────────────────────────────────────────────────
 
-it('allows a user to delete a scan belonging to their agency', function () use ($policy): void {
-    expect($policy->delete(scanUser(1), scanModel(1)))->toBeTrue();
+it('allows a property admin to delete a scan belonging to their property', function (): void {
+    $user = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    expect($user->can('delete', $this->scan))->toBeTrue();
 });
 
-it('denies a user from deleting a scan belonging to another agency', function () use ($policy): void {
-    expect($policy->delete(scanUser(1), scanModel(2)))->toBeFalse();
+it('denies a user from deleting a scan belonging to another agency', function (): void {
+    $otherProperty = Property::factory()->create(['agency_id' => $this->otherAgency->id]);
+    $user = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $otherProperty->id)->create(['agency_id' => $this->otherAgency->id]);
+    expect($user->can('delete', $this->scan))->toBeFalse();
 });

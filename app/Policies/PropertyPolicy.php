@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Enums\UserRole as UserRoleEnum;
+use App\Models\Organization;
 use App\Models\Property;
 use App\Models\User;
 
@@ -17,18 +19,23 @@ class PropertyPolicy
         return $user->agency_id === $property->agency_id;
     }
 
-    public function create(User $user): bool
+    public function create(User $user, ?Organization $organization = null): bool
     {
-        return true;
+        if ($organization !== null) {
+            return $user->canManageOrg($organization->id);
+        }
+
+        return $user->canManageAgency($user->agency_id)
+            || $user->roles()->where('role', UserRoleEnum::OrgAdmin->value)->exists();
     }
 
     public function update(User $user, Property $property): bool
     {
-        return $user->agency_id === $property->agency_id;
+        return $user->canManageProperty($property->id);
     }
 
     public function delete(User $user, Property $property): bool
     {
-        return $user->agency_id === $property->agency_id;
+        return $user->canManageOrg($property->organization_id);
     }
 }

@@ -27,6 +27,12 @@ class BulkIssueController extends Controller
         $affected = 0;
 
         foreach ($issues as $issue) {
+            if ($data['action'] === 'delete') {
+                abort_unless($user->canManageProperty($issue->property_id), 403);
+            } else {
+                abort_unless($user->canEditProperty($issue->property_id), 403);
+            }
+
             match ($data['action']) {
                 'status_change' => $this->applyStatusChange($issue, $data['status'], $user),
                 'assign' => $this->applyAssign($issue, $data['user_id'] ?? null),

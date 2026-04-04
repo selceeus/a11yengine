@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AuditStatus;
+use App\Enums\UserRole as UserRoleEnum;
 use App\Jobs\GenerateAiAuditJob;
 use App\Models\Agency;
 use App\Models\Audit;
@@ -16,7 +17,7 @@ beforeEach(function (): void {
     $this->organization = Organization::factory()->create(['agency_id' => $this->agency->id]);
     $this->property = Property::factory()->for($this->agency)->for($this->organization)->create();
 
-    $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->user = User::factory()->withRole(UserRoleEnum::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
     $this->actingAs($this->user);
 
     Queue::fake();

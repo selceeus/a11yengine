@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole as UserRoleEnum;
+use App\Models\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -44,5 +46,21 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
+    }
+
+    /**
+     * Attach a role to the user after creation.
+     */
+    public function withRole(UserRoleEnum $role, ?int $agencyId = null, ?int $orgId = null, ?int $propertyId = null): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user) use ($role, $agencyId, $orgId, $propertyId): void {
+            UserRole::create([
+                'user_id' => $user->id,
+                'role' => $role,
+                'agency_id' => $agencyId,
+                'organization_id' => $orgId,
+                'property_id' => $propertyId,
+            ]);
+        });
     }
 }

@@ -97,6 +97,45 @@ class User extends Authenticatable
         return $orgId !== null && $this->canManageOrg($orgId);
     }
 
+    public function canEditProperty(int $propertyId): bool
+    {
+        if ($this->canManageProperty($propertyId)) {
+            return true;
+        }
+
+        if ($this->roles()->where('role', UserRoleEnum::Editor->value)->where('property_id', $propertyId)->exists()) {
+            return true;
+        }
+
+        $property = Property::withoutGlobalScopes()->where('id', $propertyId)->first(['organization_id', 'agency_id']);
+
+        if ($property === null) {
+            return false;
+        }
+
+        if ($this->roles()->where('role', UserRoleEnum::Editor->value)->where('organization_id', $property->organization_id)->exists()) {
+            return true;
+        }
+
+        return $this->roles()->where('role', UserRoleEnum::Editor->value)->where('agency_id', $property->agency_id)->exists();
+    }
+
+    public function canEditOrg(int $orgId): bool
+    {
+        if ($this->canManageOrg($orgId)) {
+            return true;
+        }
+
+        if ($this->roles()->where('role', UserRoleEnum::Editor->value)->where('organization_id', $orgId)->exists()) {
+            return true;
+        }
+
+        $agencyId = Organization::withoutGlobalScopes()->where('id', $orgId)->value('agency_id');
+
+        return $agencyId !== null
+            && $this->roles()->where('role', UserRoleEnum::Editor->value)->where('agency_id', $agencyId)->exists();
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *

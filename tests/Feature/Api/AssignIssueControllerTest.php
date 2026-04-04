@@ -24,7 +24,7 @@ beforeEach(function (): void {
         'status' => IssueStatus::Open,
         'assigned_user_id' => null,
     ]);
-    $this->actor = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->actor = User::factory()->withRole(UserRole::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
     $this->assignee = User::factory()->create(['agency_id' => $this->agency->id]);
 });
 

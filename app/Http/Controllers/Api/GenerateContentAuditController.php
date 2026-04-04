@@ -7,16 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateContentAuditJob;
 use App\Models\ContentAudit;
 use App\Models\Property;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class GenerateContentAuditController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __invoke(Request $request, Property $property): JsonResponse
     {
-        $user = $request->user();
-
-        abort_unless($user->isSuperUser() || $user->agency_id === $property->agency_id, 403);
+        $this->authorize('create', [ContentAudit::class, $property]);
 
         $audit = ContentAudit::withoutGlobalScopes()->create([
             'agency_id' => $property->agency_id,

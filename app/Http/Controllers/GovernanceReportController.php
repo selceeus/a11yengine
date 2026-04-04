@@ -21,7 +21,7 @@ class GovernanceReportController extends Controller
 
     public function index(): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('viewAny', GovernanceReport::class);
 
         $reports = GovernanceReport::query()
             ->with(['property:id,name,base_url'])
@@ -59,8 +59,6 @@ class GovernanceReportController extends Controller
 
     public function store(StoreGovernanceReportRequest $request): RedirectResponse
     {
-        $this->authorize('viewAny', Property::class);
-
         $user = $request->user();
         $validated = $request->validated();
 
@@ -68,10 +66,11 @@ class GovernanceReportController extends Controller
 
         if ($propertyId !== null) {
             $property = Property::query()->findOrFail($propertyId);
-            abort_unless($user->isSuperUser() || $user->agency_id === $property->agency_id, 403);
+            $this->authorize('create', [GovernanceReport::class, $property]);
             $organizationId = $property->organization_id;
             $agencyId = $property->agency_id;
         } else {
+            $this->authorize('create', GovernanceReport::class);
             $agencyId = $user->agency_id;
             $organizationId = $user->organization_id;
         }
@@ -94,7 +93,7 @@ class GovernanceReportController extends Controller
 
     public function show(GovernanceReport $report): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('view', $report);
 
         $report->load(['property:id,name,base_url', 'agency:id,name']);
 
@@ -132,7 +131,7 @@ class GovernanceReportController extends Controller
 
     public function destroy(GovernanceReport $report): RedirectResponse
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('delete', $report);
 
         $report->delete();
 
@@ -141,7 +140,7 @@ class GovernanceReportController extends Controller
 
     public function export(Request $request, GovernanceReport $report, string $format): \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('view', $report);
 
         $report->load(['property:id,name,base_url', 'agency:id,name']);
 

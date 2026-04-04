@@ -1,59 +1,81 @@
 <?php
 
+use App\Enums\UserRole as UserRoleEnum;
+use App\Models\Agency;
 use App\Models\Issue;
+use App\Models\Organization;
+use App\Models\Property;
 use App\Models\User;
-use App\Policies\IssuePolicy;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-function issueUser(int $agencyId): User
-{
-    $user = new User;
-    $user->agency_id = $agencyId;
+uses(Tests\TestCase::class, RefreshDatabase::class);
 
-    return $user;
-}
-
-function issueModel(int $agencyId): Issue
-{
-    $issue = new Issue;
-    $issue->agency_id = $agencyId;
-
-    return $issue;
-}
-
-$policy = new IssuePolicy;
+beforeEach(function (): void {
+    $this->agency = Agency::factory()->create();
+    $this->otherAgency = Agency::factory()->create();
+    $this->organization = Organization::factory()->create(['agency_id' => $this->agency->id]);
+    $this->property = Property::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+    ]);
+    $this->issue = Issue::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+    ]);
+});
 
 // ─── viewAny ─────────────────────────────────────────────────────────────────
 
-it('allows any authenticated user to view the issues list', function () use ($policy): void {
-    expect($policy->viewAny(issueUser(1)))->toBeTrue();
+it('allows any authenticated user to view the issues list', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    expect($user->can('viewAny', Issue::class))->toBeTrue();
 });
 
 // ─── view ────────────────────────────────────────────────────────────────────
 
-it('allows a user to view an issue belonging to their agency', function () use ($policy): void {
-    expect($policy->view(issueUser(1), issueModel(1)))->toBeTrue();
+it('allows a user to view an issue belonging to their agency', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    expect($user->can('view', $this->issue))->toBeTrue();
 });
 
-it('denies a user from viewing an issue belonging to another agency', function () use ($policy): void {
-    expect($policy->view(issueUser(1), issueModel(2)))->toBeFalse();
+it('denies a user from viewing an issue belonging to another agency', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->otherAgency->id]);
+    expect($user->can('view', $this->issue))->toBeFalse();
 });
 
 // ─── update ──────────────────────────────────────────────────────────────────
 
-it('allows a user to update an issue belonging to their agency', function () use ($policy): void {
-    expect($policy->update(issueUser(1), issueModel(1)))->toBeTrue();
+it('allows an editor to update an issue belonging to their property', function (): void {
+    $user = User::factory()->withRole(UserRoleEnum::Editor, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    expect($user->can('update', $this->issue))->toBeTrue();
 });
 
-it('denies a user from updating an issue belonging to another agency', function () use ($policy): void {
-    expect($policy->update(issueUser(1), issueModel(2)))->toBeFalse();
+it('denies a viewer from updating an issue', function (): void {
+    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    expect($user->can('update', $this->issue))->toBeFalse();
+});
+
+it('denies a user from updating an issue belonging to another agency', function (): void {
+    $otherProperty = Property::factory()->create(['agency_id' => $this->otherAgency->id]);
+    $user = User::factory()->withRole(UserRoleEnum::Editor, propertyId: $otherProperty->id)->create(['agency_id' => $this->otherAgency->id]);
+    expect($user->can('update', $this->issue))->toBeFalse();
 });
 
 // ─── delete ──────────────────────────────────────────────────────────────────
 
-it('allows a user to delete an issue belonging to their agency', function () use ($policy): void {
-    expect($policy->delete(issueUser(1), issueModel(1)))->toBeTrue();
+it('allows a property admin to delete an issue belonging to their property', function (): void {
+    $user = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    expect($user->can('delete', $this->issue))->toBeTrue();
 });
 
-it('denies a user from deleting an issue belonging to another agency', function () use ($policy): void {
-    expect($policy->delete(issueUser(1), issueModel(2)))->toBeFalse();
+it('denies an editor from deleting an issue', function (): void {
+    $user = User::factory()->withRole(UserRoleEnum::Editor, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    expect($user->can('delete', $this->issue))->toBeFalse();
+});
+
+it('denies a user from deleting an issue belonging to another agency', function (): void {
+    $otherProperty = Property::factory()->create(['agency_id' => $this->otherAgency->id]);
+    $user = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $otherProperty->id)->create(['agency_id' => $this->otherAgency->id]);
+    expect($user->can('delete', $this->issue))->toBeFalse();
 });

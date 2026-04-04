@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole as UserRoleEnum;
 use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\Property;
@@ -19,7 +20,7 @@ beforeEach(function (): void {
         ->for($this->organization)
         ->create();
 
-    $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->user = User::factory()->withRole(UserRoleEnum::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
     $this->actingAs($this->user);
 });
 
@@ -32,6 +33,7 @@ it('snapshots the default scan config onto the scan when none is provided', func
 
     expect($scan->scan_config)->toBe([
         'max_pages' => 50,
+        'max_depth' => 5,
         'include_patterns' => [],
         'exclude_patterns' => [],
         'wcag_version' => 'wcag21',

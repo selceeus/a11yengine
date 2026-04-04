@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IssueStatus;
+use App\Enums\UserRole as UserRoleEnum;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\IssueActivity;
@@ -18,7 +19,7 @@ beforeEach(function (): void {
         'agency_id' => $this->agency->id,
         'organization_id' => $this->organization->id,
     ]);
-    $this->actor = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->actor = User::factory()->withRole(UserRoleEnum::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
 
     $this->issues = Issue::factory()->count(3)->create([
         'agency_id' => $this->agency->id,

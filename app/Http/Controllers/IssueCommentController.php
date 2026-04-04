@@ -17,7 +17,7 @@ class IssueCommentController extends Controller
 
     public function store(StoreIssueCommentRequest $request, Issue $issue): RedirectResponse
     {
-        $this->authorize('view', $issue);
+        $this->authorize('update', $issue);
 
         $body = $request->validated()['body'];
 

@@ -19,11 +19,11 @@ class IssuePolicy
 
     public function update(User $user, Issue $issue): bool
     {
-        return $user->agency_id === $issue->agency_id;
+        return $user->canEditProperty($issue->property_id);
     }
 
     public function delete(User $user, Issue $issue): bool
     {
-        return $user->agency_id === $issue->agency_id;
+        return $user->canManageProperty($issue->property_id);
     }
 }

@@ -7,16 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateGovernanceReportJob;
 use App\Models\GovernanceReport;
 use App\Models\Property;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class GenerateGovernanceReportController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __invoke(Request $request, Property $property): JsonResponse
     {
-        $user = $request->user();
-
-        abort_unless($user->isSuperUser() || $user->agency_id === $property->agency_id, 403);
+        $this->authorize('create', [GovernanceReport::class, $property]);
 
         $validated = $request->validate([
             'period_from' => ['required', 'date', 'before:period_to'],

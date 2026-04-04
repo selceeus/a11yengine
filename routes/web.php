@@ -43,8 +43,6 @@ use App\Http\Controllers\ScanController;
 use App\Http\Controllers\SendInvitationController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
 Route::get('/', function () {
     return redirect()->route('login');

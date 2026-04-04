@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole as UserRoleEnum;
 use App\Jobs\GenerateContentAuditJob;
 use App\Models\Agency;
 use App\Models\Organization;
@@ -16,7 +17,7 @@ beforeEach(function (): void {
         'agency_id' => $this->agency->id,
         'organization_id' => $this->organization->id,
     ]);
-    $this->actor = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->actor = User::factory()->withRole(UserRoleEnum::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
 });
 
 // ── Authentication ────────────────────────────────────────────────────────────

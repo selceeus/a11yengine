@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IssueStatus;
+use App\Enums\UserRole as UserRoleEnum;
 use App\Jobs\GenerateIssueRemediationJob;
 use App\Models\Agency;
 use App\Models\Issue;
@@ -21,7 +22,7 @@ beforeEach(function (): void {
         ->for($this->property)
         ->create(['severity' => 'low']);
 
-    $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->user = User::factory()->withRole(UserRoleEnum::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
     $this->actingAs($this->user);
 });
 

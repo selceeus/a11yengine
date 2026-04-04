@@ -7,12 +7,17 @@ use App\Http\Requests\AssignIssueRequest;
 use App\Models\Issue;
 use App\Models\User;
 use App\Notifications\IssueAssignedNotification;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 
 class AssignIssueController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __invoke(AssignIssueRequest $request, Issue $issue): JsonResponse
     {
+        $this->authorize('update', $issue);
+
         $userId = $request->validated('user_id');
 
         if ($userId === null) {

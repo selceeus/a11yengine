@@ -45,9 +45,9 @@ class AuditController extends Controller
 
     public function store(StoreAuditRequest $request): RedirectResponse
     {
-        $this->authorize('create', Audit::class);
-
         $property = Property::findOrFail($request->integer('property_id'));
+
+        $this->authorize('create', [Audit::class, $property]);
 
         $title = $request->string('title')->toString() ?: 'AI Audit — '.$property->name.' — '.now()->format('M j, Y');
 

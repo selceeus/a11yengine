@@ -17,7 +17,7 @@ class ContentAuditController extends Controller
 
     public function index(): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('viewAny', ContentAudit::class);
 
         $properties = Property::query()
             ->select(['id', 'name', 'base_url'])
@@ -52,7 +52,7 @@ class ContentAuditController extends Controller
 
     public function show(ContentAudit $contentAudit): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('view', $contentAudit);
 
         $contentAudit->load(['property:id,name,base_url', 'organization:id,name']);
 
@@ -83,7 +83,7 @@ class ContentAuditController extends Controller
 
     public function export(Request $request, ContentAudit $contentAudit, string $format): \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('view', $contentAudit);
 
         $contentAudit->load(['property:id,name,base_url']);
 

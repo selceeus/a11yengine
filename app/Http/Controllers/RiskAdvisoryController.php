@@ -17,7 +17,7 @@ class RiskAdvisoryController extends Controller
 
     public function index(): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('viewAny', RiskAdvisory::class);
 
         $properties = Property::query()
             ->select(['id', 'name', 'base_url'])
@@ -52,7 +52,7 @@ class RiskAdvisoryController extends Controller
 
     public function show(RiskAdvisory $riskAdvisory): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('view', $riskAdvisory);
 
         $riskAdvisory->load(['property:id,name,base_url', 'organization:id,name']);
 
@@ -80,7 +80,7 @@ class RiskAdvisoryController extends Controller
 
     public function export(Request $request, RiskAdvisory $riskAdvisory, string $format): \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('view', $riskAdvisory);
 
         $riskAdvisory->load(['property:id,name,base_url']);
 

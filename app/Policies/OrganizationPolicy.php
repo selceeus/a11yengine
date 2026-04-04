@@ -19,16 +19,16 @@ class OrganizationPolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->canManageAgency($user->agency_id);
     }
 
     public function update(User $user, Organization $organization): bool
     {
-        return $user->agency_id === $organization->agency_id;
+        return $user->canManageOrg($organization->id);
     }
 
     public function delete(User $user, Organization $organization): bool
     {
-        return $user->agency_id === $organization->agency_id;
+        return $user->canManageAgency($organization->agency_id);
     }
 }

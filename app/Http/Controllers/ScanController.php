@@ -49,9 +49,9 @@ class ScanController extends Controller
 
     public function store(StoreScanRequest $request): RedirectResponse
     {
-        $this->authorize('create', Scan::class);
-
         $property = Property::findOrFail($request->validated()['property_id']);
+
+        $this->authorize('create', [Scan::class, $property]);
 
         $propertyConfig = $property->defaultScanConfig();
         $requestConfig = isset($request->validated()['scan_config'])

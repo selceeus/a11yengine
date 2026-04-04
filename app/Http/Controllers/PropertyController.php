@@ -63,9 +63,10 @@ class PropertyController extends Controller
 
     public function store(StorePropertyRequest $request): RedirectResponse
     {
-        $this->authorize('create', Property::class);
-
         $validated = $request->validated();
+
+        $organization = \App\Models\Organization::findOrFail($validated['organization_id']);
+        $this->authorize('create', [Property::class, $organization]);
 
         $baseSlug = Str::slug($validated['name']);
         $slug = $baseSlug;

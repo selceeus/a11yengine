@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PropertyIndustry;
+use App\Enums\UserRole as UserRoleEnum;
 use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\Property;
@@ -16,7 +17,7 @@ beforeEach(function (): void {
         ->for($this->organization)
         ->create();
 
-    $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->user = User::factory()->withRole(UserRoleEnum::AgencyAdmin, agencyId: $this->agency->id)->create(['agency_id' => $this->agency->id]);
     $this->actingAs($this->user);
 });
 

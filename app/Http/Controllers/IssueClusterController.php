@@ -14,7 +14,7 @@ class IssueClusterController extends Controller
 
     public function index(): Response
     {
-        $this->authorize('viewAny', Property::class);
+        $this->authorize('viewAny', IssueCluster::class);
 
         $properties = Property::query()
             ->select(['id', 'name', 'base_url'])
