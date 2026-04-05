@@ -3,9 +3,9 @@
 const { source: axeSource } = require('axe-core');
 
 /**
- * Inject axe-core into the given Puppeteer page and run an accessibility scan.
+ * Inject axe-core into the given Playwright page and run an accessibility scan.
  *
- * @param {import('puppeteer').Page} page
+ * @param {import('playwright').Page} page
  * @param {object} axeConfig  The `axe` block from config.js
  * @returns {Promise<{
  *   url: string,
@@ -26,7 +26,7 @@ const { source: axeSource } = require('axe-core');
 async function runAxe(page, axeConfig) {
     const url = page.url();
 
-    await page.evaluate(axeSource);
+    await page.addScriptTag({ content: axeSource });
 
     const results = await page.evaluate((options) => {
         return window.axe.run(document, options);

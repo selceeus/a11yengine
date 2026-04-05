@@ -1,13 +1,13 @@
 'use strict';
 
-jest.mock('puppeteer', () => ({ launch: jest.fn() }));
+jest.mock('playwright', () => ({ chromium: { launch: jest.fn() } }));
 jest.mock('../axeRunner', () => ({ runAxe: jest.fn() }));
 jest.mock('../crawlUtils', () => ({
     ...jest.requireActual('../crawlUtils'),
     fetchRobotsTxt: jest.fn().mockResolvedValue(''),
 }));
 
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright');
 const { runAxe } = require('../axeRunner');
 const { fetchRobotsTxt } = require('../crawlUtils');
 const { scan, parseArgs } = require('../scan');
@@ -50,7 +50,7 @@ beforeEach(() => {
     mockPage = buildPageMock();
     mockBrowser = buildBrowserMock(mockPage);
 
-    puppeteer.launch.mockResolvedValue(mockBrowser);
+    chromium.launch.mockResolvedValue(mockBrowser);
     runAxe.mockResolvedValue({ url: 'https://example.com/', violations: [] });
     fetchRobotsTxt.mockClear();
     fetchRobotsTxt.mockResolvedValue('');
@@ -108,12 +108,12 @@ describe('parseArgs', () => {
 // ─── Browser lifecycle ────────────────────────────────────────────────────────
 
 describe('scan — browser lifecycle', () => {
-    test('launches Puppeteer with the config options', async () => {
+    test('launches Playwright chromium with the config options', async () => {
         const config = require('../config');
 
         await scan();
 
-        expect(puppeteer.launch).toHaveBeenCalledWith(config.puppeteer);
+        expect(chromium.launch).toHaveBeenCalledWith(config.playwright);
     });
 
     test('closes the browser after the scan completes', async () => {
@@ -139,7 +139,7 @@ describe('scan — single page', () => {
 
         expect(mockPage.goto).toHaveBeenCalledWith(
             'https://example.com/',
-            expect.objectContaining({ waitUntil: 'networkidle2' })
+            expect.objectContaining({ waitUntil: 'networkidle' })
         );
     });
 
@@ -237,7 +237,8 @@ describe('scan — HTTP responses', () => {
         expect(runAxe).not.toHaveBeenCalled();
 
         const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
-        expect(written).toHaveLength(0);
+        expect(written).toHaveLength(1);
+        expect(written[0]).toMatchObject({ error: true, httpStatus: 404 });
     });
 
     test('skips pages that return no response', async () => {
@@ -293,14 +294,15 @@ describe('scan — page error resilience', () => {
 // ─── stdout contract ─────────────────────────────────────────────────────────
 
 describe('scan — stdout JSON contract', () => {
-    test('writes an empty array when no pages were successfully scanned', async () => {
+    test('writes error entries when no pages were successfully scanned', async () => {
         mockPage.goto.mockResolvedValue({ status: () => 500 });
 
         await scan();
 
         const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
         expect(Array.isArray(written)).toBe(true);
-        expect(written).toHaveLength(0);
+        expect(written).toHaveLength(1);
+        expect(written[0]).toMatchObject({ error: true, httpStatus: 500 });
     });
 
     test('each result contains url and violations keys', async () => {

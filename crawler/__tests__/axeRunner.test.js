@@ -26,17 +26,17 @@ function axeViolation(overrides = {}) {
 }
 
 /**
- * Build a Puppeteer page mock that returns axe results from `page.evaluate()`.
+ * Build a Playwright page mock that returns axe results from `page.evaluate()`.
  *
- * The first `evaluate()` call is the axe source injection (returns undefined).
- * The second call is `window.axe.run()` which returns the results object.
+ * `addScriptTag()` is used for axe source injection.
+ * `evaluate()` is called once for `window.axe.run()`.
  */
 function buildPageMock(violations = [axeViolation()]) {
     return {
         url: jest.fn().mockReturnValue('https://example.com/page'),
+        addScriptTag: jest.fn().mockResolvedValue(undefined),
         evaluate: jest
             .fn()
-            .mockResolvedValueOnce(undefined) // axe source injection
             .mockResolvedValueOnce({ violations }), // axe.run() result
     };
 }
@@ -111,8 +111,8 @@ describe('runAxe', () => {
 
         await runAxe(page, axeConfig);
 
-        // Second evaluate call is window.axe.run(document, options)
-        const [, runCall] = page.evaluate.mock.calls;
+        // evaluate is called once for window.axe.run(document, options)
+        const [runCall] = page.evaluate.mock.calls;
         expect(runCall[1]).toEqual(axeConfig);
     });
 
@@ -121,12 +121,11 @@ describe('runAxe', () => {
 
         await runAxe(page, {});
 
-        // First evaluate call injects axeSource
-        expect(page.evaluate).toHaveBeenCalledTimes(2);
-        // The first arg of the first call is the axe source string
-        const [injectionArg] = page.evaluate.mock.calls[0];
-        expect(typeof injectionArg).toBe('string');
-        expect(injectionArg.length).toBeGreaterThan(0);
+        // addScriptTag is used to inject the axe source
+        expect(page.addScriptTag).toHaveBeenCalledTimes(1);
+        const [[{ content }]] = page.addScriptTag.mock.calls;
+        expect(typeof content).toBe('string');
+        expect(content.length).toBeGreaterThan(0);
     });
 
     test('handles multiple nodes per violation', async () => {

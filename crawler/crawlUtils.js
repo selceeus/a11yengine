@@ -142,9 +142,9 @@ function isSameDomain(baseUrl, candidateUrl) {
 }
 
 /**
- * Extract all unique, same-domain, http(s) href values from a Puppeteer page.
+ * Extract all unique, same-domain, http(s) href values from a Playwright page.
  *
- * @param {import('puppeteer').Page} page
+ * @param {import('playwright').Page} page
  * @param {string} baseUrl
  * @returns {Promise<string[]>}
  */

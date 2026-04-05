@@ -1,6 +1,6 @@
 'use strict';
 
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright');
 const config = require('./config');
 const { normaliseUrl, isSameDomain, extractLinks, fetchRobotsTxt, isAllowedByRobots } = require('./crawlUtils');
 const { runAxe } = require('./axeRunner');
@@ -116,7 +116,7 @@ async function scan() {
     const robotsTxt = await fetchRobotsTxt(baseUrl);
     log('info', robotsTxt ? 'Loaded robots.txt' : 'No robots.txt found — all paths allowed');
 
-    const browser = await puppeteer.launch(config.puppeteer);
+    const browser = await chromium.launch(config.playwright);
 
     /** @type {Set<string>} */
     const visited = new Set();
@@ -150,7 +150,7 @@ async function scan() {
 
             try {
                 const response = await page.goto(normalisedUrl, {
-                    waitUntil: 'networkidle2',
+                    waitUntil: 'networkidle',
                     timeout: config.navigationTimeoutMs,
                 });
 

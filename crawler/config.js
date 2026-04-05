@@ -19,7 +19,7 @@ module.exports = {
         resultTypes: ['violations'],
     },
 
-    puppeteer: {
+    playwright: {
         headless: true,
         args: [
             '--no-sandbox',
