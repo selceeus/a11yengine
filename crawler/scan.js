@@ -150,7 +150,7 @@ async function scan() {
 
             try {
                 const response = await page.goto(normalisedUrl, {
-                    waitUntil: 'networkidle',
+                    waitUntil: 'domcontentloaded',
                     timeout: config.navigationTimeoutMs,
                 });
 

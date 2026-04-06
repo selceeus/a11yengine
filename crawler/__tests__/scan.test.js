@@ -139,7 +139,7 @@ describe('scan — single page', () => {
 
         expect(mockPage.goto).toHaveBeenCalledWith(
             'https://example.com/',
-            expect.objectContaining({ waitUntil: 'networkidle' })
+            expect.objectContaining({ waitUntil: 'domcontentloaded' })
         );
     });
 
