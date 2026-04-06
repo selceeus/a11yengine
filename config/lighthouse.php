@@ -42,5 +42,5 @@ return [
     */
 
     'enabled' => (bool) env('LIGHTHOUSE_ENABLED', true),
-
+    'chrome_path' => env('LIGHTHOUSE_CHROME_PATH'),
 ];

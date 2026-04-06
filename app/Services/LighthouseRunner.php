@@ -33,6 +33,10 @@ class LighthouseRunner
             '--chrome-flags=--headless --no-sandbox --disable-gpu',
         ];
 
+        if ($chromePath = config('lighthouse.chrome_path')) {
+            $command[] = '--chrome-path='.$chromePath;
+        }
+
         if ($formFactor === 'desktop') {
             $command[] = '--preset=desktop';
         }
