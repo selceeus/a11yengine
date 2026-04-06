@@ -17,6 +17,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -42,9 +43,24 @@ class ScanController extends Controller
             ->get();
 
         return Inertia::render('scans/index', [
-            'scans' => $scans,
+            'scans' => $scans->map(fn (Scan $scan) => array_merge($scan->toArray(), [
+                'canDelete' => Gate::allows('delete', $scan),
+            ])),
             'properties' => $properties,
         ]);
+    }
+
+    public function destroy(Scan $scan): RedirectResponse
+    {
+        $this->authorize('delete', $scan);
+
+        if (in_array($scan->status, [ScanStatus::Pending, ScanStatus::Running], true)) {
+            return back()->withErrors(['scan' => 'Cannot delete a scan that is pending or running.']);
+        }
+
+        $scan->delete();
+
+        return redirect()->route('scans.index');
     }
 
     public function store(StoreScanRequest $request): RedirectResponse

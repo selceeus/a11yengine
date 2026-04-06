@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Head, Link, useForm,  usePoll } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePoll } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ type Scan = {
     total_violations: number | null;
     created_at: string;
     property: Property | null;
+    canDelete: boolean;
 };
 
 type SeverityRow = {
@@ -154,6 +155,13 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
     function submit(e: React.FormEvent) {
         e.preventDefault();
         post(ScanController.store().url);
+    }
+
+    function deleteScan(scan: Scan) {
+        if (!confirm(`Delete the scan for "${scan.property?.name ?? `Scan #${scan.id}`}"? This cannot be undone.`)) {
+            return;
+        }
+        router.delete(ScanController.destroy(scan.id).url);
     }
 
     async function openOverview(scan: Scan) {
@@ -289,6 +297,14 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                                 >
                                                     View
                                                 </Link>
+                                                {scan.canDelete && scan.status !== 'pending' && scan.status !== 'running' && (
+                                                    <button
+                                                        onClick={() => deleteScan(scan)}
+                                                        className="text-sm text-destructive hover:underline"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

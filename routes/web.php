@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('scans', [ScanController::class, 'index'])->name('scans.index');
     Route::post('scans', [ScanController::class, 'store'])->name('scans.store');
     Route::get('scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
+    Route::delete('scans/{scan}', [ScanController::class, 'destroy'])->name('scans.destroy');
     Route::get('scans/{scan}/diff', [\App\Http\Controllers\ScanDiffController::class, 'show'])->name('scans.diff');
 
     Route::get('team', [TeamController::class, 'index'])->name('team.index');

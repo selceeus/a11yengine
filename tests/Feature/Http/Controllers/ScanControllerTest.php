@@ -177,3 +177,84 @@ it('redirects unauthenticated users from show', function (): void {
 
     $this->get(route('scans.show', $scan))->assertRedirect(route('login'));
 });
+
+// ─── destroy ─────────────────────────────────────────────────────────────────
+
+it('a propAdmin can delete a completed scan', function (): void {
+    $actor = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    $scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->completed()->create();
+
+    $this->actingAs($actor)
+        ->delete(route('scans.destroy', $scan))
+        ->assertRedirect(route('scans.index'));
+
+    $this->assertDatabaseMissing('scans', ['id' => $scan->id]);
+});
+
+it('a propAdmin can delete a failed scan', function (): void {
+    $actor = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    $scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->failed()->create();
+
+    $this->actingAs($actor)
+        ->delete(route('scans.destroy', $scan))
+        ->assertRedirect(route('scans.index'));
+
+    $this->assertDatabaseMissing('scans', ['id' => $scan->id]);
+});
+
+it('an editor cannot delete a scan', function (): void {
+    $editor = User::factory()->withRole(UserRoleEnum::Editor, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    $scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->completed()->create();
+
+    $this->actingAs($editor)
+        ->delete(route('scans.destroy', $scan))
+        ->assertForbidden();
+
+    $this->assertDatabaseHas('scans', ['id' => $scan->id]);
+});
+
+it('cannot delete a pending scan', function (): void {
+    $actor = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    $scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->create();
+
+    $this->actingAs($actor)
+        ->delete(route('scans.destroy', $scan))
+        ->assertSessionHasErrors('scan');
+
+    $this->assertDatabaseHas('scans', ['id' => $scan->id]);
+});
+
+it('cannot delete a running scan', function (): void {
+    $actor = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    $scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->running()->create();
+
+    $this->actingAs($actor)
+        ->delete(route('scans.destroy', $scan))
+        ->assertSessionHasErrors('scan');
+
+    $this->assertDatabaseHas('scans', ['id' => $scan->id]);
+});
+
+it('returns 404 when deleting a scan from another agency', function (): void {
+    $scan = Scan::factory()->completed()->create();
+
+    $this->delete(route('scans.destroy', $scan))->assertNotFound();
+});
+
+it('passes canDelete true to the index page for a propAdmin', function (): void {
+    $actor = User::factory()->withRole(UserRoleEnum::PropAdmin, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->completed()->create();
+
+    $this->actingAs($actor)
+        ->get(route('scans.index'))
+        ->assertInertia(fn ($page) => $page->where('scans.0.canDelete', true));
+});
+
+it('passes canDelete false to the index page for an editor', function (): void {
+    $editor = User::factory()->withRole(UserRoleEnum::Editor, propertyId: $this->property->id)->create(['agency_id' => $this->agency->id]);
+    Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->completed()->create();
+
+    $this->actingAs($editor)
+        ->get(route('scans.index'))
+        ->assertInertia(fn ($page) => $page->where('scans.0.canDelete', false));
+});
