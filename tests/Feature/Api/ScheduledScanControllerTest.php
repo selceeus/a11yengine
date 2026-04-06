@@ -169,7 +169,7 @@ it('rejects unauthenticated destroy', function (): void {
         ->assertUnauthorized();
 });
 
-it('deactivates a schedule on destroy', function (): void {
+it('deletes a schedule on destroy', function (): void {
     $schedule = ScheduledScan::factory()->create([
         'agency_id' => $this->agency->id,
         'organization_id' => $this->organization->id,
@@ -181,7 +181,17 @@ it('deactivates a schedule on destroy', function (): void {
         ->assertOk()
         ->assertJsonPath('success', true);
 
-    expect($schedule->fresh()->is_active)->toBeFalse();
+    $this->assertDatabaseMissing('scheduled_scans', ['id' => $schedule->id]);
+});
+
+it('returns 404 when deleting a scheduled scan from another agency', function (): void {
+    $otherSchedule = ScheduledScan::factory()->create();
+
+    $this->actingAs($this->actor)
+        ->deleteJson("/api/properties/{$otherSchedule->property_id}/scheduled-scan/{$otherSchedule->id}")
+        ->assertNotFound();
+
+    $this->assertDatabaseHas('scheduled_scans', ['id' => $otherSchedule->id]);
 });
 
 // ── timing fields ─────────────────────────────────────────────────────────────

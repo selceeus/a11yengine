@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Globe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -92,10 +93,39 @@ export default function ScheduledScanShow({
     scheduledScan: ScheduledScan;
     recentScans: RecentScan[];
 }) {
+    const [deleting, setDeleting] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Scheduled Scans', href: scheduledScansIndex().url },
         { title: scheduledScan.property?.name ?? `Scan #${scheduledScan.id}`, href: '#' },
     ];
+
+    async function deleteScheduledScan() {
+        if (!confirm(`Delete the schedule for "${scheduledScan.property?.name ?? `Schedule #${scheduledScan.id}`}"? This cannot be undone.`)) {
+            return;
+        }
+
+        setDeleting(true);
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        const res = await fetch(
+            `/api/properties/${scheduledScan.property?.id}/scheduled-scan/${scheduledScan.id}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            },
+        );
+
+        setDeleting(false);
+
+        if (!res.ok) return;
+
+        router.visit(scheduledScansIndex().url);
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -128,6 +158,15 @@ export default function ScheduledScanShow({
                             )}
                         </div>
                     </div>
+
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={deleting}
+                        onClick={deleteScheduledScan}
+                    >
+                        {deleting ? 'Deleting…' : 'Delete'}
+                    </Button>
                 </div>
 
                 <Separator />

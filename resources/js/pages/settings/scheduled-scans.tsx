@@ -44,6 +44,7 @@ export default function ScheduledScansIndex({
 }) {
     const [scans, setScans] = useState(initialScans);
     const [toggling, setToggling] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState<number | null>(null);
 
     // Schedule scan dialog state
     const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -140,6 +141,33 @@ export default function ScheduledScansIndex({
         );
     }
 
+    async function deleteScheduledScan(scan: ScheduledScan) {
+        if (!confirm(`Delete the schedule for "${scan.property?.name ?? `Schedule #${scan.id}`}"? This cannot be undone.`)) {
+            return;
+        }
+
+        setDeleting(scan.id);
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        const res = await fetch(
+            `/api/properties/${scan.property?.id}/scheduled-scan/${scan.id}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            },
+        );
+
+        setDeleting(null);
+
+        if (!res.ok) return;
+
+        setScans((prev) => prev.filter((s) => s.id !== scan.id));
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Scheduled Scans" />
@@ -223,7 +251,7 @@ export default function ScheduledScansIndex({
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
-                                                        disabled={toggling === scan.id}
+                                                        disabled={toggling === scan.id || deleting === scan.id}
                                                         onClick={() => toggleScan(scan)}
                                                     >
                                                         {toggling === scan.id
@@ -231,6 +259,14 @@ export default function ScheduledScansIndex({
                                                             : scan.is_active
                                                               ? 'Pause'
                                                               : 'Resume'}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        disabled={toggling === scan.id || deleting === scan.id}
+                                                        onClick={() => deleteScheduledScan(scan)}
+                                                    >
+                                                        {deleting === scan.id ? '…' : 'Delete'}
                                                     </Button>
                                                 </div>
                                             </td>

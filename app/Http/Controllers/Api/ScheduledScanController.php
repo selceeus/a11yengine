@@ -91,7 +91,7 @@ class ScheduledScanController extends Controller
     {
         $this->authorize('create', \App\Models\Scan::class);
 
-        $scheduledScan->update(['is_active' => false]);
+        $scheduledScan->delete();
 
         return response()->json(['success' => true]);
     }
