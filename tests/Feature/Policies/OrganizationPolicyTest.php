@@ -39,6 +39,10 @@ it('allows same-agency user to view an organization', function (): void {
     expect($this->editor->can('view', $this->organization))->toBeTrue();
 });
 
+it('allows superUser to view any organization', function (): void {
+    expect($this->superUser->can('view', $this->organization))->toBeTrue();
+});
+
 it('forbids other-agency user from viewing an organization', function (): void {
     expect($this->otherAgencyUser->cannot('view', $this->organization))->toBeTrue();
 });

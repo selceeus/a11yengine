@@ -14,7 +14,7 @@ class OrganizationPolicy
 
     public function view(User $user, Organization $organization): bool
     {
-        return $user->agency_id === $organization->agency_id;
+        return $user->isSuperUser() || $user->agency_id === $organization->agency_id;
     }
 
     public function create(User $user): bool
