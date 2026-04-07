@@ -1,4 +1,4 @@
-# Accessibility Insights Platform
+# A11y Engine
 
 An enterprise web accessibility auditing and risk management platform. It automatically crawls digital properties, runs WCAG and Lighthouse audits, tracks violations as managed issues, generates AI-powered governance reports, risk advisories, content audits, and per-issue remediation guidance — and routes notifications to any email address or Slack/Teams/Discord webhook — all within a strict multi-tenant agency hierarchy.
 
@@ -6,7 +6,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 ## Features
 
-- **Automated Crawling & Scanning** — Discovers all pages on a domain via headless Puppeteer and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
+- **Automated Crawling & Scanning** — Discovers all pages on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
 - **Issue Deduplication & Tracking** — Aggregates raw findings into unique, trackable issues with occurrence counts, severity, WCAG category, tags, element HTML, help URLs, and lifecycle status (`open` → `in_progress` → `resolved`)
 - **Issue Activity Log** — Full audit trail per issue: status changes, assignments, due date updates, bulk actions, and threaded comments
 - **Scan Diff** — Side-by-side comparison of two scans showing new, resolved, and persisting findings
@@ -45,7 +45,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 | **UI Components**     | Radix UI, Headless UI                                   |
 | **Visualisation**     | D3.js v7, Three.js                                      |
 | **Type-Safe Routing** | Laravel Wayfinder v0                                    |
-| **Crawler**           | Node.js ≥18, Puppeteer 24, axe-core 4.10, Lighthouse 13 |
+| **Crawler**           | Node.js ≥18, Playwright 1.51, axe-core 4.10, Lighthouse 13 |
 | **Build Tool**        | Vite 7                                                  |
 | **Database**          | PostgreSQL with pgvector (vector embeddings)            |
 | **Queue**             | Laravel Queues (database driver)                        |
@@ -96,7 +96,7 @@ An MCP server at `/mcp/property-accessibility` exposes property issues, risk sum
 - Composer
 - Node.js ≥ 18
 - PostgreSQL with the pgvector extension
-- A Chromium-compatible browser (for Puppeteer and Lighthouse)
+- A Chromium-compatible browser (for Playwright and Lighthouse)
 
 ### Quick Setup
 
@@ -173,9 +173,10 @@ composer run dev
 
 | Variable             | Purpose                                         |
 | -------------------- | ----------------------------------------------- |
-| `LIGHTHOUSE_BINARY`  | Path to Lighthouse CLI binary                   |
-| `LIGHTHOUSE_TIMEOUT` | Max seconds per Lighthouse run (default: `120`) |
-| `LIGHTHOUSE_ENABLED` | Toggle Lighthouse performance audits on/off     |
+| `LIGHTHOUSE_BINARY`      | Path to Lighthouse CLI binary                           |
+| `LIGHTHOUSE_TIMEOUT`     | Max seconds per Lighthouse run (default: `120`)         |
+| `LIGHTHOUSE_ENABLED`     | Toggle Lighthouse performance audits on/off             |
+| `LIGHTHOUSE_CHROME_PATH` | Path to Chromium executable used by Lighthouse (optional) |
 
 ---
 
@@ -248,21 +249,21 @@ Integrations are configured per agency in **Settings → Integrations**. Webhook
 
 The platform exposes a Model Context Protocol server at `/mcp/property-accessibility`, authenticated via an API key with the `mcp` scope.
 
-| Type     | Name                          | Description                                                                  |
-| -------- | ----------------------------- | ---------------------------------------------------------------------------- |
-| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property                               |
-| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation guidance for a specific issue                 |
-| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan                             |
-| Tool     | `GetRelatedLawsuitsTool`      | Retrieve relevant ADA lawsuit cases and outcomes for a rule                  |
-| Tool     | `GetSimilarRemediationsTool`  | Find remediation patterns from similar previously resolved issues            |
-| Tool     | `TriggerScanTool`             | Initiate a new accessibility scan for a property                             |
-| Tool     | `UpdateIssueStatusTool`       | Update the status of an issue with optional resolution notes                 |
-| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug                                 |
-| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                                            |
-| Resource | `PropertyComplianceResource`  | WCAG compliance breakdown (A/AA/AAA pass/fail counts) for a property         |
-| Resource | `PropertyLegalRiskResource`   | Issues with high legal exposure mapped to ADA lawsuit precedents             |
+| Type     | Name                          | Description                                                                            |
+| -------- | ----------------------------- | -------------------------------------------------------------------------------------- |
+| Tool     | `GetPropertyIssuesTool`       | Query open accessibility issues for a property                                         |
+| Tool     | `GetIssueRemediationTool`     | Fetch AI-generated remediation guidance for a specific issue                           |
+| Tool     | `GetScanFindingsTool`         | Read raw axe-core findings from a completed scan                                       |
+| Tool     | `GetRelatedLawsuitsTool`      | Retrieve relevant ADA lawsuit cases and outcomes for a rule                            |
+| Tool     | `GetSimilarRemediationsTool`  | Find remediation patterns from similar previously resolved issues                      |
+| Tool     | `TriggerScanTool`             | Initiate a new accessibility scan for a property                                       |
+| Tool     | `UpdateIssueStatusTool`       | Update the status of an issue with optional resolution notes                           |
+| Resource | `PropertyIssuesResource`      | Structured issue list keyed by property slug                                           |
+| Resource | `PropertyRiskSummaryResource` | Risk score summary for a property                                                      |
+| Resource | `PropertyComplianceResource`  | WCAG compliance breakdown (A/AA/AAA pass/fail counts) for a property                   |
+| Resource | `PropertyLegalRiskResource`   | Issues with high legal exposure mapped to ADA lawsuit precedents                       |
 | Resource | `PendingAlertsResource`       | Real-time feed of failed scans, critical issues, overdue properties, and running scans |
-| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation             |
+| Prompt   | `RemediateViolationPrompt`    | Guided prompt for remediating a specific accessibility violation                       |
 
 ### API Keys
 
@@ -297,22 +298,22 @@ In addition to per-user preferences, agencies can route notifications by categor
 
 **Notification categories:**
 
-| Category       | Covers                                        |
-| -------------- | --------------------------------------------- |
-| `scans`        | Scan completion notifications                 |
-| `scan_failures`| Scan failure alerts                           |
-| `reports`      | Weekly digest and governance report events    |
-| `issues`       | Issue assignment and @mention notifications   |
+| Category        | Covers                                      |
+| --------------- | ------------------------------------------- |
+| `scans`         | Scan completion notifications               |
+| `scan_failures` | Scan failure alerts                         |
+| `reports`       | Weekly digest and governance report events  |
+| `issues`        | Issue assignment and @mention notifications |
 
 **Email routing** (`NotificationEmailRoute`) — add one or more email addresses per category. Each address receives a clone of the same notification email sent to individual users.
 
 **Webhook routing** (`NotificationWebhookRoute`) — add one or more webhook endpoints per category. Webhook URLs are stored encrypted at rest. Supported platforms:
 
-| Platform          | Payload format                  |
-| ----------------- | ------------------------------- |
-| Slack             | Block Kit (`blocks` array)      |
-| Microsoft Teams   | Adaptive Card (`attachments`)   |
-| Discord           | Embeds (`embeds` array)         |
+| Platform        | Payload format                |
+| --------------- | ----------------------------- |
+| Slack           | Block Kit (`blocks` array)    |
+| Microsoft Teams | Adaptive Card (`attachments`) |
+| Discord         | Embeds (`embeds` array)       |
 
 Delivery is handled by `SendWebhookNotificationJob` (queued, 3 attempts, 30 s / 60 s backoff).
 
@@ -383,32 +384,40 @@ Reports can be exported via the `Exportable` concern:
 
 ## Background Jobs
 
-| Job                           | Purpose                                                                                            | Retries                | Timeout |
-| ----------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------- | ------- |
-| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                   | 3 (10s / 30s backoff)  | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                               | batch                  | —       |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | batch                  | —       |
-| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                     | 2 (60s / 120s backoff) | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                   | —                      | —       |
-| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                            | —                      | —       |
-| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                   | —                      | —       |
-| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | —                      | —       |
-| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff) | 300s    |
-| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff) | —       |
-| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                         | 3 (30s / 60s backoff)  | —       |
+| Job                           | Purpose                                                                                            | Retries                      | Timeout |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------- | ------- |
+| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                   | 3 (10s / 30s backoff)        | 600s    |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                               | batch                        | —       |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | batch                        | —       |
+| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                     | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                   | —                            | —       |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                            | —                            | —       |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                   | —                            | —       |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | —                            | —       |
+| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff)       | 300s    |
+| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff)       | —       |
+| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                          | 3 (30s / 60s backoff)        | —       |
+| `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                 | 3 (30s / 60s / 120s backoff) | 120s    |
+| `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                | 3 (30s / 60s / 120s backoff) | 120s    |
+| `IndexRemediationPatternJob`  | Indexes a resolved issue's remediation pattern into the vector store                               | 3 (30s / 60s / 120s backoff) | 120s    |
 
 ---
 
 ## Artisan Commands
 
-| Command                                   | Description                                           |
-| ----------------------------------------- | ----------------------------------------------------- |
-| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                   |
-| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min |
-| `php artisan risk:snapshot-agency`        | Record a point-in-time agency risk snapshot           |
-| `php artisan governance:generate-reports` | Generate scheduled governance reports                 |
-| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users  |
-| `php artisan users:backfill-roles`        | Populate historical user role records                 |
+| Command                                   | Description                                                                 |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                                         |
+| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min                       |
+| `php artisan snapshots:agency-risk`       | Record a point-in-time agency risk snapshot                                 |
+| `php artisan governance:generate-reports` | Generate scheduled governance reports                                       |
+| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users                        |
+| `php artisan app:backfill-user-roles`     | Populate historical user role records                                       |
+| `php artisan rag:index-wcag`              | Dispatch jobs to embed all WCAG criteria chunks into the vector store       |
+| `php artisan rag:index-lawsuits`          | Dispatch jobs to embed ADA lawsuit records into the vector store            |
+| `php artisan rag:reindex`                 | Re-index one or more RAG stores (`wcag`, `lawsuits`, `remediations`)        |
+| `php artisan rag:reindex-remediations`    | Index resolved issues with AI suggestions into the remediation vector store |
+| `php artisan rag:status`                  | Display the current status of all RAG embedding tables                      |
 
 ---
 
@@ -424,14 +433,14 @@ node crawler/scan.js <url> \
   [--exclude <pattern>]...
 ```
 
-It uses headless Puppeteer to crawl the target domain, respects `robots.txt` and domain boundaries, and outputs per-page axe-core results as JSON to stdout. All diagnostic output is written to stderr only.
+It uses headless Playwright to crawl the target domain, respects `robots.txt` and domain boundaries, and outputs per-page axe-core results as JSON to stdout. All diagnostic output is written to stderr only.
 
 | File                    | Purpose                                                |
 | ----------------------- | ------------------------------------------------------ |
 | `crawler/scan.js`       | Main entry point                                       |
 | `crawler/axeRunner.js`  | axe-core audit execution                               |
 | `crawler/crawlUtils.js` | URL normalisation, link extraction, robots.txt parsing |
-| `crawler/config.js`     | Puppeteer/axe configuration (environment-driven)       |
+| `crawler/config.js`     | Playwright/axe configuration (environment-driven)       |
 
 ---
 
@@ -491,22 +500,20 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 | ----------------------- | ------------------------------------------------------------ |
 | `config/ai.php`         | AI driver selection, model, temperature, token limits        |
 | `config/crawler.php`    | Crawler timeout, max depth, max pages                        |
-| `config/lighthouse.php` | Lighthouse binary path, timeout, feature flag                |
+| `config/lighthouse.php` | Lighthouse binary path, timeout, feature flag, Chrome path   |
 | `config/fortify.php`    | Authentication feature flags (2FA, email verification, etc.) |
 
 ---
 
 ## Settings
 
-| Page                    | Route                                    | Description                                          |
-| ----------------------- | ---------------------------------------- | ---------------------------------------------------- |
-| Profile                 | `/settings/profile`                      | Name, email, and account details                     |
-| Password                | `/settings/password`                     | Change account password                              |
-| Two-Factor Auth         | `/settings/two-factor`                   | Enable/disable 2FA and manage recovery codes         |
-| Appearance              | `/settings/appearance`                   | Theme and UI preferences                             |
-| Notifications           | `/settings/notifications`                | Per-channel notification opt-out preferences         |
-| Notification Emails     | `/settings/notification-email-routes`    | Route notification categories to additional emails   |
-| Notification Webhooks   | `/settings/notification-webhook-routes`  | Route notification categories to Slack/Teams/Discord |
-| Scheduled Scans         | `/settings/scheduled-scans`              | Manage recurring scans                               |
-| API Keys                | `/settings/api-keys`                     | Create and revoke scoped API keys                    |
-| Integrations            | `/settings/integrations`                 | Connect and manage project management integrations   |
+| Page                  | Route                                   | Description                                          |
+| --------------------- | --------------------------------------- | ---------------------------------------------------- |
+| Profile               | `/settings/profile`                     | Name, email, and account details                     |
+| Password              | `/settings/password`                    | Change account password                              |
+| Two-Factor Auth       | `/settings/two-factor`                  | Enable/disable 2FA and manage recovery codes         |
+| Appearance            | `/settings/appearance`                  | Theme and UI preferences                             |
+| Notifications   | `/settings/notifications`   | Per-channel notification opt-out preferences |
+| Scheduled Scans | `/settings/scheduled-scans` | Manage recurring scans                       |
+| API Keys              | `/settings/api-keys`                    | Create and revoke scoped API keys                    |
+| Integrations          | `/settings/integrations`                | Connect and manage project management integrations   |
