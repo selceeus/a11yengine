@@ -11,8 +11,6 @@ import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { edit as editNotifications } from '@/routes/notification-preferences';
-import { index as notificationEmailRoutesIndex } from '@/routes/notification-email-routes';
-import { index as notificationWebhookRoutesIndex } from '@/routes/notification-webhook-routes';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -38,16 +36,6 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Notifications',
         href: editNotifications(),
-        icon: null,
-    },
-    {
-        title: 'Notification Emails',
-        href: notificationEmailRoutesIndex(),
-        icon: null,
-    },
-    {
-        title: 'Notification Webhooks',
-        href: notificationWebhookRoutesIndex(),
         icon: null,
     },
 ];
