@@ -35,26 +35,26 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 ## Tech Stack
 
-| Layer                 | Technology                                              |
-| --------------------- | ------------------------------------------------------- |
-| **Language**          | PHP 8.2                                                 |
-| **Framework**         | Laravel 12                                              |
-| **Authentication**    | Laravel Fortify v1                                      |
-| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                 |
-| **Styling**           | Tailwind CSS v4                                         |
-| **UI Components**     | Radix UI, Headless UI                                   |
-| **Visualisation**     | D3.js v7, Three.js                                      |
-| **Type-Safe Routing** | Laravel Wayfinder v0                                    |
+| Layer                 | Technology                                                 |
+| --------------------- | ---------------------------------------------------------- |
+| **Language**          | PHP 8.2                                                    |
+| **Framework**         | Laravel 12                                                 |
+| **Authentication**    | Laravel Fortify v1                                         |
+| **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                    |
+| **Styling**           | Tailwind CSS v4                                            |
+| **UI Components**     | Radix UI, Headless UI                                      |
+| **Visualisation**     | D3.js v7, Three.js                                         |
+| **Type-Safe Routing** | Laravel Wayfinder v0                                       |
 | **Crawler**           | Node.js ≥18, Playwright 1.51, axe-core 4.10, Lighthouse 13 |
-| **Build Tool**        | Vite 7                                                  |
-| **Database**          | PostgreSQL with pgvector (vector embeddings)            |
-| **Queue**             | Laravel Queues (database driver)                        |
-| **Testing**           | Pest v3, PHPUnit v11, Jest 30                           |
-| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                    |
-| **Dev Environment**   | Laravel Sail (Docker)                                   |
-| **Monitoring**        | Laravel Telescope v5                                    |
-| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet             |
-| **MCP**               | Laravel MCP v0                                          |
+| **Build Tool**        | Vite 7                                                     |
+| **Database**          | PostgreSQL with pgvector (vector embeddings)               |
+| **Queue**             | Laravel Queues (database driver)                           |
+| **Testing**           | Pest v3, PHPUnit v11, Jest 30                              |
+| **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                       |
+| **Dev Environment**   | Laravel Sail (Docker)                                      |
+| **Monitoring**        | Laravel Telescope v5                                       |
+| **AI Models**         | OpenAI GPT-4o / Anthropic Claude 3.7 Sonnet                |
+| **MCP**               | Laravel MCP v0                                             |
 
 ---
 
@@ -171,11 +171,11 @@ composer run dev
 
 ### Lighthouse
 
-| Variable             | Purpose                                         |
-| -------------------- | ----------------------------------------------- |
-| `LIGHTHOUSE_BINARY`      | Path to Lighthouse CLI binary                           |
-| `LIGHTHOUSE_TIMEOUT`     | Max seconds per Lighthouse run (default: `120`)         |
-| `LIGHTHOUSE_ENABLED`     | Toggle Lighthouse performance audits on/off             |
+| Variable                 | Purpose                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| `LIGHTHOUSE_BINARY`      | Path to Lighthouse CLI binary                             |
+| `LIGHTHOUSE_TIMEOUT`     | Max seconds per Lighthouse run (default: `120`)           |
+| `LIGHTHOUSE_ENABLED`     | Toggle Lighthouse performance audits on/off               |
 | `LIGHTHOUSE_CHROME_PATH` | Path to Chromium executable used by Lighthouse (optional) |
 
 ---
@@ -440,7 +440,7 @@ It uses headless Playwright to crawl the target domain, respects `robots.txt` an
 | `crawler/scan.js`       | Main entry point                                       |
 | `crawler/axeRunner.js`  | axe-core audit execution                               |
 | `crawler/crawlUtils.js` | URL normalisation, link extraction, robots.txt parsing |
-| `crawler/config.js`     | Playwright/axe configuration (environment-driven)       |
+| `crawler/config.js`     | Playwright/axe configuration (environment-driven)      |
 
 ---
 
@@ -507,13 +507,13 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 ## Settings
 
-| Page                  | Route                                   | Description                                          |
-| --------------------- | --------------------------------------- | ---------------------------------------------------- |
-| Profile               | `/settings/profile`                     | Name, email, and account details                     |
-| Password              | `/settings/password`                    | Change account password                              |
-| Two-Factor Auth       | `/settings/two-factor`                  | Enable/disable 2FA and manage recovery codes         |
-| Appearance            | `/settings/appearance`                  | Theme and UI preferences                             |
-| Notifications   | `/settings/notifications`   | Per-channel notification opt-out preferences |
-| Scheduled Scans | `/settings/scheduled-scans` | Manage recurring scans                       |
-| API Keys              | `/settings/api-keys`                    | Create and revoke scoped API keys                    |
-| Integrations          | `/settings/integrations`                | Connect and manage project management integrations   |
+| Page            | Route                       | Description                                        |
+| --------------- | --------------------------- | -------------------------------------------------- |
+| Profile         | `/settings/profile`         | Name, email, and account details                   |
+| Password        | `/settings/password`        | Change account password                            |
+| Two-Factor Auth | `/settings/two-factor`      | Enable/disable 2FA and manage recovery codes       |
+| Appearance      | `/settings/appearance`      | Theme and UI preferences                           |
+| Notifications   | `/settings/notifications`   | Per-channel notification opt-out preferences       |
+| Scheduled Scans | `/settings/scheduled-scans` | Manage recurring scans                             |
+| API Keys        | `/settings/api-keys`        | Create and revoke scoped API keys                  |
+| Integrations    | `/settings/integrations`    | Connect and manage project management integrations |
