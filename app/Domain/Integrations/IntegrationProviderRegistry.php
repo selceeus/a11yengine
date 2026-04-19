@@ -4,9 +4,15 @@ namespace App\Domain\Integrations;
 
 use App\Domain\Integrations\Contracts\ProjectManagementProvider;
 use App\Domain\Integrations\Providers\AsanaProvider;
+use App\Domain\Integrations\Providers\AzureDevOpsProvider;
+use App\Domain\Integrations\Providers\BasecampProvider;
+use App\Domain\Integrations\Providers\ClickUpProvider;
 use App\Domain\Integrations\Providers\GitHubProvider;
 use App\Domain\Integrations\Providers\JiraProvider;
 use App\Domain\Integrations\Providers\LinearProvider;
+use App\Domain\Integrations\Providers\MondayProvider;
+use App\Domain\Integrations\Providers\NotionProvider;
+use App\Domain\Integrations\Providers\TrelloProvider;
 use App\Domain\Integrations\Providers\WrikeProvider;
 use App\Enums\IntegrationProvider;
 use InvalidArgumentException;
@@ -20,13 +26,12 @@ class IntegrationProviderRegistry
         IntegrationProvider::Asana->value => AsanaProvider::class,
         IntegrationProvider::Linear->value => LinearProvider::class,
         IntegrationProvider::GitHub->value => GitHubProvider::class,
-        // Not yet implemented:
-        // IntegrationProvider::Monday->value => MondayProvider::class,
-        // IntegrationProvider::ClickUp->value => ClickUpProvider::class,
-        // IntegrationProvider::AzureDevOps->value => AzureDevOpsProvider::class,
-        // IntegrationProvider::Trello->value => TrelloProvider::class,
-        // IntegrationProvider::Notion->value => NotionProvider::class,
-        // IntegrationProvider::Basecamp->value => BasecampProvider::class,
+        IntegrationProvider::Monday->value => MondayProvider::class,
+        IntegrationProvider::ClickUp->value => ClickUpProvider::class,
+        IntegrationProvider::AzureDevOps->value => AzureDevOpsProvider::class,
+        IntegrationProvider::Trello->value => TrelloProvider::class,
+        IntegrationProvider::Notion->value => NotionProvider::class,
+        IntegrationProvider::Basecamp->value => BasecampProvider::class,
     ];
 
     public static function make(IntegrationProvider $provider): ProjectManagementProvider
