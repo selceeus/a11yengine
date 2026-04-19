@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\ApiKeyScope;
+use App\Models\Agency;
 use App\Models\ApiKey;
 use Closure;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class VerifyApiKey
         $apiKey->forceFill(['last_used_at' => now()])->saveQuietly();
 
         app()->instance(ApiKey::class, $apiKey);
+        app()->instance(Agency::class, $apiKey->agency);
         app()->instance('currentAgency', $apiKey->agency);
 
         return $next($request);
