@@ -7,16 +7,19 @@ use App\Models\Agency;
 use App\Models\ApiKey;
 use App\Models\Issue;
 use App\Models\Property;
+use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function createWordPressApiKey(Agency $agency): array
 {
+    $user = User::factory()->create();
     $token = ApiKey::generateToken();
 
     ApiKey::withoutGlobalScopes()->create([
         'agency_id' => $agency->id,
+        'created_by' => $user->id,
         'name' => 'WordPress Test Key',
         'key_prefix' => substr($token['plaintext'], 0, 12).'...',
         'token_hash' => $token['hash'],
@@ -53,10 +56,12 @@ it('WordPress properties: returns 401 with an invalid token', function (): void 
 
 it('WordPress properties: returns 403 when API key lacks the wordpress scope', function (): void {
     $agency = Agency::factory()->create();
+    $user = User::factory()->create();
     $token = ApiKey::generateToken();
 
     ApiKey::withoutGlobalScopes()->create([
         'agency_id' => $agency->id,
+        'created_by' => $user->id,
         'name' => 'Scans Key',
         'key_prefix' => substr($token['plaintext'], 0, 12).'...',
         'token_hash' => $token['hash'],
