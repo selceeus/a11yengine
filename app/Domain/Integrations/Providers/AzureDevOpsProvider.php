@@ -66,7 +66,9 @@ class AzureDevOpsProvider implements ProjectManagementProvider
 
     public function parseWebhookStatus(Request $request): string
     {
-        return $request->input('resource.fields.System\.State.newValue', '');
+        $fields = $request->input('resource.fields', []);
+
+        return $fields['System.State']['newValue'] ?? '';
     }
 
     public function parseWebhookExternalId(Request $request): string
