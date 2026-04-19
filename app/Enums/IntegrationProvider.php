@@ -49,7 +49,7 @@ enum IntegrationProvider: string
     public function supportsWebhooks(): bool
     {
         return match ($this) {
-            self::Jira, self::GitHub, self::Linear, self::Asana => true,
+            self::Jira, self::GitHub, self::Linear, self::Asana, self::Wrike => true,
             default => false,
         };
     }
@@ -57,7 +57,8 @@ enum IntegrationProvider: string
     public function isImplemented(): bool
     {
         return match ($this) {
-            self::Jira, self::Wrike, self::Asana, self::Linear, self::GitHub => true,
+            self::Jira, self::Wrike, self::Asana, self::Linear, self::GitHub,
+            self::Monday, self::ClickUp, self::AzureDevOps, self::Trello, self::Notion, self::Basecamp => true,
             default => false,
         };
     }
