@@ -1,11 +1,16 @@
 <?php
 
+use App\Http\Controllers\Api\AgencyRiskSummaryController;
 use App\Http\Controllers\Api\IntegrationWebhookController;
 use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
 use App\Http\Controllers\Api\OrganizationUserImpactController;
+use App\Http\Controllers\Api\WordPressIssuesController;
+use App\Http\Controllers\Api\WordPressPropertiesController;
+use App\Http\Controllers\Api\WordPressRiskSummaryController;
+use App\Http\Controllers\Api\WordPressScansController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('organizations/{organizationId}/risk-snapshot', OrganizationRiskController::class)
@@ -23,6 +28,30 @@ Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBrea
 
 Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactController::class)
     ->name('api.organizations.user-impact');
+
+// ---------------------------------------------------------------------------
+// WordPress Plugin API
+// ---------------------------------------------------------------------------
+// Authenticated via scoped API key: Authorization: Bearer <key>
+// The api.key middleware resolves the owning Agency and binds it to the
+// container. All routes require the `wordpress` scope.
+// ---------------------------------------------------------------------------
+Route::prefix('wordpress')
+    ->middleware('api.key:wordpress')
+    ->name('wordpress.')
+    ->group(function (): void {
+        Route::get('properties', WordPressPropertiesController::class)
+            ->name('properties');
+
+        Route::get('properties/{propertySlug}/issues', WordPressIssuesController::class)
+            ->name('properties.issues');
+
+        Route::get('properties/{propertySlug}/risk-summary', WordPressRiskSummaryController::class)
+            ->name('properties.risk-summary');
+
+        Route::post('properties/{propertySlug}/scans', WordPressScansController::class)
+            ->name('properties.scans');
+    });
 
 // ---------------------------------------------------------------------------
 // Tenant-scoped routes
@@ -44,13 +73,13 @@ Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactC
 //       ]);
 //   }
 // ---------------------------------------------------------------------------
-// Route::prefix('{tenant}')
-//     ->middleware('tenant')
-//     ->name('tenant.')
-//     ->group(function (): void {
-//         Route::get('risk-summary', AgencyRiskSummaryController::class)
-//             ->name('risk-summary');
-//     });
+Route::prefix('{tenant}')
+    ->middleware('tenant')
+    ->name('tenant.')
+    ->group(function (): void {
+        Route::get('risk-summary', AgencyRiskSummaryController::class)
+            ->name('risk-summary');
+    });
 
 Route::post('webhooks/integrations/{integration}', IntegrationWebhookController::class)
     ->name('api.webhooks.integrations');

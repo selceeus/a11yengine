@@ -49,7 +49,7 @@ enum IntegrationProvider: string
     public function supportsWebhooks(): bool
     {
         return match ($this) {
-            self::Jira, self::GitHub, self::Linear, self::Asana => true,
+            self::Jira, self::GitHub, self::Linear, self::Asana, self::Wrike => true,
             default => false,
         };
     }
