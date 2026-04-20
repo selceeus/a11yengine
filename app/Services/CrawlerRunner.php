@@ -10,25 +10,22 @@ class CrawlerRunner
 {
     /**
      * Run the Node.js axe-core crawler against the given URL and return the
-     * parsed page results.
+     * parsed results, including discovered page results and PDF URLs.
      *
-     * The crawler process is expected to write a JSON array to stdout where
-     * each element represents a single scanned page:
+     * The crawler process is expected to write a JSON object to stdout:
      *
      * ```json
-     * [
-     *   {
-     *     "url": "https://example.com/page",
-     *     "violations": [
-     *       { "id": "color-contrast", "impact": "serious", "nodes": [...] }
-     *     ]
-     *   }
-     * ]
+     * {
+     *   "pages": [
+     *     { "url": "https://example.com/page", "violations": [...] }
+     *   ],
+     *   "pdfs": ["https://example.com/doc.pdf"]
+     * }
      * ```
      *
      * @param  string  $url  The base URL to crawl.
      * @param  int  $timeout  Maximum seconds to wait for the process.
-     * @return array<int, array{url: string, violations: array<int, mixed>}>
+     * @return array{pages: array<int, array{url: string, violations: array<int, mixed>}>, pdfs: array<int, string>}
      *
      * @throws ScanProcessException When the process fails or returns invalid output.
      */
@@ -69,7 +66,7 @@ class CrawlerRunner
 
         $pages = json_decode($result->output(), true);
 
-        if (! is_array($pages)) {
+        if (! is_array($pages) || ! array_key_exists('pages', $pages) || ! array_key_exists('pdfs', $pages)) {
             throw new ScanProcessException(
                 'Crawler returned invalid JSON. Raw output: '.substr($result->output(), 0, 500),
             );

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'pdf_scanner' => [
+        'url' => env('PDF_SCANNER_URL', 'http://pdf-scanner:8080'),
+        'timeout' => env('PDF_SCANNER_TIMEOUT', 120),
+        'enabled' => env('PDF_SCANNER_ENABLED', false),
+    ],
+
 ];
