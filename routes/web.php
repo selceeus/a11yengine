@@ -37,6 +37,7 @@ use App\Http\Controllers\IssueClusterController;
 use App\Http\Controllers\IssueCommentController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\PdfDocumentController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RiskAdvisoryController;
 use App\Http\Controllers\ScanController;
@@ -206,6 +207,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('content-audit/{contentAudit}/export/{format}', [ContentAuditController::class, 'export'])
         ->name('content-audit.export')
         ->where('format', 'json|csv|pdf');
+
+    Route::get('pdf-documents/{pdfDocument}', [PdfDocumentController::class, 'show'])->name('pdf-documents.show');
 
     Route::get('scans/{scan}/export/{format}', [ScanController::class, 'export'])
         ->name('scans.export')

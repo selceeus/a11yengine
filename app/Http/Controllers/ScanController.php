@@ -10,6 +10,7 @@ use App\Jobs\RunScanJob;
 use App\Models\Agency;
 use App\Models\Finding;
 use App\Models\LighthouseResult;
+use App\Models\PdfDocument;
 use App\Models\Property;
 use App\Models\Scan;
 use App\Models\ScanMetric;
@@ -95,6 +96,7 @@ class ScanController extends Controller
         $scan->load([
             'property:id,name,base_url',
             'scanPages' => fn ($q) => $q->orderByDesc('violations_count'),
+            'pdfDocuments' => fn ($q) => $q->orderByDesc('created_at'),
         ]);
 
         $severityBreakdown = Finding::query()
@@ -195,6 +197,14 @@ class ScanController extends Controller
             'lighthouseResults' => $lighthouseResults,
             'delta' => $delta,
             'experiencePillars' => $experiencePillars,
+            'pdfDocuments' => $scan->pdfDocuments->map(fn (PdfDocument $doc) => [
+                'id' => $doc->id,
+                'url' => $doc->url,
+                'filename' => $doc->filename,
+                'status' => $doc->status->value,
+                'violation_count' => $doc->violation_count,
+                'scanned_at' => $doc->scanned_at?->toIso8601String(),
+            ]),
         ]);
     }
 

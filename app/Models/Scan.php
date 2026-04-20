@@ -72,4 +72,9 @@ class Scan extends Model
     {
         return $this->hasMany(ScanPage::class);
     }
+
+    public function pdfDocuments(): HasMany
+    {
+        return $this->hasMany(PdfDocument::class);
+    }
 }
