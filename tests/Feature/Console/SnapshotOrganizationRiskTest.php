@@ -3,8 +3,6 @@
 use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\OrganizationRiskSnapshot;
-use App\Models\Property;
-use App\Models\PropertyRiskSnapshot;
 
 it('creates one snapshot per organization', function (): void {
     $agency = Agency::factory()->create();

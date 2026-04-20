@@ -132,4 +132,3 @@ it('Agency risk summary: does not leak data from another agency', function (): v
         ->assertJsonPath('risk_score', null)
         ->assertJsonPath('open_issue_count', null);
 });
-

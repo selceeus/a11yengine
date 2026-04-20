@@ -22,7 +22,7 @@ class SnapshotOrganizationRisk extends Command
             return self::SUCCESS;
         }
 
-        $this->info("Recording organization risk snapshots...");
+        $this->info('Recording organization risk snapshots...');
         $bar = $this->output->createProgressBar($organizations->count());
         $bar->start();
 

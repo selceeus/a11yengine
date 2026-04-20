@@ -49,4 +49,3 @@ class WordPressScansController extends Controller
         ], 201);
     }
 }
-

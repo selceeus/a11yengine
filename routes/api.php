@@ -2,14 +2,14 @@
 
 use App\Http\Controllers\Api\AgencyRiskSummaryController;
 use App\Http\Controllers\Api\IntegrationWebhookController;
-use App\Http\Controllers\Api\TenantGovernanceSummaryController;
-use App\Http\Controllers\Api\TenantIssueSummaryController;
-use App\Http\Controllers\Api\TenantScanActivityController;
 use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
 use App\Http\Controllers\Api\OrganizationRiskSummaryController;
 use App\Http\Controllers\Api\OrganizationUserImpactController;
+use App\Http\Controllers\Api\TenantGovernanceSummaryController;
+use App\Http\Controllers\Api\TenantIssueSummaryController;
+use App\Http\Controllers\Api\TenantScanActivityController;
 use App\Http\Controllers\Api\WordPressIssuesController;
 use App\Http\Controllers\Api\WordPressPropertiesController;
 use App\Http\Controllers\Api\WordPressRiskSummaryController;

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Domain\Risk\GetOrganizationRiskSummary;
 use App\Http\Controllers\Controller;
 use App\Models\Agency;
 use App\Models\AgencyRiskSnapshot;
