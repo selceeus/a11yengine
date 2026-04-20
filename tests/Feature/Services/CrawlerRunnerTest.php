@@ -16,13 +16,15 @@ use Illuminate\Support\Facades\Process;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
- * Make a fake Process result that outputs the given pages as JSON.
+ * Make a fake Process result that outputs the given pages as JSON in the new
+ * { pages: [...], pdfs: [...] } envelope that the updated crawler emits.
  *
  * @param  array<int, mixed>  $pages
+ * @param  array<int, string>  $pdfs
  */
-function crawlerOutput(array $pages): void
+function crawlerOutput(array $pages, array $pdfs = []): void
 {
-    Process::fake(['*' => Process::result(json_encode($pages))]);
+    Process::fake(['*' => Process::result(json_encode(['pages' => $pages, 'pdfs' => $pdfs]))]);
 }
 
 /**
@@ -120,12 +122,13 @@ it('applies the supplied timeout to the process', function (): void {
 
 // ─── Return value ─────────────────────────────────────────────────────────────
 
-it('returns an empty array when the crawler reports no pages', function (): void {
+it('returns an array with empty pages and pdfs when the crawler reports no pages', function (): void {
     crawlerOutput([]);
 
     $result = $this->runner->run('https://example.com', 60);
 
-    expect($result)->toBeArray()->toBeEmpty();
+    expect($result['pages'])->toBeArray()->toBeEmpty()
+        ->and($result['pdfs'])->toBeArray()->toBeEmpty();
 });
 
 it('returns the parsed page results array on success', function (): void {
@@ -136,10 +139,10 @@ it('returns the parsed page results array on success', function (): void {
 
     $result = $this->runner->run('https://example.com', 60);
 
-    expect($result)->toHaveCount(2)
-        ->and($result[0]['url'])->toBe('https://example.com/')
-        ->and($result[0]['violations'])->toHaveCount(1)
-        ->and($result[1]['url'])->toBe('https://example.com/about');
+    expect($result['pages'])->toHaveCount(2)
+        ->and($result['pages'][0]['url'])->toBe('https://example.com/')
+        ->and($result['pages'][0]['violations'])->toHaveCount(1)
+        ->and($result['pages'][1]['url'])->toBe('https://example.com/about');
 });
 
 it('preserves violation id, impact, tags, and nodes from the crawler output', function (): void {
@@ -147,7 +150,7 @@ it('preserves violation id, impact, tags, and nodes from the crawler output', fu
 
     $result = $this->runner->run('https://example.com', 60);
 
-    $v = $result[0]['violations'][0];
+    $v = $result['pages'][0]['violations'][0];
     expect($v['id'])->toBe('image-alt')
         ->and($v['impact'])->toBe('critical')
         ->and($v['tags'])->toContain('wcag2a');
@@ -190,6 +193,13 @@ it('throws ScanProcessException when the crawler returns non-JSON stdout', funct
         ->toThrow(ScanProcessException::class, 'invalid JSON');
 });
 
+it('throws ScanProcessException when the crawler returns a plain JSON array (missing envelope)', function (): void {
+    Process::fake(['*' => Process::result('[]')]);
+
+    expect(fn () => $this->runner->run('https://example.com', 60))
+        ->toThrow(ScanProcessException::class, 'invalid JSON');
+});
+
 it('throws ScanProcessException when the crawler returns a bare JSON string', function (): void {
     Process::fake(['*' => Process::result('"just a string"')]);
 
@@ -213,6 +223,18 @@ it('includes up to 500 chars of raw output in the invalid JSON exception message
     } catch (ScanProcessException $e) {
         expect(mb_strlen($e->getMessage()))->toBeLessThan(600);
     }
+});
+
+it('returns the discovered pdf urls in the pdfs key', function (): void {
+    crawlerOutput(
+        [pageResult('https://example.com/')],
+        ['https://example.com/report.pdf', 'https://example.com/guide.pdf'],
+    );
+
+    $result = $this->runner->run('https://example.com', 60);
+
+    expect($result['pdfs'])->toHaveCount(2)
+        ->and($result['pdfs'][0])->toBe('https://example.com/report.pdf');
 });
 
 // ─── Full pipeline: CrawlerRunner → ProcessHtmlScan ──────────────────────────
@@ -255,7 +277,7 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
 
         $pages = $this->runner->run($this->property->base_url, 60);
 
-        foreach ($pages as $page) {
+        foreach ($pages['pages'] as $page) {
             $this->processHtmlScan->handle($this->scan, $page);
         }
 
@@ -275,7 +297,7 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
 
         $pages = $this->runner->run($this->property->base_url, 60);
 
-        foreach ($pages as $page) {
+        foreach ($pages['pages'] as $page) {
             $this->processHtmlScan->handle($this->scan, $page);
         }
 
@@ -295,7 +317,7 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
 
         $pages = $this->runner->run($this->property->base_url, 60);
 
-        foreach ($pages as $page) {
+        foreach ($pages['pages'] as $page) {
             $this->processHtmlScan->handle($this->scan, $page);
         }
 
@@ -318,7 +340,7 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
 
         $pages = $this->runner->run($this->property->base_url, 60);
 
-        foreach ($pages as $page) {
+        foreach ($pages['pages'] as $page) {
             $scanPage = $this->processHtmlScan->handle($this->scan, $page);
             $pagesScanned++;
             $totalViolations += $scanPage->violations_count;
@@ -339,7 +361,7 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
 
         $this->scanDomain->start($this->scan);
 
-        foreach ($this->runner->run($this->property->base_url, 60) as $page) {
+        foreach ($this->runner->run($this->property->base_url, 60)['pages'] as $page) {
             $this->processHtmlScan->handle($this->scan, $page);
         }
 
@@ -355,13 +377,13 @@ describe('pipeline: crawler JSON → ProcessHtmlScan → database', function ():
         $pageData = pageResult('https://example.com/', [violation('color-contrast', 'serious')]);
 
         crawlerOutput([$pageData]);
-        foreach ($this->runner->run($this->property->base_url, 60) as $page) {
+        foreach ($this->runner->run($this->property->base_url, 60)['pages'] as $page) {
             $this->processHtmlScan->handle($this->scan, $page);
         }
 
         // Second scan against the same page — issue should be incremented, not duplicated
         crawlerOutput([$pageData]);
-        foreach ($this->runner->run($this->property->base_url, 60) as $page) {
+        foreach ($this->runner->run($this->property->base_url, 60)['pages'] as $page) {
             $this->processHtmlScan->handle($scan2, $page);
         }
 

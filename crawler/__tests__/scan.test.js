@@ -151,16 +151,19 @@ describe('scan — single page', () => {
         expect(runAxe).toHaveBeenCalledWith(mockPage, config.axe);
     });
 
-    test('writes a JSON array to stdout containing the page result', async () => {
+    test('writes a JSON object with pages and pdfs arrays to stdout', async () => {
         const violations = [{ id: 'image-alt', impact: 'critical', nodes: [] }];
         runAxe.mockResolvedValue({ url: 'https://example.com/', violations });
 
         await scan();
 
         const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
-        expect(written).toHaveLength(1);
-        expect(written[0].url).toBe('https://example.com/');
-        expect(written[0].violations).toEqual(violations);
+        expect(written).toHaveProperty('pages');
+        expect(written).toHaveProperty('pdfs');
+        expect(written.pages).toHaveLength(1);
+        expect(written.pages[0].url).toBe('https://example.com/');
+        expect(written.pages[0].violations).toEqual(violations);
+        expect(written.pdfs).toEqual([]);
     });
 
     test('calls process.exit(0) after a successful scan', async () => {
@@ -237,8 +240,8 @@ describe('scan — HTTP responses', () => {
         expect(runAxe).not.toHaveBeenCalled();
 
         const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
-        expect(written).toHaveLength(1);
-        expect(written[0]).toMatchObject({ error: true, httpStatus: 404 });
+        expect(written.pages).toHaveLength(1);
+        expect(written.pages[0]).toMatchObject({ error: true, httpStatus: 404 });
     });
 
     test('skips pages that return no response', async () => {
@@ -300,9 +303,9 @@ describe('scan — stdout JSON contract', () => {
         await scan();
 
         const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
-        expect(Array.isArray(written)).toBe(true);
-        expect(written).toHaveLength(1);
-        expect(written[0]).toMatchObject({ error: true, httpStatus: 500 });
+        expect(Array.isArray(written.pages)).toBe(true);
+        expect(written.pages).toHaveLength(1);
+        expect(written.pages[0]).toMatchObject({ error: true, httpStatus: 500 });
     });
 
     test('each result contains url and violations keys', async () => {
@@ -314,8 +317,8 @@ describe('scan — stdout JSON contract', () => {
         await scan();
 
         const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
-        expect(written[0]).toHaveProperty('url');
-        expect(written[0]).toHaveProperty('violations');
+        expect(written.pages[0]).toHaveProperty('url');
+        expect(written.pages[0]).toHaveProperty('violations');
     });
 
     test('output is valid JSON', async () => {

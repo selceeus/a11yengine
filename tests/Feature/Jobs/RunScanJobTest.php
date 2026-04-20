@@ -21,10 +21,11 @@ use Illuminate\Support\Facades\Queue;
  * Configure a fake Process that returns the given page results as JSON.
  *
  * @param  array<int, array{url: string, violations: array<int, mixed>}>  $pages
+ * @param  array<int, string>  $pdfs
  */
-function fakeCrawler(array $pages = []): void
+function fakeCrawler(array $pages = [], array $pdfs = []): void
 {
-    Process::fake(['*' => Process::result(json_encode($pages))]);
+    Process::fake(['*' => Process::result(json_encode(['pages' => $pages, 'pdfs' => $pdfs]))]);
 }
 
 /**

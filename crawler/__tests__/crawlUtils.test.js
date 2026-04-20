@@ -1,6 +1,6 @@
 'use strict';
 
-const { normaliseUrl, isSameDomain, extractLinks, isAllowedByRobots } = require('../crawlUtils');
+const { normaliseUrl, isSameDomain, extractLinks, extractPdfLinks, isAllowedByRobots } = require('../crawlUtils');
 
 // ─── normaliseUrl ─────────────────────────────────────────────────────────────
 
@@ -175,5 +175,83 @@ describe('isAllowedByRobots', () => {
     test('returns true when Disallow is empty (allows all)', () => {
         const robots = 'User-agent: *\nDisallow: ';
         expect(isAllowedByRobots(robots, 'https://example.com/page')).toBe(true);
+    });
+});
+
+// ─── extractPdfLinks ───────────────────────────────────────────────────────────────────────
+
+describe('extractPdfLinks', () => {
+    /** @type {{ $$eval: jest.Mock }} */
+    let mockPage;
+
+    beforeEach(() => {
+        mockPage = { $$eval: jest.fn() };
+    });
+
+    test('returns same-domain PDF hrefs', async () => {
+        mockPage.$$eval.mockResolvedValue([
+            'https://example.com/report.pdf',
+            'https://example.com/guide.pdf',
+        ]);
+
+        const pdfs = await extractPdfLinks(mockPage, 'https://example.com');
+
+        expect(pdfs).toEqual([
+            'https://example.com/report.pdf',
+            'https://example.com/guide.pdf',
+        ]);
+    });
+
+    test('filters out non-PDF hrefs', async () => {
+        mockPage.$$eval.mockResolvedValue([
+            'https://example.com/report.pdf',
+            'https://example.com/about',
+            'https://example.com/image.png',
+        ]);
+
+        const pdfs = await extractPdfLinks(mockPage, 'https://example.com');
+
+        expect(pdfs).toEqual(['https://example.com/report.pdf']);
+    });
+
+    test('filters out cross-domain PDF links', async () => {
+        mockPage.$$eval.mockResolvedValue([
+            'https://example.com/local.pdf',
+            'https://external.com/external.pdf',
+        ]);
+
+        const pdfs = await extractPdfLinks(mockPage, 'https://example.com');
+
+        expect(pdfs).toEqual(['https://example.com/local.pdf']);
+    });
+
+    test('deduplicates identical PDF URLs', async () => {
+        mockPage.$$eval.mockResolvedValue([
+            'https://example.com/report.pdf',
+            'https://example.com/report.pdf',
+        ]);
+
+        const pdfs = await extractPdfLinks(mockPage, 'https://example.com');
+
+        expect(pdfs).toHaveLength(1);
+        expect(pdfs[0]).toBe('https://example.com/report.pdf');
+    });
+
+    test('matches PDF URLs with query strings', async () => {
+        mockPage.$$eval.mockResolvedValue([
+            'https://example.com/report.pdf?v=2',
+        ]);
+
+        const pdfs = await extractPdfLinks(mockPage, 'https://example.com');
+
+        expect(pdfs).toEqual(['https://example.com/report.pdf?v=2']);
+    });
+
+    test('returns an empty array when there are no PDF links', async () => {
+        mockPage.$$eval.mockResolvedValue([]);
+
+        const pdfs = await extractPdfLinks(mockPage, 'https://example.com');
+
+        expect(pdfs).toEqual([]);
     });
 });
