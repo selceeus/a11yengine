@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Head, Link, usePoll } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
+import PdfDocumentController from '@/actions/App/Http/Controllers/PdfDocumentController';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
@@ -67,6 +68,15 @@ type ExperiencePillars = {
     seo_score: number | null;
 } | null;
 
+type PdfDocument = {
+    id: number;
+    url: string;
+    filename: string | null;
+    status: 'pending' | 'scanning' | 'completed' | 'failed';
+    violation_count: number;
+    scanned_at: string | null;
+};
+
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
     serious: 'bg-orange-500',
@@ -92,6 +102,15 @@ function pageStatusVariant(status: ScanPage['status']): 'default' | 'destructive
     return status === 'completed' ? 'default' : 'destructive';
 }
 
+function pdfStatusVariant(status: PdfDocument['status']): 'default' | 'secondary' | 'destructive' | 'outline' {
+    switch (status) {
+        case 'completed': return 'default';
+        case 'scanning': return 'secondary';
+        case 'failed': return 'destructive';
+        default: return 'outline';
+    }
+}
+
 export default function Show({
     scan,
     severityBreakdown,
@@ -99,6 +118,7 @@ export default function Show({
     lighthouseResults,
     delta,
     experiencePillars,
+    pdfDocuments,
 }: {
     scan: Scan;
     severityBreakdown: SeverityRow[];
@@ -106,10 +126,11 @@ export default function Show({
     lighthouseResults: LighthouseResult[];
     delta: Delta | null;
     experiencePillars: ExperiencePillars;
+    pdfDocuments: PdfDocument[];
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
-    const [tab, setTab] = useState<'wcag' | 'lighthouse'>('wcag');
+    const [tab, setTab] = useState<'wcag' | 'lighthouse' | 'pdfs'>('wcag');
     const [lighthouseFormFactor, setLighthouseFormFactor] = useState<'mobile' | 'desktop'>('mobile');
 
     const mobileLighthouse = lighthouseResults.filter((r) => r.form_factor === 'mobile');
@@ -354,13 +375,21 @@ export default function Show({
                 {/* Tabbed results — only shown once completed */}
                 {scan.status === 'completed' && (
                     <div className="flex flex-col gap-4">
-                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'lighthouse')}>
+                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'lighthouse' | 'pdfs')}>
                             <TabsList>
                                 <TabsTrigger value="wcag">WCAG Scores</TabsTrigger>
                                 <TabsTrigger value="lighthouse" disabled={lighthouseResults.length === 0}>
                                     Lighthouse Scores
                                     {lighthouseResults.length === 0 && (
                                         <span className="ml-1.5 text-xs opacity-50">(none)</span>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger value="pdfs">
+                                    PDFs
+                                    {pdfDocuments.length > 0 && (
+                                        <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                                            {pdfDocuments.length}
+                                        </span>
                                     )}
                                 </TabsTrigger>
                             </TabsList>
@@ -497,6 +526,57 @@ export default function Show({
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* PDFs tab */}
+                        {tab === 'pdfs' && (
+                            pdfDocuments.length > 0 ? (
+                                <div className="rounded-xl border">
+                                    <table className="w-full text-sm">
+                                        <caption className="px-4 py-3">PDF Documents</caption>
+                                        <thead className="border-b bg-muted/50">
+                                            <tr className="text-xs text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">File</th>
+                                                <th className="px-4 py-3 text-left font-medium">Status</th>
+                                                <th className="px-4 py-3 text-right font-medium">Violations</th>
+                                                <th className="px-4 py-3 text-right font-medium">Scanned</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {pdfDocuments.map((doc) => (
+                                                <tr key={doc.id} className="transition-colors hover:bg-muted/30">
+                                                    <td className="max-w-sm px-4 py-3">
+                                                        <Link
+                                                            href={PdfDocumentController.show(doc.id).url}
+                                                            className="font-mono text-xs hover:underline"
+                                                        >
+                                                            {doc.filename ?? doc.url}
+                                                        </Link>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge variant={pdfStatusVariant(doc.status)} className="capitalize">
+                                                            {doc.status === 'scanning' && (
+                                                                <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-current" />
+                                                            )}
+                                                            {doc.status}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {doc.status === 'completed' ? doc.violation_count : '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                                                        {doc.scanned_at ? new Date(doc.scanned_at).toLocaleTimeString() : '—'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                                    No PDF documents were discovered during this scan.
+                                </div>
+                            )
                         )}
                     </div>
                 )}
