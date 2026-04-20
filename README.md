@@ -6,7 +6,8 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 ## Features
 
-- **Automated Crawling & Scanning** — Discovers all pages on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
+- **Automated Crawling & Scanning** — Discovers all pages and PDF documents on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
+- **PDF Accessibility Scanning** — Automatically discovers linked PDFs during a crawl and audits each document against six WCAG 2.1 criteria (tagged content, title, language, image-only, bookmarks, figure alt text) via a dedicated FastAPI microservice; violations are stored with rule key, severity, WCAG criterion, description, and page number
 - **Issue Deduplication & Tracking** — Aggregates raw findings into unique, trackable issues with occurrence counts, severity, WCAG category, tags, element HTML, help URLs, and lifecycle status (`open` → `in_progress` → `resolved`)
 - **Issue Activity Log** — Full audit trail per issue: status changes, assignments, due date updates, bulk actions, and threaded comments
 - **Scan Diff** — Side-by-side comparison of two scans showing new, resolved, and persisting findings
@@ -24,6 +25,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 - **Notification Webhook Routing** — Route the same notification categories to Slack (Block Kit), Microsoft Teams (Adaptive Cards), or Discord (embeds) webhooks; URLs are stored encrypted at rest
 - **MCP Server** — Model Context Protocol endpoint exposing issues, risk summaries, scan findings, remediation guidance, compliance status, legal risk, and a real-time pending-alerts feed to any MCP-compatible AI tool; includes tools to trigger scans and update issue status
 - **Scoped API Keys** — Machine-to-machine keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients
+- **WordPress Plugin API** — Dedicated REST endpoints (`GET /api/wordpress/properties`, `/issues`, `/risk-summary`, `POST /api/wordpress/scans`) authenticated via scoped `wordpress` API keys
 - **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly tenant-isolated
 - **Six-Role RBAC** — SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, and Viewer roles assignable at any scope level
 - **Team Management** — Invite team members via 7-day email tokens with role pre-assignment and forced password reset on first login
@@ -73,10 +75,12 @@ Agency
             ├── Issue             (deduplicated, tracked violation)
             │   ├── IssueActivity (comment / status / assignment log)
             │   └── IssueLink     (linked external PM ticket)
-            └── LighthouseResult  (performance metrics)
+            ├── LighthouseResult  (performance metrics)
+            └── PdfDocument       (discovered PDF link)
+                └── PdfViolation  (WCAG finding within the PDF)
 ```
 
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
+Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages and PDF documents, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. For each discovered PDF, a `PdfDocument` record is created and `ScanPdfJob` is dispatched to the dedicated `pdf` queue, which calls the FastAPI PDF scanner microservice and stores any `PdfViolation` records. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
 
 The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
 
@@ -177,6 +181,14 @@ composer run dev
 | `LIGHTHOUSE_TIMEOUT`     | Max seconds per Lighthouse run (default: `120`)           |
 | `LIGHTHOUSE_ENABLED`     | Toggle Lighthouse performance audits on/off               |
 | `LIGHTHOUSE_CHROME_PATH` | Path to Chromium executable used by Lighthouse (optional) |
+
+### PDF Scanner
+
+| Variable               | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `PDF_SCANNER_URL`      | Base URL of the FastAPI PDF scanner microservice            |
+| `PDF_SCANNER_TIMEOUT`  | Max seconds per PDF scan request (default: `120`)           |
+| `PDF_SCANNER_ENABLED`  | Enable PDF accessibility scanning (`true` / `false`)        |
 
 ---
 
@@ -319,7 +331,33 @@ Delivery is handled by `SendWebhookNotificationJob` (queued, 3 attempts, 30 s / 
 
 ### Risk Scoring
 
-Weighted risk scores are calculated and snapshotted at three levels: `PropertyRiskSnapshot`, `OrganizationRiskSnapshot`, and `AgencyRiskSnapshot`. These snapshots power trend charts and governance reports.
+Weighted risk scores are calculated and snapshotted at three levels: `PropertyRiskSnapshot`, `OrganizationRiskSnapshot`, and `AgencyRiskSnapshot`. These snapshots power trend charts and governance reports. All three snapshot tiers run on a daily schedule via dedicated Artisan commands (`snapshots:property-risk`, `snapshots:organization-risk`, `snapshots:agency-risk`).
+
+### WordPress Plugin API
+
+A dedicated API surface under `/api/wordpress/` provides everything a WordPress plugin needs to surface accessibility data in the CMS. All endpoints require a `wordpress`-scoped API key.
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/wordpress/properties` | `GET` | List properties the key has access to |
+| `/api/wordpress/properties/{slug}/issues` | `GET` | Recent open issues for a property |
+| `/api/wordpress/properties/{slug}/risk-summary` | `GET` | Current risk score and snapshot data |
+| `/api/wordpress/properties/{slug}/scans` | `POST` | Trigger a new accessibility scan |
+
+### PDF Accessibility Scanning
+
+During each crawl the Node.js crawler collects all PDF links on the same domain. After the page batch completes, a `ScanPdfJob` is dispatched per PDF to the dedicated `pdf` queue. The job calls the FastAPI microservice (`pdf-scanner/`) which downloads the PDF and runs six pypdf-based WCAG checks:
+
+| Rule key | WCAG Criterion | Severity |
+| --- | --- | --- |
+| `pdf/untagged` | 1.3.1 | Critical |
+| `pdf/no-title` | 2.4.2 | Serious |
+| `pdf/no-language` | 3.1.1 | Serious |
+| `pdf/image-only` | 1.1.1 | Critical |
+| `pdf/no-bookmarks` | 2.4.5 | Moderate |
+| `pdf/figure-no-alt` | 1.1.1 | Serious |
+
+Violations are stored as `PdfViolation` records linked to the `PdfDocument`. Results are viewable in the scan detail page (PDFs tab) and at `/pdf-documents/{id}`. The feature is disabled by default and enabled via `PDF_SCANNER_ENABLED=true`.
 
 ---
 
@@ -396,6 +434,7 @@ Reports can be exported via the `Exportable` concern:
 | `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | —                            | —       |
 | `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff)       | 300s    |
 | `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff)       | —       |
+| `ScanPdfJob`                  | Downloads a PDF and runs WCAG checks via the FastAPI microservice; stores PdfViolation records      | 2 (30s / 60s backoff)        | 120s    |
 | `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                          | 3 (30s / 60s backoff)        | —       |
 | `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                 | 3 (30s / 60s / 120s backoff) | 120s    |
 | `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                | 3 (30s / 60s / 120s backoff) | 120s    |
@@ -409,7 +448,9 @@ Reports can be exported via the `Exportable` concern:
 | ----------------------------------------- | --------------------------------------------------------------------------- |
 | `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                                         |
 | `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min                       |
-| `php artisan snapshots:agency-risk`       | Record a point-in-time agency risk snapshot                                 |
+| `php artisan snapshots:property-risk`     | Record a point-in-time risk snapshot for every property                     |
+| `php artisan snapshots:organization-risk` | Record a point-in-time risk snapshot for every organisation                 |
+| `php artisan snapshots:agency-risk`       | Record a point-in-time risk snapshot for every agency                       |
 | `php artisan governance:generate-reports` | Generate scheduled governance reports                                       |
 | `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users                        |
 | `php artisan app:backfill-user-roles`     | Populate historical user role records                                       |
@@ -433,14 +474,27 @@ node crawler/scan.js <url> \
   [--exclude <pattern>]...
 ```
 
-It uses headless Playwright to crawl the target domain, respects `robots.txt` and domain boundaries, and outputs per-page axe-core results as JSON to stdout. All diagnostic output is written to stderr only.
+It uses headless Playwright to crawl the target domain, respects `robots.txt` and domain boundaries, and outputs a JSON object to stdout with two keys: `pages` (per-page axe-core results) and `pdfs` (deduplicated list of discovered PDF URLs on the same domain). All diagnostic output is written to stderr only.
 
 | File                    | Purpose                                                |
 | ----------------------- | ------------------------------------------------------ |
 | `crawler/scan.js`       | Main entry point                                       |
 | `crawler/axeRunner.js`  | axe-core audit execution                               |
-| `crawler/crawlUtils.js` | URL normalisation, link extraction, robots.txt parsing |
+| `crawler/crawlUtils.js` | URL normalisation, link extraction, PDF link extraction, robots.txt parsing |
 | `crawler/config.js`     | Playwright/axe configuration (environment-driven)      |
+
+### PDF Scanner Microservice
+
+A standalone FastAPI service in `pdf-scanner/` handles PDF analysis. It exposes:
+
+- `POST /scan` — accepts `{url}`, downloads the PDF, runs WCAG checks, returns `{violations: [...]}`
+- `GET /health` — readiness probe
+
+The service is containerised via Docker and declared in `docker-compose.yml` (port 8080). Run it with:
+
+```bash
+docker compose up pdf-scanner
+```
 
 ---
 
@@ -502,6 +556,7 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 | `config/crawler.php`    | Crawler timeout, max depth, max pages                        |
 | `config/lighthouse.php` | Lighthouse binary path, timeout, feature flag, Chrome path   |
 | `config/fortify.php`    | Authentication feature flags (2FA, email verification, etc.) |
+| `config/services.php`   | External service configuration including `pdf_scanner` (url, timeout, enabled) |
 
 ---
 
