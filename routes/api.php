@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AgencyRiskSummaryController;
 use App\Http\Controllers\Api\IntegrationWebhookController;
+use App\Http\Controllers\Api\TenantGovernanceSummaryController;
+use App\Http\Controllers\Api\TenantIssueSummaryController;
+use App\Http\Controllers\Api\TenantScanActivityController;
 use App\Http\Controllers\Api\OrganizationGovernanceReportController;
 use App\Http\Controllers\Api\OrganizationRiskBreakdownController;
 use App\Http\Controllers\Api\OrganizationRiskController;
@@ -74,11 +77,20 @@ Route::prefix('wordpress')
 //   }
 // ---------------------------------------------------------------------------
 Route::prefix('{tenant}')
-    ->middleware('tenant')
+    ->middleware(['tenant', 'api.key:scans:read'])
     ->name('tenant.')
     ->group(function (): void {
         Route::get('risk-summary', AgencyRiskSummaryController::class)
             ->name('risk-summary');
+
+        Route::get('scan-activity', TenantScanActivityController::class)
+            ->name('scan-activity');
+
+        Route::get('issues', TenantIssueSummaryController::class)
+            ->name('issues');
+
+        Route::get('governance-summary', TenantGovernanceSummaryController::class)
+            ->name('governance-summary');
     });
 
 Route::post('webhooks/integrations/{integration}', IntegrationWebhookController::class)
