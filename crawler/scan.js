@@ -2,7 +2,7 @@
 
 const { chromium } = require('playwright');
 const config = require('./config');
-const { normaliseUrl, isSameDomain, extractLinks, fetchRobotsTxt, isAllowedByRobots } = require('./crawlUtils');
+const { normaliseUrl, isSameDomain, extractLinks, extractPdfLinks, fetchRobotsTxt, isAllowedByRobots } = require('./crawlUtils');
 const { runAxe } = require('./axeRunner');
 
 /**
@@ -127,6 +127,9 @@ async function scan() {
     /** @type {Array<{url: string, violations: object[]}>} */
     const results = [];
 
+    /** @type {Set<string>} Deduplicated set of PDF URLs discovered during the crawl. */
+    const discoveredPdfs = new Set();
+
     try {
         while (queue.length > 0 && visited.size < maxPages) {
             const { url, depth } = queue.shift();
@@ -170,6 +173,11 @@ async function scan() {
 
                 if (depth < maxDepth) {
                     const links = await extractLinks(page, baseUrl);
+                    const pdfLinks = await extractPdfLinks(page, baseUrl);
+
+                    for (const pdf of pdfLinks) {
+                        discoveredPdfs.add(pdf);
+                    }
 
                     for (const link of links) {
                         if (
@@ -193,7 +201,7 @@ async function scan() {
         await browser.close();
     }
 
-    process.stdout.write(JSON.stringify(results));
+    process.stdout.write(JSON.stringify({ pages: results, pdfs: [...discoveredPdfs] }));
     process.exit(0);
 }
 

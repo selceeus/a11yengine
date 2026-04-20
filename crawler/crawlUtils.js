@@ -172,4 +172,36 @@ async function extractLinks(page, baseUrl) {
     return links;
 }
 
-module.exports = { normaliseUrl, isSameDomain, extractLinks, fetchRobotsTxt, isAllowedByRobots };
+/**
+ * Extract all unique, same-domain PDF hrefs from a Playwright page.
+ *
+ * @param {import('playwright').Page} page
+ * @param {string} baseUrl
+ * @returns {Promise<string[]>}
+ */
+async function extractPdfLinks(page, baseUrl) {
+    const hrefs = await page.$$eval('a[href]', (anchors) =>
+        anchors.map((a) => a.href)
+    );
+
+    const seen = new Set();
+    const links = [];
+
+    for (const href of hrefs) {
+        const normalised = normaliseUrl(href);
+
+        if (
+            !seen.has(normalised) &&
+            isSameDomain(baseUrl, normalised) &&
+            /^https?:\/\//i.test(normalised) &&
+            /\.pdf(\?.*)?$/i.test(normalised)
+        ) {
+            seen.add(normalised);
+            links.push(normalised);
+        }
+    }
+
+    return links;
+}
+
+module.exports = { normaliseUrl, isSameDomain, extractLinks, extractPdfLinks, fetchRobotsTxt, isAllowedByRobots };
