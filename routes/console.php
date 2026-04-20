@@ -8,6 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Schedule::command('snapshots:property-risk')->daily();
+Schedule::command('snapshots:organization-risk')->daily();
 Schedule::command('snapshots:agency-risk')->daily();
 Schedule::command('scans:run-scheduled')->everyMinute();
 Schedule::command('scans:expire-stuck')->everyFiveMinutes();
