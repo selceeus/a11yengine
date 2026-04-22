@@ -50,17 +50,31 @@ class WrikeProvider implements ProjectManagementProvider
 
     public function verifyWebhook(Integration $integration, Request $request): bool
     {
-        return true;
+        $secretKey = $integration->settings['webhook_secret'] ?? null;
+
+        if (empty($secretKey)) {
+            return false;
+        }
+
+        $signature = $request->header('X-Wrike-Signature', '');
+        $expected = base64_encode(hash_hmac('sha256', $request->getContent(), $secretKey, true));
+
+        return hash_equals($expected, $signature);
     }
 
     public function parseWebhookStatus(Request $request): string
     {
-        return $request->input('data.0.status', '');
+        $eventType = $request->input('0.eventType', '');
+
+        return match ($eventType) {
+            'TaskFinished' => 'completed',
+            default => strtolower($eventType),
+        };
     }
 
     public function parseWebhookExternalId(Request $request): string
     {
-        return $request->input('data.0.id', '');
+        return (string) $request->input('0.taskId', '');
     }
 
     public function testConnection(Integration $integration): array

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Domain\Integrations\Actions\DeleteWrikeWebhook;
+use App\Domain\Integrations\Actions\RegisterWrikeWebhook;
 use App\Domain\Integrations\IntegrationProviderRegistry;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
@@ -61,9 +63,9 @@ class IntegrationController extends Controller
 
         $provider = IntegrationProvider::from($request->input('provider'));
 
-        $agency = app('currentAgency');
+        $agency = currentAgency();
 
-        Integration::create([
+        $integration = Integration::create([
             'agency_id' => $agency->id,
             'property_id' => $request->input('property_id'),
             'provider' => $provider,
@@ -72,11 +74,23 @@ class IntegrationController extends Controller
             'status' => IntegrationStatus::Active,
         ]);
 
+        if ($provider === IntegrationProvider::Wrike) {
+            (new RegisterWrikeWebhook)($integration);
+        }
+
         return redirect()->route('integrations.index');
     }
 
     public function destroy(Integration $integration): RedirectResponse
     {
+        if ($integration->provider === IntegrationProvider::Wrike) {
+            try {
+                (new DeleteWrikeWebhook)($integration);
+            } catch (\Throwable) {
+                // Best-effort: do not block deletion if Wrike API is unreachable.
+            }
+        }
+
         $integration->delete();
 
         return redirect()->route('integrations.index');
