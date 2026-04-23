@@ -71,7 +71,23 @@ class NotionProvider implements ProjectManagementProvider
 
     public function verifyWebhook(Integration $integration, Request $request): bool
     {
-        return true;
+        $creds = $integration->credentials;
+        $secret = $creds['webhook_secret'] ?? null;
+
+        if (empty($secret)) {
+            return true;
+        }
+
+        $signature = $request->header('X-Notion-Signature', '');
+
+        if (empty($signature)) {
+            return false;
+        }
+
+        // Notion sends "sha256=<hex_digest>" in the X-Notion-Signature header.
+        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $secret);
+
+        return hash_equals($expected, $signature);
     }
 
     public function parseWebhookStatus(Request $request): string

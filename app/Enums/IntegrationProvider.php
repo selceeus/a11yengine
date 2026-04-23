@@ -115,6 +115,7 @@ enum IntegrationProvider: string
             self::Notion => [
                 ['key' => 'integration_token', 'label' => 'Integration Token', 'type' => 'password', 'required' => true],
                 ['key' => 'database_id', 'label' => 'Database ID', 'type' => 'text', 'required' => true],
+                ['key' => 'webhook_secret', 'label' => 'Webhook Secret', 'type' => 'password', 'required' => false],
             ],
             self::Basecamp => [
                 ['key' => 'access_token', 'label' => 'Access Token', 'type' => 'password', 'required' => true],

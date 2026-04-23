@@ -78,10 +78,44 @@ it('Notion: archives the page to close it', function (): void {
 
 // ── verifyWebhook ─────────────────────────────────────────────────────────────
 
-it('Notion: always returns true for webhook verification', function (): void {
-    $request = new Request;
+it('Notion: returns true when no webhook_secret is configured', function (): void {
+    $request = Request::create('/webhook', 'POST');
 
     expect($this->provider->verifyWebhook($this->integration, $request))->toBeTrue();
+});
+
+it('Notion: returns true when signature matches HMAC-SHA256 of the body', function (): void {
+    $secret = 'my-notion-secret';
+    $body = '{"event":"test"}';
+    $signature = 'sha256='.hash_hmac('sha256', $body, $secret);
+
+    $this->integration->credentials = array_merge($this->integration->credentials, [
+        'webhook_secret' => $secret,
+    ]);
+
+    $request = Request::create('/webhook', 'POST', [], [], [], ['HTTP_X_NOTION_SIGNATURE' => $signature], $body);
+
+    expect($this->provider->verifyWebhook($this->integration, $request))->toBeTrue();
+});
+
+it('Notion: returns false when signature does not match', function (): void {
+    $this->integration->credentials = array_merge($this->integration->credentials, [
+        'webhook_secret' => 'correct-secret',
+    ]);
+
+    $request = Request::create('/webhook', 'POST', [], [], [], ['HTTP_X_NOTION_SIGNATURE' => 'sha256=badhash'], '{"event":"test"}');
+
+    expect($this->provider->verifyWebhook($this->integration, $request))->toBeFalse();
+});
+
+it('Notion: returns false when webhook_secret is set but no signature header is present', function (): void {
+    $this->integration->credentials = array_merge($this->integration->credentials, [
+        'webhook_secret' => 'my-secret',
+    ]);
+
+    $request = Request::create('/webhook', 'POST');
+
+    expect($this->provider->verifyWebhook($this->integration, $request))->toBeFalse();
 });
 
 // ── parseWebhookStatus ────────────────────────────────────────────────────────
