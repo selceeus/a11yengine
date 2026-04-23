@@ -230,7 +230,7 @@ Four AI analysis types sit above the scan layer, each scoped to a property, orga
 | Type                  | Model              | Description                                                                                                                 |
 | --------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | **Audit**             | `Audit`            | Executive summary of a scan's findings with pass/fail compliance scoring                                                    |
-| **Issue Clusters**    | `IssueCluster`     | Groups open issues into thematic clusters to reveal systemic problems                                                       |
+| **Issue Clusters**    | `IssueCluster`     | Groups open issues into thematic clusters to reveal systemic problems; detail page at `/issue-clusters/{id}`                |
 | **Risk Advisory**     | `RiskAdvisory`     | Prioritised list of remediation recommendations ranked by impact and ease of fix                                            |
 | **Content Audit**     | `ContentAudit`     | Prose-level analysis of page content for accessibility and readability issues beyond automated rule checks                  |
 | **Governance Report** | `GovernanceReport` | Comprehensive executive report with narrative, risk trends, severity breakdown, remediation progress, and compliance status |
@@ -241,21 +241,28 @@ Governance reports support configurable date ranges and can be scheduled alongsi
 
 Issues can be pushed to external project management tools via the `Integration` model and `PushIssueToIntegrationJob`. An `IssueLink` record stores the external ticket ID, URL, and status for each linked issue.
 
-| Provider      | Auth Type |
-| ------------- | --------- |
-| Jira          | Basic     |
-| GitHub Issues | Token     |
-| Linear        | Token     |
-| Asana         | Token     |
-| Wrike         | Token     |
-| ClickUp       | Token     |
-| Monday.com    | Token     |
-| Azure DevOps  | PAT       |
-| Trello        | API Key   |
-| Notion        | Token     |
-| Basecamp      | Token     |
+| Provider      | Auth Type | Bidirectional Webhooks |
+| ------------- | --------- | ---------------------- |
+| Jira          | Basic     | ✓                      |
+| GitHub Issues | Token     | ✓                      |
+| Linear        | Token     | ✓                      |
+| Asana         | Token     | ✓                      |
+| Wrike         | Token     | ✓                      |
+| ClickUp       | Token     |                        |
+| Monday.com    | Token     |                        |
+| Azure DevOps  | PAT       |                        |
+| Trello        | API Key   |                        |
+| Notion        | Token     |                        |
+| Basecamp      | Token     |                        |
 
 Integrations are configured per agency in **Settings → Integrations**. Webhooks from providers are received at `POST /api/webhooks/integrations/{integration}` to sync status back to `IssueLink` records.
+
+#### Webhook Security
+
+Providers that support webhooks can optionally have a `webhook_secret` credential stored on the integration. When present, the platform verifies the incoming request signature before processing:
+
+- **Jira, Linear, Asana, Wrike, GitHub** — HMAC-SHA256 signature verified against the provider-specific header
+- **Notion** — HMAC-SHA256 verified against the `X-Notion-Signature` header using the optional `webhook_secret` credential field; requests without a configured secret are accepted (permissive fallback for backward compatibility)
 
 ### MCP Server
 
@@ -333,6 +340,19 @@ Delivery is handled by `SendWebhookNotificationJob` (queued, 3 attempts, 30 s / 
 
 Weighted risk scores are calculated and snapshotted at three levels: `PropertyRiskSnapshot`, `OrganizationRiskSnapshot`, and `AgencyRiskSnapshot`. These snapshots power trend charts and governance reports. All three snapshot tiers run on a daily schedule via dedicated Artisan commands (`snapshots:property-risk`, `snapshots:organization-risk`, `snapshots:agency-risk`).
 
+### Tenant API
+
+A tenant-scoped API surface is available for machine-to-machine clients that need per-agency data without a user session. Routes are prefixed with the agency slug and authenticated via a `scans:read`-scoped API key.
+
+**Authentication:** `Authorization: Bearer <key>` — the `{tenant}` segment is the agency's slug, or alternatively pass `X-Tenant: <slug>` as a request header.
+
+| Endpoint                            | Method | Description                                                   |
+| ----------------------------------- | ------ | ------------------------------------------------------------- |
+| `/api/{tenant}/risk-summary`        | `GET`  | Current risk score and trend data for the agency              |
+| `/api/{tenant}/scan-activity`       | `GET`  | Recent scan activity across all properties                    |
+| `/api/{tenant}/issues`              | `GET`  | Open issue summary aggregated across all properties           |
+| `/api/{tenant}/governance-summary`  | `GET`  | Latest governance report summary for the agency               |
+
 ### WordPress Plugin API
 
 A dedicated API surface under `/api/wordpress/` provides everything a WordPress plugin needs to surface accessibility data in the CMS. All endpoints require a `wordpress`-scoped API key.
@@ -359,6 +379,8 @@ During each crawl the Node.js crawler collects all PDF links on the same domain.
 
 Violations are stored as `PdfViolation` records linked to the `PdfDocument`. Results are viewable in the scan detail page (PDFs tab) and at `/pdf-documents/{id}`. The feature is disabled by default and enabled via `PDF_SCANNER_ENABLED=true`.
 
+`PdfScannerHealthService` pings the microservice's `/health` endpoint (3 s timeout) and caches the result for 60 seconds. When the service is unreachable or `PDF_SCANNER_ENABLED` is `false`, the PDFs tab on the scan detail page displays an inline availability warning.
+
 ---
 
 ## AI Agents
@@ -371,7 +393,7 @@ All agents use Laravel AI with structured JSON output and a 300-second timeout.
 | `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `wcag_reference`, `wcag_level`, `user_impact`, `severity_rating`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `estimated_effort`, `resources` |
 | `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                                                                                         |
 | `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                                                                                      |
-| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `affected_pages`                                                                                           |
+| `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `severity` (critical/high/medium/low), `priority` (high/medium/low), `issue_ids`, `wcag_categories`, `affected_pages`, `ai_notes` |
 | `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `summary_cards`, `recommendations`, `source_refs`                                                                                                          |
 
 ### RAG Knowledge Base
@@ -385,6 +407,8 @@ Three embedding stores (pgvector, HNSW index, 1536 dimensions):
 | `RemediationEmbedding` | Successful remediation patterns indexed per rule key               |
 
 `RagRetrievalService` exposes `findWcagChunks()`, `findLawsuits()`, and `findSimilarRemediations()` for cosine-similarity lookup at inference time.
+
+If the WCAG knowledge base has not been indexed (`WcagEmbedding` table is empty), the dashboard displays a prominent dismissable warning prompting an admin to run `php artisan rag:index-wcag`.
 
 ---
 
