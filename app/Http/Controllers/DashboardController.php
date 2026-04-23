@@ -7,6 +7,7 @@ use App\Enums\AuditStatus;
 use App\Enums\ScanStatus;
 use App\Models\Audit;
 use App\Models\Scan;
+use App\Models\WcagEmbedding;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +18,7 @@ class DashboardController extends Controller
     public function __invoke(): Response
     {
         return Inertia::render('dashboard', [
+            'ragIndexed' => WcagEmbedding::query()->exists(),
             'defaultPropertyId' => Scan::query()
                 ->where('status', ScanStatus::Completed)
                 ->orderByDesc('completed_at')

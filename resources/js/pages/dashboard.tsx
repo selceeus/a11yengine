@@ -1,5 +1,7 @@
 import { Head, WhenVisible, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AccessibilityRiskLandscapeBarChart } from '@/components/charts/AccessibilityRiskLandscapeBarChart';
 import { IssueSeverityChart } from '@/components/charts/IssueSeverityChart';
@@ -20,16 +22,37 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard() {
-    const { auth, defaultPropertyId, latestAudits } = usePage().props as {
+    const { auth, defaultPropertyId, latestAudits, ragIndexed } = usePage().props as {
         auth: Auth;
         defaultPropertyId: number | null;
         latestAudits: AuditSummary[] | null;
+        ragIndexed: boolean;
     };
+    const [ragDismissed, setRagDismissed] = useState(false);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {!ragIndexed && !ragDismissed && (
+                    <Alert variant="destructive" className="flex items-start justify-between gap-4">
+                        <div>
+                            <AlertTitle>AI Knowledge Base Not Indexed</AlertTitle>
+                            <AlertDescription>
+                                The WCAG knowledge base has not been indexed yet. AI-powered audit and risk features may produce lower-quality results.{' '}
+                                Run <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">php artisan rag:index-wcag</code> to populate it.
+                            </AlertDescription>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setRagDismissed(true)}
+                            className="shrink-0 rounded p-1 hover:bg-destructive/20"
+                            aria-label="Dismiss warning"
+                        >
+                            ✕
+                        </button>
+                    </Alert>
+                )}
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <Card className="col-span-full md:col-span-2">
                         <CardHeader>
