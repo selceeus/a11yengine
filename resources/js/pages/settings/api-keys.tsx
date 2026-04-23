@@ -243,6 +243,55 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                             </table>
                         </div>
                     )}
+
+                    {/* WordPress Plugin Integration Guide */}
+                    <div className="rounded-lg border">
+                        <div className="border-b bg-muted/30 px-4 py-3">
+                            <h2 className="text-sm font-semibold">WordPress Plugin Integration</h2>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                Use an API key with the <code className="rounded bg-muted px-1 py-0.5 font-mono">wordpress</code> scope to connect the plugin to your properties.
+                            </p>
+                        </div>
+                        <div className="space-y-4 p-4">
+                            <p className="text-sm text-muted-foreground">
+                                Authenticate all requests using an <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Authorization</code> header:
+                            </p>
+                            <pre className="overflow-x-auto rounded bg-muted px-4 py-3 font-mono text-xs">
+                                {`Authorization: Bearer <your-api-key>`}
+                            </pre>
+
+                            <div className="divide-y rounded-lg border text-sm">
+                                <div className="grid grid-cols-[auto_1fr] gap-x-4 px-4 py-3">
+                                    <span className="shrink-0 rounded bg-blue-100 px-2 py-0.5 font-mono text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-300">GET</span>
+                                    <div>
+                                        <code className="font-mono text-xs">/api/wordpress/properties</code>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">List all properties accessible to this agency.</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-[auto_1fr] gap-x-4 px-4 py-3">
+                                    <span className="shrink-0 rounded bg-blue-100 px-2 py-0.5 font-mono text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-300">GET</span>
+                                    <div>
+                                        <code className="font-mono text-xs">/api/wordpress/properties/{'{propertySlug}'}/issues</code>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">Retrieve open accessibility issues for a property.</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-[auto_1fr] gap-x-4 px-4 py-3">
+                                    <span className="shrink-0 rounded bg-blue-100 px-2 py-0.5 font-mono text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-300">GET</span>
+                                    <div>
+                                        <code className="font-mono text-xs">/api/wordpress/properties/{'{propertySlug}'}/risk-summary</code>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">Get the latest risk advisory summary for a property.</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-[auto_1fr] gap-x-4 px-4 py-3">
+                                    <span className="shrink-0 rounded bg-green-100 px-2 py-0.5 font-mono text-xs text-green-700 dark:bg-green-950 dark:text-green-300">POST</span>
+                                    <div>
+                                        <code className="font-mono text-xs">/api/wordpress/properties/{'{propertySlug}'}/scans</code>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">Trigger a new accessibility scan for a property.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
             </div>
         </AppLayout>
     );
