@@ -346,12 +346,12 @@ A tenant-scoped API surface is available for machine-to-machine clients that nee
 
 **Authentication:** `Authorization: Bearer <key>` — the `{tenant}` segment is the agency's slug, or alternatively pass `X-Tenant: <slug>` as a request header.
 
-| Endpoint                            | Method | Description                                                   |
-| ----------------------------------- | ------ | ------------------------------------------------------------- |
-| `/api/{tenant}/risk-summary`        | `GET`  | Current risk score and trend data for the agency              |
-| `/api/{tenant}/scan-activity`       | `GET`  | Recent scan activity across all properties                    |
-| `/api/{tenant}/issues`              | `GET`  | Open issue summary aggregated across all properties           |
-| `/api/{tenant}/governance-summary`  | `GET`  | Latest governance report summary for the agency               |
+| Endpoint                           | Method | Description                                         |
+| ---------------------------------- | ------ | --------------------------------------------------- |
+| `/api/{tenant}/risk-summary`       | `GET`  | Current risk score and trend data for the agency    |
+| `/api/{tenant}/scan-activity`      | `GET`  | Recent scan activity across all properties          |
+| `/api/{tenant}/issues`             | `GET`  | Open issue summary aggregated across all properties |
+| `/api/{tenant}/governance-summary` | `GET`  | Latest governance report summary for the agency     |
 
 ### WordPress Plugin API
 
@@ -387,14 +387,14 @@ Violations are stored as `PdfViolation` records linked to the `PdfDocument`. Res
 
 All agents use Laravel AI with structured JSON output and a 300-second timeout.
 
-| Agent               | Input                                       | Output                                                                                                                                                                            |
-| ------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents`                                                                       |
-| `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `wcag_reference`, `wcag_level`, `user_impact`, `severity_rating`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `estimated_effort`, `resources` |
-| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                                                                                         |
-| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                                                                                      |
+| Agent               | Input                                       | Output                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AuditAgent`        | Scan findings, property context, RAG        | `overall_score`, `executive_summary`, `compliance_status`, `top_risks`, `issue_details`, `legal_precedents`                                                                                              |
+| `RemediationAgent`  | Single issue + WCAG context, RAG            | `explanation`, `wcag_reference`, `wcag_level`, `user_impact`, `severity_rating`, `code_fix`, `aria_fix`, `remediation_steps`, `testing_guidance`, `estimated_effort`, `resources`                        |
+| `ContentAuditAgent` | Page HTML + axe findings                    | `content_issues` (per category), `reading_metrics`, `suggested_alt_text` for image issues                                                                                                                |
+| `RiskAdvisoryAgent` | Open issues, property/org/agency scope, RAG | Prioritised list with `severity`, `risk_reduction_score`, `ease_of_remediation`, `quick_win`                                                                                                             |
 | `IssueClusterAgent` | Open issue set                              | `clusters` with `cluster_name`, `common_component`, `recommended_fix`, `severity` (critical/high/medium/low), `priority` (high/medium/low), `issue_ids`, `wcag_categories`, `affected_pages`, `ai_notes` |
-| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `summary_cards`, `recommendations`, `source_refs`                                                                                                          |
+| `GovernanceAgent`   | Audit + scan + content audit data, RAG      | `executive_narrative`, `summary_cards`, `recommendations`, `source_refs`                                                                                                                                 |
 
 ### RAG Knowledge Base
 
