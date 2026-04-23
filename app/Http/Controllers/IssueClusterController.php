@@ -46,4 +46,26 @@ class IssueClusterController extends Controller
             ]),
         ]);
     }
+
+    public function show(IssueCluster $issueCluster): Response
+    {
+        $this->authorize('view', $issueCluster);
+
+        $issueCluster->load('property:id,name,base_url');
+
+        return Inertia::render('issue-clusters/show', [
+            'cluster' => [
+                'id' => $issueCluster->id,
+                'status' => $issueCluster->status->value,
+                'total_clusters' => $issueCluster->total_clusters,
+                'open_issues_analyzed' => $issueCluster->open_issues_analyzed,
+                'generated_at' => $issueCluster->generated_at?->toIso8601String(),
+                'error_message' => $issueCluster->error_message,
+                'clusters' => $issueCluster->clusters ?? [],
+                'property' => $issueCluster->property
+                    ? ['id' => $issueCluster->property->id, 'name' => $issueCluster->property->name, 'base_url' => $issueCluster->property->base_url]
+                    : null,
+            ],
+        ]);
+    }
 }

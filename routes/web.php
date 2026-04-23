@@ -167,6 +167,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->where('format', 'json|csv|pdf');
 
     Route::get('issue-clusters', [IssueClusterController::class, 'index'])->name('issue-clusters.index');
+    Route::get('issue-clusters/{issueCluster}', [IssueClusterController::class, 'show'])->name('issue-clusters.show');
 
     Route::get('api/properties/{property}/risk-advisory', PropertyRiskAdvisoryController::class)
         ->name('api.properties.risk-advisory');

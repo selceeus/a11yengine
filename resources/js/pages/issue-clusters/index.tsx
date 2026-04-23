@@ -4,6 +4,7 @@ import { Layers } from 'lucide-react';
 import GenerateIssueClustersController from '@/actions/App/Http/Controllers/Api/GenerateIssueClustersController';
 import PropertyIssueClustersController from '@/actions/App/Http/Controllers/Api/PropertyIssueClustersController';
 import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
+import * as IssueClusterController from '@/actions/App/Http/Controllers/IssueClusterController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -140,7 +141,14 @@ export default function Index({ properties }: { properties: PropertyRow[] }) {
 
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-end gap-3">
-                                                    {cluster ? (
+                                                    {cluster?.status === 'completed' ? (
+                                                        <Link
+                                                            href={IssueClusterController.show(cluster.id).url}
+                                                            className="text-sm text-primary hover:underline"
+                                                        >
+                                                            Details
+                                                        </Link>
+                                                    ) : cluster ? (
                                                         <Link
                                                             href={
                                                                 PropertyController.show(property.id).url + '#ai-clusters'
