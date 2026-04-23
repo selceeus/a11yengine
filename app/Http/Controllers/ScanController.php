@@ -14,6 +14,7 @@ use App\Models\PdfDocument;
 use App\Models\Property;
 use App\Models\Scan;
 use App\Models\ScanMetric;
+use App\Services\PdfScannerHealthService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,10 @@ class ScanController extends Controller
     use AuthorizesRequests;
     use Exportable;
 
-    public function __construct(private readonly Agency $agency) {}
+    public function __construct(
+        private readonly Agency $agency,
+        private readonly PdfScannerHealthService $pdfScannerHealth,
+    ) {}
 
     public function index(): Response
     {
@@ -205,6 +209,7 @@ class ScanController extends Controller
                 'violation_count' => $doc->violation_count,
                 'scanned_at' => $doc->scanned_at?->toIso8601String(),
             ]),
+            'pdfScannerAvailable' => $this->pdfScannerHealth->isAvailable(),
         ]);
     }
 

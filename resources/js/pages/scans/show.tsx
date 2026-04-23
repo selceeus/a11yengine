@@ -119,6 +119,7 @@ export default function Show({
     delta,
     experiencePillars,
     pdfDocuments,
+    pdfScannerAvailable,
 }: {
     scan: Scan;
     severityBreakdown: SeverityRow[];
@@ -127,6 +128,7 @@ export default function Show({
     delta: Delta | null;
     experiencePillars: ExperiencePillars;
     pdfDocuments: PdfDocument[];
+    pdfScannerAvailable: boolean;
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
@@ -530,7 +532,13 @@ export default function Show({
 
                         {/* PDFs tab */}
                         {tab === 'pdfs' && (
-                            pdfDocuments.length > 0 ? (
+                            <>
+                            {!pdfScannerAvailable && (
+                                <div className="mb-4 rounded-xl border border-yellow-400/40 bg-yellow-50/50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-950/30 dark:text-yellow-300">
+                                    The PDF scanner service is currently unavailable. PDF accessibility scanning is disabled.
+                                </div>
+                            )}
+                            {pdfDocuments.length > 0 ? (
                                 <div className="rounded-xl border">
                                     <table className="w-full text-sm">
                                         <caption className="px-4 py-3">PDF Documents</caption>
@@ -576,7 +584,8 @@ export default function Show({
                                 <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
                                     No PDF documents were discovered during this scan.
                                 </div>
-                            )
+                            )}
+                            </>
                         )}
                     </div>
                 )}
