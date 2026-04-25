@@ -20,3 +20,4 @@ Schedule::command('digest:weekly')->weeklyOn(1, '9:00');
 Schedule::command('rag:reindex-remediations')->weeklyOn(0, '02:00');
 Schedule::command('rag:index-wcag', ['--skip-if-indexed' => true])->monthly();
 Schedule::command('rag:index-lawsuits', ['--skip-if-indexed' => true])->monthly();
+Schedule::command('access-reviews:create')->quarterly();

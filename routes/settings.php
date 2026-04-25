@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\Settings\AccessReviewController;
+use App\Http\Controllers\Settings\AccessReviewsExportController;
 use App\Http\Controllers\Settings\ActivityLogExportController;
 use App\Http\Controllers\Settings\ApiKeyController;
+use App\Http\Controllers\Settings\ApiKeyInventoryExportController;
 use App\Http\Controllers\Settings\IntegrationController;
 use App\Http\Controllers\Settings\NotificationEmailRouteController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
@@ -9,7 +12,9 @@ use App\Http\Controllers\Settings\NotificationWebhookRouteController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\ScheduledScansController;
+use App\Http\Controllers\Settings\Soc2EvidenceController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
+use App\Http\Controllers\Settings\UserRolesExportController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -92,4 +97,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings/activity-log/export', ActivityLogExportController::class)
         ->name('activity-log.export');
+
+    // ── Access Reviews ────────────────────────────────────────────────────
+    Route::get('settings/access-reviews', [AccessReviewController::class, 'index'])
+        ->name('access-reviews.index');
+
+    Route::get('settings/access-reviews/{accessReview}', [AccessReviewController::class, 'show'])
+        ->name('access-reviews.show');
+
+    Route::post('settings/access-reviews/{accessReview}/users/{user}/confirm', [AccessReviewController::class, 'confirm'])
+        ->name('access-reviews.confirm');
+
+    Route::post('settings/access-reviews/{accessReview}/users/{user}/revoke', [AccessReviewController::class, 'revoke'])
+        ->name('access-reviews.revoke');
+
+    Route::post('settings/access-reviews/{accessReview}/complete', [AccessReviewController::class, 'complete'])
+        ->name('access-reviews.complete');
+
+    // ── SOC2 Evidence ─────────────────────────────────────────────────────
+    Route::get('settings/soc2-evidence', Soc2EvidenceController::class)
+        ->name('soc2-evidence.index');
+
+    Route::get('settings/soc2-evidence/export/user-roles', UserRolesExportController::class)
+        ->name('soc2-evidence.export.user-roles');
+
+    Route::get('settings/soc2-evidence/export/api-keys', ApiKeyInventoryExportController::class)
+        ->name('soc2-evidence.export.api-keys');
+
+    Route::get('settings/soc2-evidence/export/access-reviews', AccessReviewsExportController::class)
+        ->name('soc2-evidence.export.access-reviews');
 });
