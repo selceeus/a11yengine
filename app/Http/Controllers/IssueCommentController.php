@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActivityLogEvent;
 use App\Enums\IssueActivityType;
 use App\Http\Requests\StoreIssueCommentRequest;
 use App\Models\Issue;
 use App\Models\IssueActivity;
 use App\Models\User;
 use App\Notifications\IssueMentionedNotification;
+use App\Services\ActivityLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 
@@ -28,6 +30,12 @@ class IssueCommentController extends Controller
             'body' => $body,
             'created_at' => now(),
         ]);
+
+        ActivityLogger::log(
+            event: ActivityLogEvent::IssueCommentAdded,
+            subject: $issue,
+            subjectLabel: $issue->description ? mb_substr($issue->description, 0, 80) : "Issue #{$issue->id}",
+        );
 
         $this->notifyMentionedUsers($issue, $body, $request->user());
 

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\ActivityLogEvent;
 use App\Enums\ApiKeyScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreApiKeyRequest;
 use App\Models\ApiKey;
+use App\Services\ActivityLogger;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,6 +16,8 @@ use Inertia\Response;
 
 class ApiKeyController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index(Request $request): Response
     {
         $apiKeys = ApiKey::query()
@@ -54,7 +59,7 @@ class ApiKeyController extends Controller
 
         $token = ApiKey::generateToken();
 
-        ApiKey::create([
+        $apiKey = ApiKey::create([
             'agency_id' => $agency->id,
             'created_by' => $request->user()->id,
             'name' => $request->validated('name'),
@@ -63,6 +68,14 @@ class ApiKeyController extends Controller
             'scopes' => $request->validated('scopes'),
             'expires_at' => $request->validated('expires_at'),
         ]);
+
+        ActivityLogger::log(
+            event: ActivityLogEvent::ApiKeyCreated,
+            subject: $apiKey,
+            subjectLabel: $apiKey->name,
+            metadata: ['scopes' => $apiKey->scopes],
+            ipAddress: $request->ip(),
+        );
 
         return redirect()->route('api-keys.index')
             ->with('newToken', $token['plaintext']);
@@ -73,6 +86,13 @@ class ApiKeyController extends Controller
         $this->authorize('update', $apiKey->agency);
 
         $apiKey->forceFill(['revoked_at' => now()])->save();
+
+        ActivityLogger::log(
+            event: ActivityLogEvent::ApiKeyRevoked,
+            subject: $apiKey,
+            subjectLabel: $apiKey->name,
+            ipAddress: request()->ip(),
+        );
 
         return redirect()->route('api-keys.index');
     }
