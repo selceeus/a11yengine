@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\ActivityLogExportController;
 use App\Http\Controllers\Settings\ApiKeyController;
 use App\Http\Controllers\Settings\IntegrationController;
 use App\Http\Controllers\Settings\NotificationEmailRouteController;
@@ -88,4 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('settings/notification-webhook-routes/{notificationWebhookRoute}', [NotificationWebhookRouteController::class, 'destroy'])
         ->name('notification-webhook-routes.destroy');
+
+    Route::get('settings/activity-log/export', ActivityLogExportController::class)
+        ->name('activity-log.export');
 });
