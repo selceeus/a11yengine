@@ -21,3 +21,6 @@ Schedule::command('rag:reindex-remediations')->weeklyOn(0, '02:00');
 Schedule::command('rag:index-wcag', ['--skip-if-indexed' => true])->monthly();
 Schedule::command('rag:index-lawsuits', ['--skip-if-indexed' => true])->monthly();
 Schedule::command('access-reviews:create')->quarterly();
+Schedule::command('api-keys:notify-expiring')->daily();
+Schedule::command('api-keys:revoke-expired')->daily();
+Schedule::command('activity-log:prune')->monthly();

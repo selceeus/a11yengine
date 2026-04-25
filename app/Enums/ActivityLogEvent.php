@@ -19,6 +19,8 @@ enum ActivityLogEvent: string
     case ApiKeyCreated = 'api_key.created';
     case ApiKeyRevoked = 'api_key.revoked';
     case ApiKeyUsed = 'api_key.used';
+    case ApiKeyExpiringSoon = 'api_key.expiring_soon';
+    case ApiKeyAutoRevoked = 'api_key.auto_revoked';
 
     // ── Scans ───────────────────────────────────────────────────────────────
     case ScanStarted = 'scan.started';
@@ -47,6 +49,9 @@ enum ActivityLogEvent: string
     case AccessReviewCompleted = 'access_review.completed';
     case UserAccessConfirmed = 'access_review.user_confirmed';
     case UserAccessRevoked = 'access_review.user_revoked';
+
+    // ── System ──────────────────────────────────────────────────────────────
+    case ActivityLogPruned = 'activity_log.pruned';
 
     public function label(): string
     {
@@ -77,6 +82,9 @@ enum ActivityLogEvent: string
             self::AccessReviewCompleted => 'Access review completed',
             self::UserAccessConfirmed => 'User access confirmed',
             self::UserAccessRevoked => 'User access revoked',
+            self::ApiKeyExpiringSoon => 'API key expiring soon',
+            self::ApiKeyAutoRevoked => 'API key auto-revoked',
+            self::ActivityLogPruned => 'Activity log pruned',
         };
     }
 
@@ -94,7 +102,9 @@ enum ActivityLogEvent: string
 
             self::ApiKeyCreated,
             self::ApiKeyRevoked,
-            self::ApiKeyUsed => 'api',
+            self::ApiKeyUsed,
+            self::ApiKeyExpiringSoon,
+            self::ApiKeyAutoRevoked => 'api',
 
             self::ScanStarted,
             self::ScanCompleted,
@@ -117,6 +127,8 @@ enum ActivityLogEvent: string
             self::AccessReviewCompleted,
             self::UserAccessConfirmed,
             self::UserAccessRevoked => 'team',
+
+            self::ActivityLogPruned => 'system',
         };
     }
 }
