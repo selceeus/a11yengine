@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FindingSeverity;
 use App\Enums\PdfScanStatus;
 use App\Jobs\ScanPdfJob;
 use App\Models\Agency;
@@ -10,6 +11,40 @@ use App\Models\Property;
 use App\Models\Scan;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Build a minimal veraPDF REST JSON response body.
+ *
+ * @param  array<int, array{clause: string, testNumber: int, description: string, checks: list<array{status: string, context: string}>}>  $failedRules
+ */
+function veraResponse(array $failedRules = [], ?bool $isCompliant = null): array
+{
+    $isCompliant ??= empty($failedRules);
+
+    return [
+        'report' => [
+            'jobs' => [[
+                'validationReport' => [
+                    'isCompliant' => $isCompliant,
+                    'details' => [
+                        'ruleSummaries' => array_map(
+                            fn (array $r) => [
+                                'clause' => $r['clause'],
+                                'testNumber' => $r['testNumber'],
+                                'status' => 'failed',
+                                'description' => $r['description'],
+                                'checks' => $r['checks'],
+                            ],
+                            $failedRules
+                        ),
+                    ],
+                ],
+            ]],
+        ],
+    ];
+}
 
 // ─── Setup ───────────────────────────────────────────────────────────────────
 
@@ -55,28 +90,26 @@ it('marks the document as failed immediately when the pdf scanner is disabled', 
 
 // ─── Happy path ───────────────────────────────────────────────────────────────
 
-it('creates a PdfViolation record for each violation returned by the scanner', function (): void {
+it('creates a PdfViolation record for each check occurrence returned by the scanner', function (): void {
     Http::fake([
-        '*/scan' => Http::response([
-            'violations' => [
-                [
-                    'rule_key' => 'pdf/untagged',
-                    'severity' => 'critical',
-                    'wcag_criteria' => '1.3.1',
-                    'description' => 'PDF is not tagged.',
-                    'element_context' => null,
-                    'page_number' => null,
-                ],
-                [
-                    'rule_key' => 'pdf/no-title',
-                    'severity' => 'serious',
-                    'wcag_criteria' => '2.4.2',
-                    'description' => 'PDF has no title.',
-                    'element_context' => null,
-                    'page_number' => 1,
+        '*/api/validate/*' => Http::response(veraResponse([
+            [
+                'clause' => '6.2',
+                'testNumber' => 1,
+                'description' => 'Document is not tagged.',
+                'checks' => [
+                    ['status' => 'failed', 'context' => 'root/document[0]'],
                 ],
             ],
-        ], 200),
+            [
+                'clause' => '7.1',
+                'testNumber' => 1,
+                'description' => 'Document title is missing.',
+                'checks' => [
+                    ['status' => 'failed', 'context' => 'root/document[0]/pages[0]/annots[0]'],
+                ],
+            ],
+        ]), 200),
     ]);
 
     (new ScanPdfJob($this->doc))->handle();
@@ -84,9 +117,67 @@ it('creates a PdfViolation record for each violation returned by the scanner', f
     expect(PdfViolation::query()->count())->toBe(2);
 });
 
+it('maps clause 6.2 to rule_key ua1/6.2-1 with wcag_criteria 1.3.1 and critical severity', function (): void {
+    Http::fake([
+        '*/api/validate/*' => Http::response(veraResponse([
+            [
+                'clause' => '6.2',
+                'testNumber' => 1,
+                'description' => 'Document is not tagged.',
+                'checks' => [['status' => 'failed', 'context' => 'root/document[0]']],
+            ],
+        ]), 200),
+    ]);
+
+    (new ScanPdfJob($this->doc))->handle();
+
+    $violation = PdfViolation::query()->first();
+    expect($violation->rule_key)->toBe('ua1/6.2-1')
+        ->and($violation->wcag_criteria)->toBe('1.3.1')
+        ->and($violation->severity)->toBe(FindingSeverity::CRITICAL);
+});
+
+it('extracts the 1-based page number from the veraPDF context string', function (): void {
+    Http::fake([
+        '*/api/validate/*' => Http::response(veraResponse([
+            [
+                'clause' => '28',
+                'testNumber' => 1,
+                'description' => 'Figure missing alt text.',
+                'checks' => [['status' => 'failed', 'context' => 'root/document[0]/pages[2]/content/Figure[0]']],
+            ],
+        ]), 200),
+    ]);
+
+    (new ScanPdfJob($this->doc))->handle();
+
+    // pages[2] is 0-indexed → page_number should be 3
+    expect(PdfViolation::query()->first()->page_number)->toBe(3);
+});
+
+it('falls back gracefully for unknown clauses', function (): void {
+    Http::fake([
+        '*/api/validate/*' => Http::response(veraResponse([
+            [
+                'clause' => '99.99',
+                'testNumber' => 99,
+                'description' => 'Some future rule.',
+                'checks' => [['status' => 'failed', 'context' => '']],
+            ],
+        ]), 200),
+    ]);
+
+    (new ScanPdfJob($this->doc))->handle();
+
+    $violation = PdfViolation::query()->first();
+    expect($violation->rule_key)->toBe('ua1/99.99-99')
+        ->and($violation->wcag_criteria)->toBeNull()
+        ->and($violation->severity)->toBe(FindingSeverity::MINOR);
+});
+
 it('transitions the document status to Completed on success', function (): void {
     Http::fake([
-        '*/scan' => Http::response(['violations' => []], 200),
+        '*/api/validate/*' => Http::response(veraResponse(), 200),
     ]);
 
     (new ScanPdfJob($this->doc))->handle();
@@ -96,14 +187,19 @@ it('transitions the document status to Completed on success', function (): void 
         ->and($fresh->scanned_at)->not->toBeNull();
 });
 
-it('sets violation_count to the number of violations returned', function (): void {
+it('sets violation_count to the number of check occurrences returned', function (): void {
     Http::fake([
-        '*/scan' => Http::response([
-            'violations' => [
-                ['rule_key' => 'pdf/untagged', 'severity' => 'critical', 'wcag_criteria' => '1.3.1', 'description' => 'Not tagged.', 'element_context' => null, 'page_number' => null],
-                ['rule_key' => 'pdf/no-title', 'severity' => 'serious', 'wcag_criteria' => '2.4.2', 'description' => 'No title.', 'element_context' => null, 'page_number' => null],
+        '*/api/validate/*' => Http::response(veraResponse([
+            [
+                'clause' => '6.2',
+                'testNumber' => 1,
+                'description' => 'Not tagged.',
+                'checks' => [
+                    ['status' => 'failed', 'context' => 'root/document[0]'],
+                    ['status' => 'failed', 'context' => 'root/document[0]/pages[0]'],
+                ],
             ],
-        ], 200),
+        ]), 200),
     ]);
 
     (new ScanPdfJob($this->doc))->handle();
@@ -115,7 +211,7 @@ it('sets violation_count to the number of violations returned', function (): voi
 
 it('marks the document as failed when the scanner returns a 5xx response', function (): void {
     Http::fake([
-        '*/scan' => Http::response(['detail' => 'Internal error'], 500),
+        '*/api/validate/*' => Http::response(['message' => 'Internal error'], 500),
     ]);
 
     (new ScanPdfJob($this->doc))->handle();
@@ -127,7 +223,7 @@ it('marks the document as failed when the scanner returns a 5xx response', funct
 
 it('marks the document as failed when the scanner returns a 422 response', function (): void {
     Http::fake([
-        '*/scan' => Http::response(['detail' => 'Could not download PDF.'], 422),
+        '*/api/validate/*' => Http::response(['message' => 'Could not download PDF.'], 422),
     ]);
 
     (new ScanPdfJob($this->doc))->handle();
