@@ -39,6 +39,15 @@ enum ActivityLogEvent: string
     case OrganizationCreated = 'organization.created';
     case OrganizationUpdated = 'organization.updated';
 
+    // ── Security ────────────────────────────────────────────────────────────
+    case UserLoginFailed = 'user.login_failed';
+
+    // ── Access reviews ──────────────────────────────────────────────────────
+    case AccessReviewStarted = 'access_review.started';
+    case AccessReviewCompleted = 'access_review.completed';
+    case UserAccessConfirmed = 'access_review.user_confirmed';
+    case UserAccessRevoked = 'access_review.user_revoked';
+
     public function label(): string
     {
         return match ($this) {
@@ -63,6 +72,11 @@ enum ActivityLogEvent: string
             self::PropertyUpdated => 'Property updated',
             self::OrganizationCreated => 'Organisation created',
             self::OrganizationUpdated => 'Organisation updated',
+            self::UserLoginFailed => 'Failed login attempt',
+            self::AccessReviewStarted => 'Access review started',
+            self::AccessReviewCompleted => 'Access review completed',
+            self::UserAccessConfirmed => 'User access confirmed',
+            self::UserAccessRevoked => 'User access revoked',
         };
     }
 
@@ -96,6 +110,13 @@ enum ActivityLogEvent: string
             self::PropertyUpdated,
             self::OrganizationCreated,
             self::OrganizationUpdated => 'settings',
+
+            self::UserLoginFailed => 'authentication',
+
+            self::AccessReviewStarted,
+            self::AccessReviewCompleted,
+            self::UserAccessConfirmed,
+            self::UserAccessRevoked => 'team',
         };
     }
 }

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\ScanCompleted;
 use App\Events\ScanFailed;
 use App\Listeners\GenerateAuditOnScanCompleted;
+use App\Listeners\LogFailedLogin;
 use App\Listeners\LogScanCompleted;
 use App\Listeners\LogScanFailed;
 use App\Listeners\LogSuccessfulLogin;
@@ -14,6 +15,7 @@ use App\Listeners\NotifyScanFailed;
 use App\Models\Issue;
 use App\Observers\IssueObserver;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Date;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         Issue::observe(IssueObserver::class);
 
         Event::listen(Login::class, LogSuccessfulLogin::class);
+        Event::listen(Failed::class, LogFailedLogin::class);
         Event::listen(Logout::class, LogSuccessfulLogout::class);
         Event::listen(ScanCompleted::class, GenerateAuditOnScanCompleted::class);
         Event::listen(ScanCompleted::class, NotifyScanCompleted::class);

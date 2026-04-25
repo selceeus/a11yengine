@@ -45,6 +45,32 @@ class ActivityLogger
     }
 
     /**
+     * Write a failed login attempt. Looks up agency_id by email; silently skips unknown emails.
+     */
+    public static function loginFailed(string $email, Request $request, int $failureCount): void
+    {
+        $agencyId = User::where('email', $email)->value('agency_id');
+
+        if (! $agencyId) {
+            return;
+        }
+
+        ActivityLog::create([
+            'agency_id' => $agencyId,
+            'user_id' => null,
+            'actor_type' => 'unknown',
+            'actor_label' => $email,
+            'event' => ActivityLogEvent::UserLoginFailed,
+            'subject_type' => null,
+            'subject_id' => null,
+            'subject_label' => null,
+            'metadata' => ['attempt_count' => $failureCount],
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+        ]);
+    }
+
+    /**
      * Write a login event (user may not yet be bound to auth() at this point).
      *
      * @param  array<string, mixed>  $metadata
