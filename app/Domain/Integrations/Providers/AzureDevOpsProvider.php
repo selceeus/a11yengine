@@ -61,7 +61,24 @@ class AzureDevOpsProvider implements ProjectManagementProvider
 
     public function verifyWebhook(Integration $integration, Request $request): bool
     {
-        return true;
+        $creds = $integration->credentials;
+        $webhookPassword = $creds['webhook_password'] ?? null;
+
+        if (empty($webhookPassword)) {
+            return true;
+        }
+
+        $authHeader = $request->header('Authorization', '');
+
+        if (! str_starts_with($authHeader, 'Basic ')) {
+            return false;
+        }
+
+        $decoded = base64_decode(substr($authHeader, 6), true);
+        $parts = explode(':', (string) $decoded, 2);
+        $password = $parts[1] ?? '';
+
+        return hash_equals($webhookPassword, $password);
     }
 
     public function parseWebhookStatus(Request $request): string

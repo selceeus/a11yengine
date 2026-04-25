@@ -51,7 +51,17 @@ class ClickUpProvider implements ProjectManagementProvider
 
     public function verifyWebhook(Integration $integration, Request $request): bool
     {
-        return true;
+        $creds = $integration->credentials;
+        $secret = $creds['webhook_secret'] ?? null;
+
+        if (empty($secret)) {
+            return true;
+        }
+
+        $signature = $request->header('X-Signature', '');
+        $expected = hash_hmac('sha256', $request->getContent(), $secret);
+
+        return hash_equals($expected, $signature);
     }
 
     public function parseWebhookStatus(Request $request): string

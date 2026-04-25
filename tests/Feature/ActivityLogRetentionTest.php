@@ -51,6 +51,36 @@ it('logs a prune event after deleting old entries', function (): void {
         ->and($pruneLog->metadata['retention_months'])->toBe(24);
 });
 
+it('records per-agency deleted count, not the total across all agencies', function (): void {
+    $agencyB = Agency::factory()->create();
+
+    // 3 old entries for agency A, 2 for agency B
+    ActivityLog::factory()->count(3)->create([
+        'agency_id' => $this->agency->id,
+        'created_at' => now()->subMonths(25),
+    ]);
+
+    ActivityLog::factory()->count(2)->create([
+        'agency_id' => $agencyB->id,
+        'created_at' => now()->subMonths(25),
+    ]);
+
+    $this->artisan('activity-log:prune', ['--months' => 24])->assertSuccessful();
+
+    $logA = ActivityLog::withoutGlobalScopes()
+        ->where('event', 'activity_log.pruned')
+        ->where('agency_id', $this->agency->id)
+        ->first();
+
+    $logB = ActivityLog::withoutGlobalScopes()
+        ->where('event', 'activity_log.pruned')
+        ->where('agency_id', $agencyB->id)
+        ->first();
+
+    expect($logA->metadata['deleted_count'])->toBe(3)
+        ->and($logB->metadata['deleted_count'])->toBe(2);
+});
+
 it('respects the --months override option', function (): void {
     // 1 entry that is 6 weeks old (within 24 months, but outside 1 month)
     ActivityLog::factory()->create([

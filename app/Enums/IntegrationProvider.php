@@ -49,7 +49,8 @@ enum IntegrationProvider: string
     public function supportsWebhooks(): bool
     {
         return match ($this) {
-            self::Jira, self::GitHub, self::Linear, self::Asana, self::Wrike => true,
+            self::Jira, self::GitHub, self::Linear, self::Asana, self::Wrike,
+            self::ClickUp, self::Basecamp, self::Trello, self::AzureDevOps => true,
             default => false,
         };
     }
@@ -87,6 +88,7 @@ enum IntegrationProvider: string
             self::Linear => [
                 ['key' => 'api_key', 'label' => 'API Key', 'type' => 'password', 'required' => true],
                 ['key' => 'team_id', 'label' => 'Team ID', 'type' => 'text', 'required' => true],
+                ['key' => 'webhook_secret', 'label' => 'Webhook Secret', 'type' => 'password', 'required' => false],
             ],
             self::GitHub => [
                 ['key' => 'token', 'label' => 'Personal Access Token', 'type' => 'password', 'required' => true],
@@ -101,14 +103,17 @@ enum IntegrationProvider: string
             self::ClickUp => [
                 ['key' => 'api_token', 'label' => 'API Token', 'type' => 'password', 'required' => true],
                 ['key' => 'list_id', 'label' => 'List ID', 'type' => 'text', 'required' => true],
+                ['key' => 'webhook_secret', 'label' => 'Webhook Secret', 'type' => 'password', 'required' => false],
             ],
             self::AzureDevOps => [
                 ['key' => 'organization', 'label' => 'Organization', 'type' => 'text', 'required' => true],
                 ['key' => 'project', 'label' => 'Project', 'type' => 'text', 'required' => true],
                 ['key' => 'pat', 'label' => 'Personal Access Token', 'type' => 'password', 'required' => true],
+                ['key' => 'webhook_password', 'label' => 'Webhook Password', 'type' => 'password', 'required' => false],
             ],
             self::Trello => [
                 ['key' => 'api_key', 'label' => 'API Key', 'type' => 'text', 'required' => true],
+                ['key' => 'api_secret', 'label' => 'API Secret', 'type' => 'password', 'required' => false],
                 ['key' => 'token', 'label' => 'Token', 'type' => 'password', 'required' => true],
                 ['key' => 'list_id', 'label' => 'List ID', 'type' => 'text', 'required' => true],
             ],
@@ -121,6 +126,7 @@ enum IntegrationProvider: string
                 ['key' => 'access_token', 'label' => 'Access Token', 'type' => 'password', 'required' => true],
                 ['key' => 'account_id', 'label' => 'Account ID', 'type' => 'text', 'required' => true],
                 ['key' => 'project_id', 'label' => 'Project ID', 'type' => 'text', 'required' => true],
+                ['key' => 'webhook_secret', 'label' => 'Webhook Secret', 'type' => 'password', 'required' => false],
             ],
         };
     }

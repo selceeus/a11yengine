@@ -43,9 +43,23 @@ function formatDate(iso: string | null): string {
     return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+type ExpiryStatus = 'expired' | 'expiring-soon' | 'active' | null;
+
+function getExpiryStatus(key: ApiKey): ExpiryStatus {
+    if (!key.expires_at) return null;
+    const now = Date.now();
+    const expiry = new Date(key.expires_at).getTime();
+    if (expiry <= now) return 'expired';
+    if (expiry <= now + 30 * 24 * 60 * 60 * 1000) return 'expiring-soon';
+    return 'active';
+}
+
 export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Props) {
     const [open, setOpen] = useState(false);
     const [tokenVisible, setTokenVisible] = useState<string | null>(newToken);
+
+    const expiringKeys = apiKeys.filter((k) => k.is_active && getExpiryStatus(k) === 'expiring-soon');
+    const expiredActiveKeys = apiKeys.filter((k) => k.is_active && getExpiryStatus(k) === 'expired');
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -181,6 +195,23 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                         </div>
                     )}
 
+                    {(expiringKeys.length > 0 || expiredActiveKeys.length > 0) && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
+                                {expiredActiveKeys.length > 0 && (
+                                    <span>
+                                        {expiredActiveKeys.length} key{expiredActiveKeys.length > 1 ? 's have' : ' has'} expired and should be revoked.{' '}
+                                    </span>
+                                )}
+                                {expiringKeys.length > 0 && (
+                                    <span>
+                                        {expiringKeys.length} key{expiringKeys.length > 1 ? 's are' : ' is'} expiring within 30 days.
+                                    </span>
+                                )}
+                            </p>
+                        </div>
+                    )}
+
                     {apiKeys.length === 0 ? (
                         <p className="text-muted-foreground text-sm">No API keys yet. Create one to get started.</p>
                     ) : (
@@ -216,8 +247,22 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                                             <td className="text-muted-foreground px-4 py-3">
                                                 {formatDate(key.last_used_at)}
                                             </td>
-                                            <td className="text-muted-foreground px-4 py-3">
-                                                {formatDate(key.expires_at)}
+                                            <td className="px-4 py-3">
+                                                {key.expires_at ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-muted-foreground">{formatDate(key.expires_at)}</span>
+                                                        {getExpiryStatus(key) === 'expired' && (
+                                                            <Badge variant="destructive" className="w-fit text-xs">Expired</Badge>
+                                                        )}
+                                                        {getExpiryStatus(key) === 'expiring-soon' && (
+                                                            <Badge variant="outline" className="w-fit border-amber-400 text-xs text-amber-700 dark:text-amber-400">
+                                                                Expiring soon
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3">
                                                 {key.is_active ? (

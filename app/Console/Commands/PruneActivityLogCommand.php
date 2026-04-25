@@ -30,38 +30,42 @@ class PruneActivityLogCommand extends Command
             ->filter()
             ->values();
 
-        // Chunk-delete to avoid long-running table locks
-        $total = 0;
-
-        do {
-            $deleted = ActivityLog::withoutGlobalScopes()
-                ->where('created_at', '<', $cutoff)
-                ->limit(500)
-                ->delete();
-
-            $total += $deleted;
-        } while ($deleted > 0);
-
-        if ($total === 0) {
+        if ($agencyIds->isEmpty()) {
             $this->info('Nothing to prune.');
 
             return self::SUCCESS;
         }
 
-        // Log the prune event once per affected agency
+        // Delete and log per agency to track accurate per-agency counts
+        $totalDeleted = 0;
+
         foreach ($agencyIds as $agencyId) {
+            $agencyTotal = 0;
+
+            do {
+                $deleted = ActivityLog::withoutGlobalScopes()
+                    ->where('agency_id', $agencyId)
+                    ->where('created_at', '<', $cutoff)
+                    ->limit(500)
+                    ->delete();
+
+                $agencyTotal += $deleted;
+            } while ($deleted > 0);
+
+            $totalDeleted += $agencyTotal;
+
             ActivityLogger::system(
                 agencyId: $agencyId,
                 event: ActivityLogEvent::ActivityLogPruned,
                 metadata: [
-                    'deleted_count' => $total,
+                    'deleted_count' => $agencyTotal,
                     'cutoff' => $cutoff->toIso8601String(),
                     'retention_months' => $months,
                 ],
             );
         }
 
-        $this->info("Done. Pruned {$total} log entries across {$agencyIds->count()} agency/agencies.");
+        $this->info("Done. Pruned {$totalDeleted} log entries across {$agencyIds->count()} agency/agencies.");
 
         return self::SUCCESS;
     }

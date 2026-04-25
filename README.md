@@ -304,16 +304,16 @@ An append-only `activity_logs` table records all security-relevant events across
 
 #### Logged Events
 
-| Category        | Events                                                                             |
-| --------------- | ---------------------------------------------------------------------------------- |
-| **Authentication** | User login, logout, password change, 2FA enabled/disabled                       |
-| **Access Control** | User invited, role changed                                                       |
-| **API Keys**    | Key created, revoked, used                                                         |
-| **Scans**       | Scan started, completed, failed                                                    |
-| **Issues**      | Status changed, assigned, comment added                                            |
-| **Audit & Reports** | Audit generated                                                                |
-| **Properties**  | Property created/updated                                                           |
-| **Organisations** | Organisation created/updated                                                     |
+| Category            | Events                                                    |
+| ------------------- | --------------------------------------------------------- |
+| **Authentication**  | User login, logout, password change, 2FA enabled/disabled |
+| **Access Control**  | User invited, role changed                                |
+| **API Keys**        | Key created, revoked, used                                |
+| **Scans**           | Scan started, completed, failed                           |
+| **Issues**          | Status changed, assigned, comment added                   |
+| **Audit & Reports** | Audit generated                                           |
+| **Properties**      | Property created/updated                                  |
+| **Organisations**   | Organisation created/updated                              |
 
 #### Implementation
 
@@ -628,14 +628,14 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 ## Settings
 
-| Page            | Route                          | Description                                        |
-| --------------- | ------------------------------ | -------------------------------------------------- |
-| Profile         | `/settings/profile`            | Name, email, and account details                   |
-| Password        | `/settings/password`           | Change account password                            |
-| Two-Factor Auth | `/settings/two-factor`         | Enable/disable 2FA and manage recovery codes       |
-| Appearance      | `/settings/appearance`         | Theme and UI preferences                           |
-| Notifications   | `/settings/notifications`      | Per-channel notification opt-out preferences       |
-| Scheduled Scans | `/settings/scheduled-scans`    | Manage recurring scans                             |
-| API Keys        | `/settings/api-keys`           | Create and revoke scoped API keys                  |
-| Integrations    | `/settings/integrations`       | Connect and manage project management integrations |
-| Activity Log    | `/settings/activity-log/export`| Download SOC2 audit log as CSV (last 365 days)     |
+| Page            | Route                           | Description                                        |
+| --------------- | ------------------------------- | -------------------------------------------------- |
+| Profile         | `/settings/profile`             | Name, email, and account details                   |
+| Password        | `/settings/password`            | Change account password                            |
+| Two-Factor Auth | `/settings/two-factor`          | Enable/disable 2FA and manage recovery codes       |
+| Appearance      | `/settings/appearance`          | Theme and UI preferences                           |
+| Notifications   | `/settings/notifications`       | Per-channel notification opt-out preferences       |
+| Scheduled Scans | `/settings/scheduled-scans`     | Manage recurring scans                             |
+| API Keys        | `/settings/api-keys`            | Create and revoke scoped API keys                  |
+| Integrations    | `/settings/integrations`        | Connect and manage project management integrations |
+| Activity Log    | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)     |

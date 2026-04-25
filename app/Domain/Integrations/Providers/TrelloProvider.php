@@ -52,7 +52,18 @@ class TrelloProvider implements ProjectManagementProvider
 
     public function verifyWebhook(Integration $integration, Request $request): bool
     {
-        return true;
+        $creds = $integration->credentials;
+        $secret = $creds['api_secret'] ?? null;
+
+        if (empty($secret)) {
+            return true;
+        }
+
+        $signature = $request->header('X-Trello-Webhook', '');
+        $content = $request->getContent().$request->url();
+        $expected = base64_encode(hash_hmac('sha1', $content, $secret, true));
+
+        return hash_equals($expected, $signature);
     }
 
     public function parseWebhookStatus(Request $request): string

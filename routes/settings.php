@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\AccessReviewController;
 use App\Http\Controllers\Settings\AccessReviewsExportController;
+use App\Http\Controllers\Settings\ActivityLogController;
 use App\Http\Controllers\Settings\ActivityLogExportController;
 use App\Http\Controllers\Settings\ApiKeyController;
 use App\Http\Controllers\Settings\ApiKeyInventoryExportController;
@@ -94,6 +95,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('settings/notification-webhook-routes/{notificationWebhookRoute}', [NotificationWebhookRouteController::class, 'destroy'])
         ->name('notification-webhook-routes.destroy');
+
+    Route::get('settings/activity-log', ActivityLogController::class)
+        ->name('activity-log.index');
 
     Route::get('settings/activity-log/export', ActivityLogExportController::class)
         ->name('activity-log.export');
