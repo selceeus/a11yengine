@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\Api\ActivityFeedController;
 use App\Http\Controllers\Api\AgencyGovernanceReportController;
 use App\Http\Controllers\Api\AgencyIssueSummaryController;
 use App\Http\Controllers\Api\AgencyOrgRiskTrendsController;
@@ -234,8 +235,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('api.notifications.index');
     Route::patch('api/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('api.notifications.read');
-    Route::post('api/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+    Route::get('api/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('api.notifications.read-all');
+
+    Route::get('api/activity-feed', ActivityFeedController::class)
+        ->name('api.activity-feed');
 });
 
 Route::middleware('guest')->group(function (): void {
