@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'activity_log_retention_months' => (int) env('ACTIVITY_LOG_RETENTION_MONTHS', 24),
+
 ];
