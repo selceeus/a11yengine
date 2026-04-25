@@ -25,6 +25,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 - **Notification Webhook Routing** — Route the same notification categories to Slack (Block Kit), Microsoft Teams (Adaptive Cards), or Discord (embeds) webhooks; URLs are stored encrypted at rest
 - **MCP Server** — Model Context Protocol endpoint exposing issues, risk summaries, scan findings, remediation guidance, compliance status, legal risk, and a real-time pending-alerts feed to any MCP-compatible AI tool; includes tools to trigger scans and update issue status
 - **Scoped API Keys** — Machine-to-machine keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients
+- **SOC2 Activity Feed** — Tamper-evident append-only audit log of all security-relevant events (logins, API key lifecycle, issue changes, scan outcomes) covering SOC2 CC6/CC7/CC8 controls; visible on the dashboard Activity tab and exportable as CSV for auditors
 - **WordPress Plugin API** — Dedicated REST endpoints (`GET /api/wordpress/properties`, `/issues`, `/risk-summary`, `POST /api/wordpress/scans`) authenticated via scoped `wordpress` API keys
 - **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly tenant-isolated
 - **Six-Role RBAC** — SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, and Viewer roles assignable at any scope level
@@ -297,6 +298,44 @@ Scoped API keys allow machine-to-machine access without user credentials. Keys a
 | `mcp`           | Connect AI tools via MCP protocol |
 | `wordpress`     | Authenticate the WordPress plugin |
 
+### SOC2 Activity Log
+
+An append-only `activity_logs` table records all security-relevant events across the platform, supporting SOC2 CC6 (Logical Access), CC7 (System Operations), and CC8 (Change Management) controls.
+
+#### Logged Events
+
+| Category        | Events                                                                             |
+| --------------- | ---------------------------------------------------------------------------------- |
+| **Authentication** | User login, logout, password change, 2FA enabled/disabled                       |
+| **Access Control** | User invited, role changed                                                       |
+| **API Keys**    | Key created, revoked, used                                                         |
+| **Scans**       | Scan started, completed, failed                                                    |
+| **Issues**      | Status changed, assigned, comment added                                            |
+| **Audit & Reports** | Audit generated                                                                |
+| **Properties**  | Property created/updated                                                           |
+| **Organisations** | Organisation created/updated                                                     |
+
+#### Implementation
+
+- Events are written via `ActivityLogger` — a static service with `log()` (authenticated user), `loginSuccess()`, `logoutSuccess()`, `apiKeyUsed()`, and `system()` (no-user) methods
+- Login/logout events fire via Laravel's built-in `Auth\Events\Login` / `Auth\Events\Logout` listeners
+- Scan events fire via `ScanCompleted` / `ScanFailed` application events
+- Issue changes are captured in `IssueObserver`; comments in `IssueCommentController`
+- API key lifecycle is captured in `ApiKeyController`
+- Each record stores `actor_type`, `actor_label`, `event`, `subject_type`, `subject_id`, `subject_label`, `metadata` (JSONB), `ip_address`, and `created_at` (no updates — append-only)
+- Scoped to the current agency via `TenantScope`
+- 1-year retention window enforced on the CSV export
+
+#### Dashboard Activity Tab
+
+The dashboard includes an **Activity** tab (alongside the Overview tab) showing a paginated, cursor-based feed of the agency's recent events via `GET /api/activity-feed`.
+
+#### SOC2 Export
+
+Agency admins can download the last 365 days of activity logs as a CSV from `GET /settings/activity-log/export`. The response streams in chunks of 500 records with appropriate `Content-Disposition` headers.
+
+---
+
 ### Notifications
 
 #### Per-User Notification Preferences
@@ -366,20 +405,23 @@ A dedicated API surface under `/api/wordpress/` provides everything a WordPress 
 
 ### PDF Accessibility Scanning
 
-During each crawl the Node.js crawler collects all PDF links on the same domain. After the page batch completes, a `ScanPdfJob` is dispatched per PDF to the dedicated `pdf` queue. The job calls the FastAPI microservice (`pdf-scanner/`) which downloads the PDF and runs six pypdf-based WCAG checks:
+During each crawl the Node.js crawler collects all PDF links on the same domain. After the page batch completes, a `ScanPdfJob` is dispatched per PDF to the dedicated `pdf` queue. The job calls the veraPDF REST microservice which downloads the PDF and validates it against the full PDF/UA-1 rule set.
 
-| Rule key            | WCAG Criterion | Severity |
-| ------------------- | -------------- | -------- |
-| `pdf/untagged`      | 1.3.1          | Critical |
-| `pdf/no-title`      | 2.4.2          | Serious  |
-| `pdf/no-language`   | 3.1.1          | Serious  |
-| `pdf/image-only`    | 1.1.1          | Critical |
-| `pdf/no-bookmarks`  | 2.4.5          | Moderate |
-| `pdf/figure-no-alt` | 1.1.1          | Serious  |
+The job maps veraPDF `ruleSummaries` and `checks` to flat `PdfViolation` records using a 30-clause `CLAUSE_META` lookup table:
+
+| Example clauses       | WCAG Criterion | Severity |
+| --------------------- | -------------- | -------- |
+| Tagged content (6.2)  | 1.3.1          | Critical |
+| Document title (7.1)  | 2.4.2          | Serious  |
+| Natural language (11) | 3.1.1          | Serious  |
+| Figure alt text (7.3) | 1.1.1          | Serious  |
+| Bookmarks (6.9)       | 2.4.5          | Moderate |
 
 Violations are stored as `PdfViolation` records linked to the `PdfDocument`. Results are viewable in the scan detail page (PDFs tab) and at `/pdf-documents/{id}`. The feature is disabled by default and enabled via `PDF_SCANNER_ENABLED=true`.
 
-`PdfScannerHealthService` pings the microservice's `/health` endpoint (3 s timeout) and caches the result for 60 seconds. When the service is unreachable or `PDF_SCANNER_ENABLED` is `false`, the PDFs tab on the scan detail page displays an inline availability warning.
+`PdfScannerHealthService` pings the microservice's `/api/info` endpoint (3 s timeout) and caches the result for 60 seconds. When the service is unreachable or `PDF_SCANNER_ENABLED` is `false`, the PDFs tab on the scan detail page displays an inline availability warning.
+
+**Docker:** The veraPDF REST service is declared in `docker-compose.yml` as `verapdf/rest:latest`, exposing port 8080 (API) and 8081 (Dropwizard diagnostics). JVM heap is capped via `JAVA_OPTS=-Xmx384m`.
 
 ---
 
@@ -509,12 +551,12 @@ It uses headless Playwright to crawl the target domain, respects `robots.txt` an
 
 ### PDF Scanner Microservice
 
-A standalone FastAPI service in `pdf-scanner/` handles PDF analysis. It exposes:
+PDF accessibility validation is handled by [veraPDF REST](https://verapdf.org/) (`verapdf/rest:latest`), a standards-compliant PDF/UA-1 validator. It exposes:
 
-- `POST /scan` — accepts `{url}`, downloads the PDF, runs WCAG checks, returns `{violations: [...]}`
-- `GET /health` — readiness probe
+- `POST /api/validate/url/ua1` — accepts `{url}`, validates the PDF against PDF/UA-1, returns a JSON report with `ruleSummaries` and per-rule `checks`
+- `GET /api/info` — readiness probe (Dropwizard diagnostics)
 
-The service is containerised via Docker and declared in `docker-compose.yml` (port 8080). Run it with:
+The service is declared in `docker-compose.yml` (port 8080). Run it with:
 
 ```bash
 docker compose up pdf-scanner
@@ -586,13 +628,14 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 ## Settings
 
-| Page            | Route                       | Description                                        |
-| --------------- | --------------------------- | -------------------------------------------------- |
-| Profile         | `/settings/profile`         | Name, email, and account details                   |
-| Password        | `/settings/password`        | Change account password                            |
-| Two-Factor Auth | `/settings/two-factor`      | Enable/disable 2FA and manage recovery codes       |
-| Appearance      | `/settings/appearance`      | Theme and UI preferences                           |
-| Notifications   | `/settings/notifications`   | Per-channel notification opt-out preferences       |
-| Scheduled Scans | `/settings/scheduled-scans` | Manage recurring scans                             |
-| API Keys        | `/settings/api-keys`        | Create and revoke scoped API keys                  |
-| Integrations    | `/settings/integrations`    | Connect and manage project management integrations |
+| Page            | Route                          | Description                                        |
+| --------------- | ------------------------------ | -------------------------------------------------- |
+| Profile         | `/settings/profile`            | Name, email, and account details                   |
+| Password        | `/settings/password`           | Change account password                            |
+| Two-Factor Auth | `/settings/two-factor`         | Enable/disable 2FA and manage recovery codes       |
+| Appearance      | `/settings/appearance`         | Theme and UI preferences                           |
+| Notifications   | `/settings/notifications`      | Per-channel notification opt-out preferences       |
+| Scheduled Scans | `/settings/scheduled-scans`    | Manage recurring scans                             |
+| API Keys        | `/settings/api-keys`           | Create and revoke scoped API keys                  |
+| Integrations    | `/settings/integrations`       | Connect and manage project management integrations |
+| Activity Log    | `/settings/activity-log/export`| Download SOC2 audit log as CSV (last 365 days)     |
