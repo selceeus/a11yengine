@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Audits\CompareAuditTrends;
 use App\Enums\AuditStatus;
 use App\Enums\ScanStatus;
+use App\Models\ActivityLog;
 use App\Models\Audit;
 use App\Models\Scan;
 use App\Models\WcagEmbedding;
@@ -46,6 +47,27 @@ class DashboardController extends Controller
                         ];
                     })
                     ->all();
+            }),
+            'activityFeed' => Inertia::defer(function (): array {
+                $logs = ActivityLog::query()
+                    ->latest()
+                    ->limit(50)
+                    ->get();
+
+                return $logs->map(fn (ActivityLog $log): array => [
+                    'id' => $log->id,
+                    'event' => $log->event->value,
+                    'event_label' => $log->event->label(),
+                    'event_category' => $log->event->category(),
+                    'actor_type' => $log->actor_type,
+                    'actor_label' => $log->actor_label,
+                    'subject_type' => $log->subject_type,
+                    'subject_id' => $log->subject_id,
+                    'subject_label' => $log->subject_label,
+                    'metadata' => $log->metadata,
+                    'ip_address' => $log->ip_address,
+                    'created_at' => $log->created_at->toIso8601String(),
+                ])->all();
             }),
         ]);
     }
