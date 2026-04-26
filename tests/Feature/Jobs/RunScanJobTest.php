@@ -75,6 +75,7 @@ beforeEach(function (): void {
 
     // Disable Lighthouse so only axe jobs run — keeps tests focused on the crawl pipeline
     config(['lighthouse.enabled' => false]);
+    config(['queue.default' => 'sync']);
 });
 
 // ─── Queue dispatching ────────────────────────────────────────────────────────

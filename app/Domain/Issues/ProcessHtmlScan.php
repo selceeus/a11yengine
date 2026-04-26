@@ -33,9 +33,14 @@ class ProcessHtmlScan
         $violations = $pageResult['violations'] ?? [];
         $detectedAt = Date::now();
 
-        $findings = $this->persistFindings($scan, $url, $violations, $detectedAt);
+        Finding::$suppressOccurrenceIncrement = true;
 
-        $this->normalizeFindings($findings, $scan);
+        try {
+            $findings = $this->persistFindings($scan, $url, $violations, $detectedAt);
+            $this->normalizeFindings($findings, $scan);
+        } finally {
+            Finding::$suppressOccurrenceIncrement = false;
+        }
 
         $page = $this->scanPage->record($scan, $url, $findings->count());
 

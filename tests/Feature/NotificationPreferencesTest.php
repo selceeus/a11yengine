@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IssueSeverity;
+use App\Enums\UserRole;
 use App\Events\ScanCompleted;
 use App\Listeners\NotifyScanCompleted;
 use App\Models\Agency;
@@ -24,7 +25,9 @@ function setupPreferencesTenant(): array
         'agency_id' => $agency->id,
         'organization_id' => $organization->id,
     ]);
-    $user = User::factory()->create(['agency_id' => $agency->id]);
+    $user = User::factory()
+        ->withRole(UserRole::Editor, $agency->id)
+        ->create(['agency_id' => $agency->id]);
     app()->instance(Agency::class, $agency);
 
     return [$user, $agency, $organization, $property];

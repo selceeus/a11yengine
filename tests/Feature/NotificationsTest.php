@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IssueSeverity;
+use App\Enums\UserRole;
 use App\Events\ScanCompleted;
 use App\Listeners\NotifyScanCompleted;
 use App\Models\Agency;
@@ -16,6 +17,10 @@ use Illuminate\Support\Facades\Notification;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+beforeEach(function (): void {
+    config(['queue.default' => 'sync']);
+});
+
 function setupTenant(): array
 {
     $agency = Agency::factory()->create();
@@ -24,7 +29,9 @@ function setupTenant(): array
         'agency_id' => $agency->id,
         'organization_id' => $organization->id,
     ]);
-    $user = User::factory()->create(['agency_id' => $agency->id]);
+    $user = User::factory()
+        ->withRole(UserRole::Editor, $agency->id)
+        ->create(['agency_id' => $agency->id]);
     app()->instance(Agency::class, $agency);
 
     return [$user, $agency, $organization, $property];

@@ -36,6 +36,7 @@ beforeEach(function (): void {
         ->create();
 
     $this->dispatcher = app(ScanPageDispatcher::class);
+    config(['queue.default' => 'sync']);
 });
 
 // ─── Immediate complete (no pages) ───────────────────────────────────────────

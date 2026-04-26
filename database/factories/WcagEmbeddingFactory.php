@@ -17,8 +17,8 @@ class WcagEmbeddingFactory extends Factory
     public function definition(): array
     {
         return [
-            'criterion' => fake()->randomElement(['1.1.1', '1.3.1', '1.4.3', '2.1.1', '4.1.2']),
-            'chunk_index' => fake()->numberBetween(0, 3),
+            'criterion' => fake()->unique()->randomElement(['1.1.1', '1.3.1', '1.4.3', '2.1.1', '4.1.2', '2.4.7', '3.1.1', '3.3.1', '1.2.1', '2.5.3', '1.2.2', '1.2.3', '1.2.4', '1.2.5', '1.3.2', '1.3.3', '1.3.4', '1.3.5', '1.4.1', '1.4.2', '2.1.2', '2.1.3', '2.2.1', '2.2.2', '2.3.1']),
+            'chunk_index' => 0,
             'level' => fake()->randomElement(['A', 'AA']),
             'title' => fake()->sentence(3),
             'chunk' => fake()->paragraph(),

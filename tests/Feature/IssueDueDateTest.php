@@ -2,6 +2,7 @@
 
 use App\Enums\IssueSeverity;
 use App\Enums\IssueStatus;
+use App\Enums\UserRole;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\IssueActivity;
@@ -19,7 +20,9 @@ beforeEach(function (): void {
         'agency_id' => $this->agency->id,
         'organization_id' => $this->organization->id,
     ]);
-    $this->actor = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->actor = User::factory()
+        ->withRole(UserRole::Editor, $this->agency->id)
+        ->create(['agency_id' => $this->agency->id]);
 });
 
 // ── auto-set on create ────────────────────────────────────────────────────────

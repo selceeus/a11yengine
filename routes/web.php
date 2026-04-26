@@ -235,7 +235,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('api.notifications.index');
     Route::patch('api/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('api.notifications.read');
-    Route::get('api/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+    Route::post('api/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('api.notifications.read-all');
 
     Route::get('api/activity-feed', ActivityFeedController::class)

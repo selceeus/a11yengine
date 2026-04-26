@@ -56,14 +56,19 @@ class OrgRiskTrendsController extends Controller
             ];
         }
 
+        $orgEntry = [
+            'id' => $organization->id,
+            'name' => $organization->name,
+            'series' => $series,
+        ];
+
         return response()->json([
-            'organizations' => [
-                [
-                    'id' => $organization->id,
-                    'name' => $organization->name,
-                    'series' => $series,
-                ],
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
             ],
+            'series' => $series,
+            'organizations' => [$orgEntry],
             'days' => $dateSpine,
             'generated_at' => now()->toISOString(),
         ]);

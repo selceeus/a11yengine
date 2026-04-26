@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IssueActivityType;
+use App\Enums\UserRole;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\IssueActivity;
@@ -25,7 +26,9 @@ beforeEach(function (): void {
         'organization_id' => $this->organization->id,
         'property_id' => $this->property->id,
     ]);
-    $this->actor = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->actor = User::factory()
+        ->withRole(UserRole::Editor, $this->agency->id)
+        ->create(['agency_id' => $this->agency->id]);
 });
 
 // ── store ─────────────────────────────────────────────────────────────────────

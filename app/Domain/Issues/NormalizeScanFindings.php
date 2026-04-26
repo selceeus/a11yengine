@@ -36,10 +36,12 @@ class NormalizeScanFindings
         if ($issue) {
             $issue->update(['last_detected_at' => $finding->detected_at]);
 
-            if (! in_array($issue->id, $incrementedIssueIds)) {
+            if ($finding->issue_id === null && ! in_array($issue->id, $incrementedIssueIds)) {
                 $issue->incrementOccurrence();
                 $incrementedIssueIds[] = $issue->id;
             }
+
+            $finding->update(['issue_id' => $issue->id]);
 
             return;
         }

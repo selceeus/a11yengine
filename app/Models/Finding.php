@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\FindingSeverity;
+use App\Enums\IssueStatus;
 use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Finding extends Model
 {
     use HasFactory;
+
+    public static bool $suppressOccurrenceIncrement = false;
 
     protected $fillable = [
         'agency_id',
@@ -38,6 +41,25 @@ class Finding extends Model
 
         static::saving(function (self $finding): void {
             $finding->fingerprint ??= $finding->computeFingerprint();
+        });
+
+        static::created(function (self $finding): void {
+            if (self::$suppressOccurrenceIncrement) {
+                return;
+            }
+
+            $issue = Issue::withoutGlobalScope(TenantScope::class)
+                ->where('agency_id', $finding->agency_id)
+                ->where('property_id', $finding->property_id)
+                ->where('rule_key', $finding->rule_key)
+                ->where('page_url', $finding->page_url)
+                ->whereIn('status', [IssueStatus::Open->value, IssueStatus::InProgress->value])
+                ->first();
+
+            if ($issue) {
+                $issue->incrementOccurrence();
+                $finding->withoutEvents(fn () => $finding->update(['issue_id' => $issue->id]));
+            }
         });
     }
 
