@@ -24,8 +24,11 @@ An enterprise web accessibility auditing and risk management platform. It automa
 - **Notification Email Routing** — Route scan, failure, report, and issue notifications by category to any number of non-user email addresses per agency (complements per-user preferences)
 - **Notification Webhook Routing** — Route the same notification categories to Slack (Block Kit), Microsoft Teams (Adaptive Cards), or Discord (embeds) webhooks; URLs are stored encrypted at rest
 - **MCP Server** — Model Context Protocol endpoint exposing issues, risk summaries, scan findings, remediation guidance, compliance status, legal risk, and a real-time pending-alerts feed to any MCP-compatible AI tool; includes tools to trigger scans and update issue status
-- **Scoped API Keys** — Machine-to-machine keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients
-- **SOC2 Activity Feed** — Tamper-evident append-only audit log of all security-relevant events (logins, API key lifecycle, issue changes, scan outcomes) covering SOC2 CC6/CC7/CC8 controls; visible on the dashboard Activity tab and exportable as CSV for auditors
+- **Scoped API Keys** — Machine-to-machine keys with fine-grained scopes for external integrations, the WordPress plugin, and MCP clients; keys carry optional expiry dates with automated expiry notifications (30-day warning) and daily auto-revocation of expired keys
+- **SOC2 Activity Feed** — Tamper-evident append-only audit log of all security-relevant events (logins, failed logins, API key lifecycle, issue changes, scan outcomes) covering SOC2 CC6/CC7/CC8 controls; searchable and filterable in **Settings → Activity Log** with Export CSV for auditors; configurable retention window (default 1 year, pruned monthly)
+- **SOC2 Access Reviews** — Quarterly access review workflows allowing agency admins to confirm or revoke individual user access; reviewers are notified when a new review cycle opens; completed review history is exportable as CSV
+- **SOC2 Evidence Package** — Single-page evidence hub at **Settings → SOC2 Evidence** that bundles three point-in-time exports: user/role assignments, API key inventory, and access review history
+- **Failed Login Alerting** — Consecutive failed login attempts trigger a `SuspiciousLoginNotification` to the targeted user and agency admins; all failed attempts are recorded in the activity log
 - **WordPress Plugin API** — Dedicated REST endpoints (`GET /api/wordpress/properties`, `/issues`, `/risk-summary`, `POST /api/wordpress/scans`) authenticated via scoped `wordpress` API keys
 - **Multi-Tenant Architecture** — Agencies contain organisations which contain properties; all data is strictly tenant-isolated
 - **Six-Role RBAC** — SuperUser, AgencyAdmin, OrgAdmin, PropAdmin, Editor, and Viewer roles assignable at any scope level
@@ -249,12 +252,12 @@ Issues can be pushed to external project management tools via the `Integration` 
 | Linear        | Token     | ✓                      |
 | Asana         | Token     | ✓                      |
 | Wrike         | Token     | ✓                      |
-| ClickUp       | Token     |                        |
+| ClickUp       | Token     | ✓                      |
 | Monday.com    | Token     |                        |
-| Azure DevOps  | PAT       |                        |
-| Trello        | API Key   |                        |
-| Notion        | Token     |                        |
-| Basecamp      | Token     |                        |
+| Azure DevOps  | PAT       | ✓                      |
+| Trello        | API Key   | ✓                      |
+| Notion        | Token     | ✓                      |
+| Basecamp      | Token     | ✓                      |
 
 Integrations are configured per agency in **Settings → Integrations**. Webhooks from providers are received at `POST /api/webhooks/integrations/{integration}` to sync status back to `IssueLink` records.
 
@@ -263,7 +266,14 @@ Integrations are configured per agency in **Settings → Integrations**. Webhook
 Providers that support webhooks can optionally have a `webhook_secret` credential stored on the integration. When present, the platform verifies the incoming request signature before processing:
 
 - **Jira, Linear, Asana, Wrike, GitHub** — HMAC-SHA256 signature verified against the provider-specific header
+- **Linear** — HMAC-SHA256 on `X-Linear-Signature`
+- **ClickUp** — HMAC-SHA256 on `X-Signature`
+- **Basecamp** — HMAC-SHA256 on `X-Signature-256` (`sha256=` prefix stripped before comparison)
+- **Trello** — HMAC-SHA1 base64 on `X-Trello-Webhook` using the integration's `api_secret` credential
+- **Azure DevOps** — Basic auth password comparison via `hash_equals`
 - **Notion** — HMAC-SHA256 verified against the `X-Notion-Signature` header using the optional `webhook_secret` credential field; requests without a configured secret are accepted (permissive fallback for backward compatibility)
+
+All providers fall back to accepting requests when no secret or credential is configured.
 
 ### MCP Server
 
@@ -304,16 +314,17 @@ An append-only `activity_logs` table records all security-relevant events across
 
 #### Logged Events
 
-| Category            | Events                                                    |
-| ------------------- | --------------------------------------------------------- |
-| **Authentication**  | User login, logout, password change, 2FA enabled/disabled |
-| **Access Control**  | User invited, role changed                                |
-| **API Keys**        | Key created, revoked, used                                |
-| **Scans**           | Scan started, completed, failed                           |
-| **Issues**          | Status changed, assigned, comment added                   |
-| **Audit & Reports** | Audit generated                                           |
-| **Properties**      | Property created/updated                                  |
-| **Organisations**   | Organisation created/updated                              |
+| Category            | Events                                                                     |
+| ------------------- | -------------------------------------------------------------------------- |
+| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled    |
+| **Access Control**  | User invited, role changed                                                 |
+| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry        |
+| **Scans**           | Scan started, completed, failed                                            |
+| **Issues**          | Status changed, assigned, comment added                                    |
+| **Audit & Reports** | Audit generated                                                            |
+| **Properties**      | Property created/updated                                                   |
+| **Organisations**   | Organisation created/updated                                               |
+| **Maintenance**     | Activity log pruned                                                        |
 
 #### Implementation
 
@@ -330,25 +341,64 @@ An append-only `activity_logs` table records all security-relevant events across
 
 The dashboard includes an **Activity** tab (alongside the Overview tab) showing a paginated, cursor-based feed of the agency's recent events via `GET /api/activity-feed`.
 
+#### Activity Log Viewer
+
+Agency admins can browse, search, and filter the full activity log at **Settings → Activity Log** (`/settings/activity-log`). The page supports filtering by category (authentication, access control, API keys, scans, issues, etc.) and date range, with colour-coded category badges and cursor-based pagination. The **Export CSV** button on this page triggers the same CSV stream as the dedicated export endpoint.
+
 #### SOC2 Export
 
 Agency admins can download the last 365 days of activity logs as a CSV from `GET /settings/activity-log/export`. The response streams in chunks of 500 records with appropriate `Content-Disposition` headers.
 
+#### Activity Log Retention
+
+A configurable retention window (default 12 months, set via `app.activity_log_retention_months`) is enforced by the `activity-log:prune` Artisan command, which runs on a monthly schedule. Pruning deletes records older than the threshold on a per-agency basis and writes an `ActivityLogPruned` entry to record the count of removed rows per agency.
+
 ---
 
-### Notifications
+### SOC2 Access Reviews
+
+Quarterly access review cycles allow agency admins to verify that every user's role and access level is still appropriate. The `access-reviews:create` command (scheduled quarterly) generates a new `AccessReview` record per agency and notifies all `AgencyAdmin` users via `AccessReviewDueNotification`. Admins review each user in **Settings → Access Reviews**, confirming or revoking access one user at a time, before marking the review complete.
+
+| Route                                                                   | Description                                         |
+| ----------------------------------------------------------------------- | --------------------------------------------------- |
+| `GET /settings/access-reviews`                                          | List all access review cycles for the agency        |
+| `GET /settings/access-reviews/{id}`                                     | Detail page — confirm or revoke users per review    |
+| `POST /settings/access-reviews/{id}/users/{user}/confirm`               | Mark a user's access as confirmed                   |
+| `POST /settings/access-reviews/{id}/users/{user}/revoke`                | Revoke a user's access from within the review       |
+| `POST /settings/access-reviews/{id}/complete`                           | Mark the review cycle as completed                  |
+
+---
+
+### SOC2 Evidence Package
+
+**Settings → SOC2 Evidence** (`/settings/soc2-evidence`) is a single-page hub that aggregates point-in-time compliance exports for auditors.
+
+| Export                                           | Route                                             | Contents                                               |
+| ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------ |
+| User Roles                                       | `GET /settings/soc2-evidence/export/user-roles`   | All users with their roles, scope, and assignment date |
+| API Key Inventory                                | `GET /settings/soc2-evidence/export/api-keys`     | All keys with scope, expiry, creator, and status       |
+| Access Review History                            | `GET /settings/soc2-evidence/export/access-reviews` | All completed review cycles with per-user outcomes   |
+
+---
+
+### Failed Login Alerting
+
+Consecutive failed login attempts for an account are recorded as `failed_login` events in the activity log. When the threshold is crossed, a `SuspiciousLoginNotification` is dispatched to the affected user and all `AgencyAdmin` users in the relevant agency, including the source IP address and timestamp.
 
 #### Per-User Notification Preferences
 
 Users manage preferences per notification type and channel in **Settings → Notifications** using an opt-out model (enabled by default).
 
-| Notification                 | Trigger                                         |
-| ---------------------------- | ----------------------------------------------- |
-| `ScanCompletedNotification`  | A scan completes on a property the user follows |
-| `ScanFailedNotification`     | A scan fails for any reason                     |
-| `IssueAssignedNotification`  | An issue is assigned to the user                |
-| `IssueMentionedNotification` | The user is @mentioned in an issue comment      |
-| `WeeklyDigestNotification`   | Weekly summary of new/resolved issues and scans |
+| Notification                       | Trigger                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `ScanCompletedNotification`        | A scan completes on a property the user follows                                     |
+| `ScanFailedNotification`           | A scan fails for any reason                                                         |
+| `IssueAssignedNotification`        | An issue is assigned to the user                                                    |
+| `IssueMentionedNotification`       | The user is @mentioned in an issue comment                                          |
+| `WeeklyDigestNotification`         | Weekly summary of new/resolved issues and scans                                     |
+| `SuspiciousLoginNotification`      | Consecutive failed login attempts detected for an account                           |
+| `AccessReviewDueNotification`      | A new quarterly access review cycle has been created for the agency                 |
+| `ApiKeyExpiringSoonNotification`   | An API key is expiring within 30 days (sent to the key's creator and agency admins) |
 
 #### Agency-Level Notification Routing
 
@@ -520,6 +570,10 @@ Reports can be exported via the `Exportable` concern:
 | `php artisan governance:generate-reports` | Generate scheduled governance reports                                       |
 | `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users                        |
 | `php artisan app:backfill-user-roles`     | Populate historical user role records                                       |
+| `php artisan access-reviews:create`       | Create a new quarterly access review cycle for every agency (runs quarterly) |
+| `php artisan api-keys:notify-expiring`    | Send expiry warning notifications for API keys expiring within 30 days (runs daily) |
+| `php artisan api-keys:revoke-expired`     | Auto-revoke any API keys past their expiry date (runs daily)                |
+| `php artisan activity-log:prune`          | Delete activity log entries older than the configured retention window (runs monthly) |
 | `php artisan rag:index-wcag`              | Dispatch jobs to embed all WCAG criteria chunks into the vector store       |
 | `php artisan rag:index-lawsuits`          | Dispatch jobs to embed ADA lawsuit records into the vector store            |
 | `php artisan rag:reindex`                 | Re-index one or more RAG stores (`wcag`, `lawsuits`, `remediations`)        |
@@ -636,6 +690,9 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 | Appearance      | `/settings/appearance`          | Theme and UI preferences                           |
 | Notifications   | `/settings/notifications`       | Per-channel notification opt-out preferences       |
 | Scheduled Scans | `/settings/scheduled-scans`     | Manage recurring scans                             |
-| API Keys        | `/settings/api-keys`            | Create and revoke scoped API keys                  |
+| API Keys        | `/settings/api-keys`            | Create and revoke scoped API keys; expiry status badges and alert banner for keys expiring within 30 days |
 | Integrations    | `/settings/integrations`        | Connect and manage project management integrations |
-| Activity Log    | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)     |
+| Activity Log    | `/settings/activity-log`        | Browse and filter the full activity log with category and date range filters |
+| Activity Log Export | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)  |
+| Access Reviews  | `/settings/access-reviews`      | Manage quarterly SOC2 access review cycles         |
+| SOC2 Evidence   | `/settings/soc2-evidence`       | Download user-role, API key, and access review exports for auditors |
