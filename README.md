@@ -314,17 +314,17 @@ An append-only `activity_logs` table records all security-relevant events across
 
 #### Logged Events
 
-| Category            | Events                                                                     |
-| ------------------- | -------------------------------------------------------------------------- |
-| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled    |
-| **Access Control**  | User invited, role changed                                                 |
-| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry        |
-| **Scans**           | Scan started, completed, failed                                            |
-| **Issues**          | Status changed, assigned, comment added                                    |
-| **Audit & Reports** | Audit generated                                                            |
-| **Properties**      | Property created/updated                                                   |
-| **Organisations**   | Organisation created/updated                                               |
-| **Maintenance**     | Activity log pruned                                                        |
+| Category            | Events                                                                  |
+| ------------------- | ----------------------------------------------------------------------- |
+| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled |
+| **Access Control**  | User invited, role changed                                              |
+| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry     |
+| **Scans**           | Scan started, completed, failed                                         |
+| **Issues**          | Status changed, assigned, comment added                                 |
+| **Audit & Reports** | Audit generated                                                         |
+| **Properties**      | Property created/updated                                                |
+| **Organisations**   | Organisation created/updated                                            |
+| **Maintenance**     | Activity log pruned                                                     |
 
 #### Implementation
 
@@ -359,13 +359,13 @@ A configurable retention window (default 12 months, set via `app.activity_log_re
 
 Quarterly access review cycles allow agency admins to verify that every user's role and access level is still appropriate. The `access-reviews:create` command (scheduled quarterly) generates a new `AccessReview` record per agency and notifies all `AgencyAdmin` users via `AccessReviewDueNotification`. Admins review each user in **Settings → Access Reviews**, confirming or revoking access one user at a time, before marking the review complete.
 
-| Route                                                                   | Description                                         |
-| ----------------------------------------------------------------------- | --------------------------------------------------- |
-| `GET /settings/access-reviews`                                          | List all access review cycles for the agency        |
-| `GET /settings/access-reviews/{id}`                                     | Detail page — confirm or revoke users per review    |
-| `POST /settings/access-reviews/{id}/users/{user}/confirm`               | Mark a user's access as confirmed                   |
-| `POST /settings/access-reviews/{id}/users/{user}/revoke`                | Revoke a user's access from within the review       |
-| `POST /settings/access-reviews/{id}/complete`                           | Mark the review cycle as completed                  |
+| Route                                                     | Description                                      |
+| --------------------------------------------------------- | ------------------------------------------------ |
+| `GET /settings/access-reviews`                            | List all access review cycles for the agency     |
+| `GET /settings/access-reviews/{id}`                       | Detail page — confirm or revoke users per review |
+| `POST /settings/access-reviews/{id}/users/{user}/confirm` | Mark a user's access as confirmed                |
+| `POST /settings/access-reviews/{id}/users/{user}/revoke`  | Revoke a user's access from within the review    |
+| `POST /settings/access-reviews/{id}/complete`             | Mark the review cycle as completed               |
 
 ---
 
@@ -373,11 +373,11 @@ Quarterly access review cycles allow agency admins to verify that every user's r
 
 **Settings → SOC2 Evidence** (`/settings/soc2-evidence`) is a single-page hub that aggregates point-in-time compliance exports for auditors.
 
-| Export                                           | Route                                             | Contents                                               |
-| ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------ |
-| User Roles                                       | `GET /settings/soc2-evidence/export/user-roles`   | All users with their roles, scope, and assignment date |
-| API Key Inventory                                | `GET /settings/soc2-evidence/export/api-keys`     | All keys with scope, expiry, creator, and status       |
-| Access Review History                            | `GET /settings/soc2-evidence/export/access-reviews` | All completed review cycles with per-user outcomes   |
+| Export                | Route                                               | Contents                                               |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------------ |
+| User Roles            | `GET /settings/soc2-evidence/export/user-roles`     | All users with their roles, scope, and assignment date |
+| API Key Inventory     | `GET /settings/soc2-evidence/export/api-keys`       | All keys with scope, expiry, creator, and status       |
+| Access Review History | `GET /settings/soc2-evidence/export/access-reviews` | All completed review cycles with per-user outcomes     |
 
 ---
 
@@ -389,16 +389,16 @@ Consecutive failed login attempts for an account are recorded as `failed_login` 
 
 Users manage preferences per notification type and channel in **Settings → Notifications** using an opt-out model (enabled by default).
 
-| Notification                       | Trigger                                                                             |
-| ---------------------------------- | ----------------------------------------------------------------------------------- |
-| `ScanCompletedNotification`        | A scan completes on a property the user follows                                     |
-| `ScanFailedNotification`           | A scan fails for any reason                                                         |
-| `IssueAssignedNotification`        | An issue is assigned to the user                                                    |
-| `IssueMentionedNotification`       | The user is @mentioned in an issue comment                                          |
-| `WeeklyDigestNotification`         | Weekly summary of new/resolved issues and scans                                     |
-| `SuspiciousLoginNotification`      | Consecutive failed login attempts detected for an account                           |
-| `AccessReviewDueNotification`      | A new quarterly access review cycle has been created for the agency                 |
-| `ApiKeyExpiringSoonNotification`   | An API key is expiring within 30 days (sent to the key's creator and agency admins) |
+| Notification                     | Trigger                                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| `ScanCompletedNotification`      | A scan completes on a property the user follows                                     |
+| `ScanFailedNotification`         | A scan fails for any reason                                                         |
+| `IssueAssignedNotification`      | An issue is assigned to the user                                                    |
+| `IssueMentionedNotification`     | The user is @mentioned in an issue comment                                          |
+| `WeeklyDigestNotification`       | Weekly summary of new/resolved issues and scans                                     |
+| `SuspiciousLoginNotification`    | Consecutive failed login attempts detected for an account                           |
+| `AccessReviewDueNotification`    | A new quarterly access review cycle has been created for the agency                 |
+| `ApiKeyExpiringSoonNotification` | An API key is expiring within 30 days (sent to the key's creator and agency admins) |
 
 #### Agency-Level Notification Routing
 
@@ -560,25 +560,25 @@ Reports can be exported via the `Exportable` concern:
 
 ## Artisan Commands
 
-| Command                                   | Description                                                                 |
-| ----------------------------------------- | --------------------------------------------------------------------------- |
-| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                                         |
-| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min                       |
-| `php artisan snapshots:property-risk`     | Record a point-in-time risk snapshot for every property                     |
-| `php artisan snapshots:organization-risk` | Record a point-in-time risk snapshot for every organisation                 |
-| `php artisan snapshots:agency-risk`       | Record a point-in-time risk snapshot for every agency                       |
-| `php artisan governance:generate-reports` | Generate scheduled governance reports                                       |
-| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users                        |
-| `php artisan app:backfill-user-roles`     | Populate historical user role records                                       |
-| `php artisan access-reviews:create`       | Create a new quarterly access review cycle for every agency (runs quarterly) |
-| `php artisan api-keys:notify-expiring`    | Send expiry warning notifications for API keys expiring within 30 days (runs daily) |
-| `php artisan api-keys:revoke-expired`     | Auto-revoke any API keys past their expiry date (runs daily)                |
+| Command                                   | Description                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| `php artisan scans:run-scheduled`         | Execute all pending scheduled scans                                                   |
+| `php artisan scans:expire-stuck`          | Fail any scans stuck in the running state for >20 min                                 |
+| `php artisan snapshots:property-risk`     | Record a point-in-time risk snapshot for every property                               |
+| `php artisan snapshots:organization-risk` | Record a point-in-time risk snapshot for every organisation                           |
+| `php artisan snapshots:agency-risk`       | Record a point-in-time risk snapshot for every agency                                 |
+| `php artisan governance:generate-reports` | Generate scheduled governance reports                                                 |
+| `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users                                  |
+| `php artisan app:backfill-user-roles`     | Populate historical user role records                                                 |
+| `php artisan access-reviews:create`       | Create a new quarterly access review cycle for every agency (runs quarterly)          |
+| `php artisan api-keys:notify-expiring`    | Send expiry warning notifications for API keys expiring within 30 days (runs daily)   |
+| `php artisan api-keys:revoke-expired`     | Auto-revoke any API keys past their expiry date (runs daily)                          |
 | `php artisan activity-log:prune`          | Delete activity log entries older than the configured retention window (runs monthly) |
-| `php artisan rag:index-wcag`              | Dispatch jobs to embed all WCAG criteria chunks into the vector store       |
-| `php artisan rag:index-lawsuits`          | Dispatch jobs to embed ADA lawsuit records into the vector store            |
-| `php artisan rag:reindex`                 | Re-index one or more RAG stores (`wcag`, `lawsuits`, `remediations`)        |
-| `php artisan rag:reindex-remediations`    | Index resolved issues with AI suggestions into the remediation vector store |
-| `php artisan rag:status`                  | Display the current status of all RAG embedding tables                      |
+| `php artisan rag:index-wcag`              | Dispatch jobs to embed all WCAG criteria chunks into the vector store                 |
+| `php artisan rag:index-lawsuits`          | Dispatch jobs to embed ADA lawsuit records into the vector store                      |
+| `php artisan rag:reindex`                 | Re-index one or more RAG stores (`wcag`, `lawsuits`, `remediations`)                  |
+| `php artisan rag:reindex-remediations`    | Index resolved issues with AI suggestions into the remediation vector store           |
+| `php artisan rag:status`                  | Display the current status of all RAG embedding tables                                |
 
 ---
 
@@ -682,17 +682,17 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 ## Settings
 
-| Page            | Route                           | Description                                        |
-| --------------- | ------------------------------- | -------------------------------------------------- |
-| Profile         | `/settings/profile`             | Name, email, and account details                   |
-| Password        | `/settings/password`            | Change account password                            |
-| Two-Factor Auth | `/settings/two-factor`          | Enable/disable 2FA and manage recovery codes       |
-| Appearance      | `/settings/appearance`          | Theme and UI preferences                           |
-| Notifications   | `/settings/notifications`       | Per-channel notification opt-out preferences       |
-| Scheduled Scans | `/settings/scheduled-scans`     | Manage recurring scans                             |
-| API Keys        | `/settings/api-keys`            | Create and revoke scoped API keys; expiry status badges and alert banner for keys expiring within 30 days |
-| Integrations    | `/settings/integrations`        | Connect and manage project management integrations |
-| Activity Log    | `/settings/activity-log`        | Browse and filter the full activity log with category and date range filters |
-| Activity Log Export | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)  |
-| Access Reviews  | `/settings/access-reviews`      | Manage quarterly SOC2 access review cycles         |
-| SOC2 Evidence   | `/settings/soc2-evidence`       | Download user-role, API key, and access review exports for auditors |
+| Page                | Route                           | Description                                                                                               |
+| ------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Profile             | `/settings/profile`             | Name, email, and account details                                                                          |
+| Password            | `/settings/password`            | Change account password                                                                                   |
+| Two-Factor Auth     | `/settings/two-factor`          | Enable/disable 2FA and manage recovery codes                                                              |
+| Appearance          | `/settings/appearance`          | Theme and UI preferences                                                                                  |
+| Notifications       | `/settings/notifications`       | Per-channel notification opt-out preferences                                                              |
+| Scheduled Scans     | `/settings/scheduled-scans`     | Manage recurring scans                                                                                    |
+| API Keys            | `/settings/api-keys`            | Create and revoke scoped API keys; expiry status badges and alert banner for keys expiring within 30 days |
+| Integrations        | `/settings/integrations`        | Connect and manage project management integrations                                                        |
+| Activity Log        | `/settings/activity-log`        | Browse and filter the full activity log with category and date range filters                              |
+| Activity Log Export | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)                                                            |
+| Access Reviews      | `/settings/access-reviews`      | Manage quarterly SOC2 access review cycles                                                                |
+| SOC2 Evidence       | `/settings/soc2-evidence`       | Download user-role, API key, and access review exports for auditors                                       |
