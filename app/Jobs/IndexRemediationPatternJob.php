@@ -5,16 +5,13 @@ namespace App\Jobs;
 use App\Models\Issue;
 use App\Models\RemediationEmbedding;
 use App\Services\EmbeddingService;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
 class IndexRemediationPatternJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     public int $timeout = 120;
 

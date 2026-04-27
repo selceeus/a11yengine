@@ -4,16 +4,13 @@ namespace App\Jobs;
 
 use App\Models\LawsuitEmbedding;
 use App\Services\EmbeddingService;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
 class IngestLawsuitDataJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     public int $timeout = 120;
 
