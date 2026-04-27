@@ -26,4 +26,10 @@ enum IssueStatus: string
     {
         return in_array($this, self::terminalStatuses(), strict: true);
     }
+
+    /** @return list<string> */
+    public static function activeStatusValues(): array
+    {
+        return array_map(fn (self $s) => $s->value, self::activeStatuses());
+    }
 }

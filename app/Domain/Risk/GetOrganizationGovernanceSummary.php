@@ -50,7 +50,7 @@ class GetOrganizationGovernanceSummary
 
         $openIssues = Issue::query()
             ->where('organization_id', $organizationId)
-            ->where('status', IssueStatus::Open)
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->count();
 
         // Last completed scan timestamp
@@ -80,7 +80,7 @@ class GetOrganizationGovernanceSummary
         // Open issues that are high/critical and first detected more than 30 days ago
         $agingHighRiskIssues = Issue::query()
             ->where('organization_id', $organizationId)
-            ->where('status', IssueStatus::Open)
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->whereIn('severity', [IssueSeverity::High->value, IssueSeverity::Critical->value])
             ->where('first_detected_at', '<', $now->copy()->subDays(30))
             ->count();

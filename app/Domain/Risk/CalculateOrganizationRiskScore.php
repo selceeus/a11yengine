@@ -16,7 +16,7 @@ class CalculateOrganizationRiskScore
 
         return (int) Issue::query()
             ->where('organization_id', $organizationId)
-            ->where('status', IssueStatus::Open)
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->selectRaw('SUM(risk_weight * occurrence_count) as score')
             ->value('score');
     }

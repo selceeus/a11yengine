@@ -4,18 +4,16 @@ namespace App\Observers;
 
 use App\Enums\ActivityLogEvent;
 use App\Enums\IssueActivityType;
-use App\Enums\IssueSeverity;
 use App\Models\Issue;
 use App\Models\IssueActivity;
 use App\Services\ActivityLogger;
-use Carbon\CarbonImmutable;
 
 class IssueObserver
 {
     public function creating(Issue $issue): void
     {
         if ($issue->due_date === null && $issue->severity !== null) {
-            $issue->due_date = self::defaultDueDateForSeverity($issue->severity);
+            $issue->due_date = Issue::defaultDueDateForSeverity($issue->severity);
         }
     }
 
@@ -78,17 +76,5 @@ class IssueObserver
                 'created_at' => now(),
             ]);
         }
-    }
-
-    public static function defaultDueDateForSeverity(IssueSeverity $severity): CarbonImmutable
-    {
-        $days = match ($severity) {
-            IssueSeverity::Critical => 7,
-            IssueSeverity::High => 14,
-            IssueSeverity::Medium => 30,
-            IssueSeverity::Low => 60,
-        };
-
-        return now()->addDays($days);
     }
 }

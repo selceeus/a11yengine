@@ -123,7 +123,7 @@ class AiGovernanceService
         // Open issue counts for AI context
         $openIssueCounts = Issue::withoutGlobalScopes()
             ->where('property_id', $report->property_id)
-            ->whereIn('status', array_map(fn ($s) => $s->value, IssueStatus::activeStatuses()))
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->selectRaw('severity, COUNT(*) as total')
             ->groupBy('severity')
             ->pluck('total', 'severity')
@@ -200,7 +200,7 @@ class AiGovernanceService
 
         $openIssueCounts = Issue::withoutGlobalScopes()
             ->where('agency_id', $agencyId)
-            ->whereIn('status', array_map(fn ($s) => $s->value, IssueStatus::activeStatuses()))
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->selectRaw('severity, COUNT(*) as total')
             ->groupBy('severity')
             ->pluck('total', 'severity')
@@ -340,7 +340,7 @@ class AiGovernanceService
         // Group by distinct criterion so each SC counts once regardless of how many violations exist.
         $rows = $query
             ->whereNotNull('wcag_criteria')
-            ->whereIn('status', array_map(fn ($s) => $s->value, IssueStatus::activeStatuses()))
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->selectRaw('DISTINCT wcag_criteria')
             ->get();
 

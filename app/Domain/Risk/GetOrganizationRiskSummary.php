@@ -34,7 +34,7 @@ class GetOrganizationRiskSummary
 
         $base = Issue::query()
             ->where('organization_id', $organizationId)
-            ->where('status', IssueStatus::Open);
+            ->whereIn('status', IssueStatus::activeStatusValues());
 
         $totalRiskScore = $this->calculator->handle($organizationId);
 

@@ -38,7 +38,7 @@ class GenerateRiskBreakdown
 
         $base = Issue::query()
             ->where('organization_id', $organization->id)
-            ->where('status', IssueStatus::Open);
+            ->whereIn('status', IssueStatus::activeStatusValues());
 
         $totalRiskScore = $this->calculator->handle($organization);
 

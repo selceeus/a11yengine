@@ -72,7 +72,7 @@ class OrganizationController extends Controller
         $openIssueCount = Issue::withoutGlobalScopes()
             ->where('agency_id', $organization->agency_id)
             ->whereIn('property_id', $propertyIds)
-            ->whereIn('status', array_map(fn (IssueStatus $s) => $s->value, IssueStatus::activeStatuses()))
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->count();
 
         $latestScan = Scan::withoutGlobalScopes()

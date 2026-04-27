@@ -16,11 +16,11 @@ class NormalizeScanFindings
         $incrementedIssueIds = [];
 
         $scan->findings()->each(function (Finding $finding) use (&$incrementedIssueIds): void {
-            $this->normalizeFiniding($finding, $incrementedIssueIds);
+            $this->normalizeFinding($finding, $incrementedIssueIds);
         });
     }
 
-    private function normalizeFiniding(Finding $finding, array &$incrementedIssueIds): void
+    private function normalizeFinding(Finding $finding, array &$incrementedIssueIds): void
     {
         $issue = Issue::query()
             ->where('agency_id', $finding->agency_id)

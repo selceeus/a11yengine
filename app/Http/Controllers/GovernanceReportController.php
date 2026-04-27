@@ -72,7 +72,7 @@ class GovernanceReportController extends Controller
         } else {
             $this->authorize('create', GovernanceReport::class);
             $agencyId = $user->agency_id;
-            $organizationId = $user->organization_id;
+            $organizationId = null;
         }
 
         $report = GovernanceReport::withoutGlobalScopes()->create([

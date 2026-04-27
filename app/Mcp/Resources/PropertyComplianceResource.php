@@ -39,7 +39,7 @@ class PropertyComplianceResource extends Resource implements HasUriTemplate
             return Response::error('Property not found for slug: '.$slug);
         }
 
-        $activeStatuses = array_map(fn (IssueStatus $s) => $s->value, IssueStatus::activeStatuses());
+        $activeStatuses = IssueStatus::activeStatusValues();
 
         $failingCriteria = Issue::withoutGlobalScope(TenantScope::class)
             ->where('property_id', $property->id)
