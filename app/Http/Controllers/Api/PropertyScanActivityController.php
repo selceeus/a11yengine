@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Scans\ScanActivitySummary;
 use App\Enums\ScanStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Property;
@@ -35,15 +36,7 @@ class PropertyScanActivityController extends Controller
             ])
             ->toArray();
 
-        $days = [];
-        for ($i = 0; $i < 30; $i++) {
-            $date = $windowStart->addDays($i)->toDateString();
-            $days[] = [
-                'date' => $date,
-                'scans' => $byDate[$date]['scans'] ?? 0,
-                'violations' => $byDate[$date]['violations'] ?? 0,
-            ];
-        }
+        $days = ScanActivitySummary::buildDaySpine($byDate, $windowStart);
 
         return response()->json([
             'days' => $days,

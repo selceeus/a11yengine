@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Risk\RiskTrendSpine;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\RiskSnapshot;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class OrgRiskTrendsController extends Controller
 {
-    private const ALLOWED_DAYS = [7, 30, 90];
-
     public function __invoke(Request $request, Organization $organization): JsonResponse
     {
         $user = $request->user();
@@ -22,9 +20,7 @@ class OrgRiskTrendsController extends Controller
 
         $days = (int) $request->query('days', 30);
 
-        if (! in_array($days, self::ALLOWED_DAYS, strict: true)) {
-            throw ValidationException::withMessages(['days' => 'days must be 7, 30, or 90.']);
-        }
+        RiskTrendSpine::validateDays($days);
 
         $windowStart = CarbonImmutable::now()->subDays($days - 1)->startOfDay();
 
@@ -34,10 +30,7 @@ class OrgRiskTrendsController extends Controller
             ->orderBy('snapshot_date')
             ->get(['snapshot_date', 'total_risk_score', 'open_issue_count']);
 
-        $dateSpine = [];
-        for ($i = 0; $i < $days; $i++) {
-            $dateSpine[] = $windowStart->addDays($i)->toDateString();
-        }
+        $dateSpine = RiskTrendSpine::buildDateSpine($windowStart, $days);
 
         $indexed = [];
         foreach ($snapshots as $snap) {
@@ -47,14 +40,7 @@ class OrgRiskTrendsController extends Controller
             ];
         }
 
-        $series = [];
-        foreach ($dateSpine as $date) {
-            $series[] = [
-                'date' => $date,
-                'risk_score' => $indexed[$date]['risk_score'] ?? 0,
-                'open_issues' => $indexed[$date]['open_issues'] ?? 0,
-            ];
-        }
+        $series = RiskTrendSpine::buildSeries($indexed, $dateSpine);
 
         $orgEntry = [
             'id' => $organization->id,

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\IssueSeverity;
+use App\Domain\Issues\IssueSeveritySummary;
 use App\Enums\IssueStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
@@ -21,7 +21,7 @@ class AgencyIssueSummaryController extends Controller
 
         $query = Issue::withoutGlobalScopes()
             ->where('agency_id', $agency->id)
-            ->whereIn('status', array_map(fn (IssueStatus $s) => $s->value, IssueStatus::activeStatuses()));
+            ->whereIn('status', IssueStatus::activeStatusValues());
 
         if (! $user->isSuperUser() && $user->hasRole(UserRole::PropAdmin)) {
             $propertyIds = $user->roles()
@@ -39,13 +39,6 @@ class AgencyIssueSummaryController extends Controller
             ->pluck('count', 'severity')
             ->toArray();
 
-        return response()->json([
-            'critical' => (int) ($counts[IssueSeverity::Critical->value] ?? 0),
-            'high' => (int) ($counts[IssueSeverity::High->value] ?? 0),
-            'medium' => (int) ($counts[IssueSeverity::Medium->value] ?? 0),
-            'low' => (int) ($counts[IssueSeverity::Low->value] ?? 0),
-            'total' => array_sum($counts),
-            'generated_at' => now()->toISOString(),
-        ]);
+        return response()->json(IssueSeveritySummary::fromCounts($counts));
     }
 }

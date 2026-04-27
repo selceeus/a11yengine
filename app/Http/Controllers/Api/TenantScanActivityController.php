@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Scans\ScanActivitySummary;
 use App\Enums\ScanStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Agency;
@@ -32,15 +33,7 @@ class TenantScanActivityController extends Controller
             ->toArray();
 
         // Fill in every day in the window with zeros so the chart always gets 30 points
-        $days = [];
-        for ($i = 0; $i < 30; $i++) {
-            $date = $windowStart->addDays($i)->toDateString();
-            $days[] = [
-                'date' => $date,
-                'scans' => $byDate[$date]['scans'] ?? 0,
-                'violations' => $byDate[$date]['violations'] ?? 0,
-            ];
-        }
+        $days = ScanActivitySummary::buildDaySpine($byDate, $windowStart);
 
         return response()->json([
             'days' => $days,

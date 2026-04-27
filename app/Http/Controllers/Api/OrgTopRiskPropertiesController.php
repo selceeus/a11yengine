@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Risk\RiskTrendSpine;
 use App\Enums\IssueStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Issue;
@@ -20,10 +21,7 @@ class OrgTopRiskPropertiesController extends Controller
 
         abort_unless($user->isSuperUser() || $user->agency_id === $organization->agency_id, 403);
 
-        $activeStatuses = array_map(
-            fn (IssueStatus $s) => $s->value,
-            IssueStatus::activeStatuses()
-        );
+        $activeStatuses = IssueStatus::activeStatusValues();
 
         $properties = Property::withoutGlobalScopes()
             ->where('properties.organization_id', $organization->id)
@@ -47,23 +45,12 @@ class OrgTopRiskPropertiesController extends Controller
             ->whereIn('property_id', $propertyIds)
             ->whereIn('status', $activeStatuses)
             ->selectRaw(
-                "property_id, MAX(CASE severity
-                    WHEN 'critical' THEN 4
-                    WHEN 'high'     THEN 3
-                    WHEN 'medium'   THEN 2
-                    WHEN 'low'      THEN 1
-                    ELSE 0 END) as severity_order"
+                'property_id, '.RiskTrendSpine::severityCaseSql()
             )
             ->groupBy('property_id')
             ->get()
             ->pluck('severity_order', 'property_id')
-            ->map(fn ($order) => match ((int) $order) {
-                4 => 'critical',
-                3 => 'high',
-                2 => 'medium',
-                1 => 'low',
-                default => null,
-            });
+            ->map(fn ($order) => RiskTrendSpine::rankToSeverity((int) $order));
 
         $result = $properties->map(fn (Property $p) => [
             'id' => $p->id,
