@@ -70,7 +70,7 @@ class IssueNormalizer
      *
      * @param  list<string>  $tags
      */
-    private function resolveWcagCategory(array $tags): string
+    public function resolveWcagCategory(array $tags): string
     {
         foreach ($tags as $tag) {
             foreach (self::WCAG_TAG_PREFIXES as $prefix => $category) {
@@ -86,7 +86,7 @@ class IssueNormalizer
     /**
      * Map an axe-core impact string to a FindingSeverity enum value.
      */
-    private function resolveImpact(?string $impact): FindingSeverity
+    public function resolveImpact(?string $impact): FindingSeverity
     {
         return match ($impact) {
             'critical' => FindingSeverity::CRITICAL,
@@ -100,7 +100,7 @@ class IssueNormalizer
     /**
      * Map a FindingSeverity (axe-core granularity) to the coarser IssueSeverity level.
      */
-    private function mapToIssueSeverity(FindingSeverity $severity): IssueSeverity
+    public function mapToIssueSeverity(FindingSeverity $severity): IssueSeverity
     {
         return match ($severity) {
             FindingSeverity::CRITICAL => IssueSeverity::Critical,
@@ -114,7 +114,7 @@ class IssueNormalizer
     /**
      * Resolve the numeric risk weight for a given severity level.
      */
-    private function resolveRiskWeight(FindingSeverity $severity): int
+    public function resolveRiskWeight(FindingSeverity $severity): int
     {
         return self::RISK_WEIGHTS[$severity->value] ?? 10;
     }
@@ -143,5 +143,48 @@ class IssueNormalizer
         }
 
         return $elements;
+    }
+
+    /**
+     * Extracts the WCAG success criterion and conformance level from axe tags.
+     * e.g. tags ['wcag2aa', 'wcag143'] → '1.4.3 AA'
+     *
+     * @param  list<string>  $tags
+     */
+    public function resolveWcagCriteria(array $tags): ?string
+    {
+        $criterion = null;
+
+        foreach ($tags as $tag) {
+            if (preg_match('/^wcag(\d)(\d)(\d+)$/', $tag, $matches)) {
+                $criterion = $matches[1].'.'.$matches[2].'.'.$matches[3];
+                break;
+            }
+        }
+
+        if ($criterion === null) {
+            return null;
+        }
+
+        $level = null;
+
+        foreach ($tags as $tag) {
+            if (preg_match('/^wcag\d+aaa$/i', $tag)) {
+                $level = 'AAA';
+                break;
+            }
+
+            if (preg_match('/^wcag\d+aa$/i', $tag)) {
+                $level = 'AA';
+                break;
+            }
+
+            if (preg_match('/^wcag\d+a$/i', $tag)) {
+                $level = 'A';
+                break;
+            }
+        }
+
+        return $level !== null ? $criterion.' '.$level : $criterion;
     }
 }
