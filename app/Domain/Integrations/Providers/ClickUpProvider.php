@@ -25,7 +25,7 @@ class ClickUpProvider implements ProjectManagementProvider
                     "Severity: {$issue->severity->value}",
                     "Help: {$issue->help_url}",
                 ]),
-                'priority' => $this->mapSeverity($issue->severity->value),
+                'priority' => $issue->severity->toPriority(),
             ]);
 
         $response->throw();
@@ -86,15 +86,5 @@ class ClickUpProvider implements ProjectManagementProvider
         }
 
         return ['ok' => false, 'message' => $response->json('err', 'Connection failed.')];
-    }
-
-    private function mapSeverity(string $severity): int
-    {
-        return match ($severity) {
-            'critical' => 1,
-            'serious' => 2,
-            'moderate' => 3,
-            default => 4,
-        };
     }
 }

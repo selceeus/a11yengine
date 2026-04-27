@@ -29,7 +29,7 @@ class ActivityLogger
             return;
         }
 
-        ActivityLog::create([
+        self::write([
             'agency_id' => $user->agency_id,
             'user_id' => $user->id,
             'actor_type' => 'user',
@@ -40,7 +40,6 @@ class ActivityLogger
             'subject_label' => $subjectLabel,
             'metadata' => empty($metadata) ? null : $metadata,
             'ip_address' => $ipAddress,
-            'created_at' => now(),
         ]);
     }
 
@@ -55,18 +54,13 @@ class ActivityLogger
             return;
         }
 
-        ActivityLog::create([
+        self::write([
             'agency_id' => $agencyId,
-            'user_id' => null,
             'actor_type' => 'unknown',
             'actor_label' => $email,
             'event' => ActivityLogEvent::UserLoginFailed,
-            'subject_type' => null,
-            'subject_id' => null,
-            'subject_label' => null,
             'metadata' => ['attempt_count' => $failureCount],
             'ip_address' => $request->ip(),
-            'created_at' => now(),
         ]);
     }
 
@@ -81,18 +75,14 @@ class ActivityLogger
             return;
         }
 
-        ActivityLog::create([
+        self::write([
             'agency_id' => $user->agency_id,
             'user_id' => $user->id,
             'actor_type' => 'user',
             'actor_label' => $user->name,
             'event' => ActivityLogEvent::UserLogin,
-            'subject_type' => null,
-            'subject_id' => null,
-            'subject_label' => null,
             'metadata' => empty($metadata) ? null : $metadata,
             'ip_address' => $request->ip(),
-            'created_at' => now(),
         ]);
     }
 
@@ -105,18 +95,13 @@ class ActivityLogger
             return;
         }
 
-        ActivityLog::create([
+        self::write([
             'agency_id' => $user->agency_id,
             'user_id' => $user->id,
             'actor_type' => 'user',
             'actor_label' => $user->name,
             'event' => ActivityLogEvent::UserLogout,
-            'subject_type' => null,
-            'subject_id' => null,
-            'subject_label' => null,
-            'metadata' => null,
             'ip_address' => $request->ip(),
-            'created_at' => now(),
         ]);
     }
 
@@ -127,18 +112,13 @@ class ActivityLogger
      */
     public static function apiKeyUsed(ApiKey $apiKey, Request $request, array $metadata = []): void
     {
-        ActivityLog::create([
+        self::write([
             'agency_id' => $apiKey->agency_id,
-            'user_id' => null,
             'actor_type' => 'api_key',
             'actor_label' => $apiKey->name,
             'event' => ActivityLogEvent::ApiKeyUsed,
-            'subject_type' => null,
-            'subject_id' => null,
-            'subject_label' => null,
             'metadata' => array_merge(['key_prefix' => $apiKey->key_prefix], $metadata),
             'ip_address' => $request->ip(),
-            'created_at' => now(),
         ]);
     }
 
@@ -154,9 +134,8 @@ class ActivityLogger
         ?string $subjectLabel = null,
         array $metadata = [],
     ): void {
-        ActivityLog::create([
+        self::write([
             'agency_id' => $agencyId,
-            'user_id' => null,
             'actor_type' => 'system',
             'actor_label' => 'System',
             'event' => $event,
@@ -164,9 +143,23 @@ class ActivityLogger
             'subject_id' => $subject?->getKey(),
             'subject_label' => $subjectLabel,
             'metadata' => empty($metadata) ? null : $metadata,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     */
+    private static function write(array $fields): void
+    {
+        ActivityLog::create(array_merge([
+            'user_id' => null,
+            'subject_type' => null,
+            'subject_id' => null,
+            'subject_label' => null,
+            'metadata' => null,
             'ip_address' => null,
             'created_at' => now(),
-        ]);
+        ], $fields));
     }
 
     private static function subjectType(Model $model): string

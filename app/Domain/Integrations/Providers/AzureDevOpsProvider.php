@@ -27,7 +27,7 @@ class AzureDevOpsProvider implements ProjectManagementProvider
                 "Severity: {$issue->severity->value}",
                 "Help: <a href=\"{$issue->help_url}\">{$issue->help_url}</a>",
             ])],
-            ['op' => 'add', 'path' => '/fields/Microsoft.VSTS.Common.Priority', 'value' => $this->mapSeverity($issue->severity->value)],
+            ['op' => 'add', 'path' => '/fields/Microsoft.VSTS.Common.Priority', 'value' => $issue->severity->toPriority()],
         ];
 
         $response = Http::withBasicAuth('', $creds['pat'])
@@ -106,15 +106,5 @@ class AzureDevOpsProvider implements ProjectManagementProvider
         }
 
         return ['ok' => false, 'message' => $response->json('message', 'Connection failed.')];
-    }
-
-    private function mapSeverity(string $severity): int
-    {
-        return match ($severity) {
-            'critical' => 1,
-            'serious' => 2,
-            'moderate' => 3,
-            default => 4,
-        };
     }
 }

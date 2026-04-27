@@ -46,7 +46,7 @@ class LinearProvider implements ProjectManagementProvider
                     'title' => "[A11y] {$issue->rule_key}: {$issue->description}",
                     'description' => $description,
                     'teamId' => $creds['team_id'],
-                    'priority' => $this->mapSeverity($issue->severity->value),
+                    'priority' => $issue->severity->toPriority(),
                 ],
             ]);
 
@@ -143,15 +143,5 @@ class LinearProvider implements ProjectManagementProvider
         }
 
         return ['ok' => false, 'message' => $response->json('errors.0.message', 'Connection failed.')];
-    }
-
-    private function mapSeverity(string $severity): int
-    {
-        return match ($severity) {
-            'critical' => 1,
-            'serious' => 2,
-            'moderate' => 3,
-            default => 4,
-        };
     }
 }
