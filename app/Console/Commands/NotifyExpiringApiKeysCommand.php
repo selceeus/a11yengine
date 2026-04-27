@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\ActivityLogEvent;
-use App\Models\Agency;
+use App\Enums\UserRole;
 use App\Models\ApiKey;
 use App\Models\User;
 use App\Notifications\ApiKeyExpiringSoonNotification;
@@ -36,45 +36,45 @@ class NotifyExpiringApiKeysCommand extends Command
         }
 
         $notified = 0;
+        $keysByAgency = $keys->groupBy('agency_id');
 
-        foreach ($keys as $apiKey) {
-            $agency = $apiKey->agency;
+        foreach ($keysByAgency as $agencyId => $agencyKeys) {
+            $agency = $agencyKeys->first()->agency;
 
             if (! $agency) {
                 continue;
             }
 
-            // Notify the key creator
-            if ($apiKey->createdBy) {
-                $apiKey->createdBy->notify(new ApiKeyExpiringSoonNotification($apiKey));
+            $admins = User::query()
+                ->where('agency_id', $agencyId)
+                ->whereHas('roles', fn ($q) => $q->where('role', UserRole::AgencyAdmin->value))
+                ->get()
+                ->keyBy('id');
+
+            foreach ($agencyKeys as $apiKey) {
+                $creatorId = $apiKey->createdBy?->id;
+
+                if ($apiKey->createdBy) {
+                    $apiKey->createdBy->notify(new ApiKeyExpiringSoonNotification($apiKey));
+                }
+
+                $admins->reject(fn (User $admin) => $admin->id === $creatorId)
+                    ->each(fn (User $admin) => $admin->notify(new ApiKeyExpiringSoonNotification($apiKey)));
+
+                ActivityLogger::system(
+                    agencyId: $agencyId,
+                    event: ActivityLogEvent::ApiKeyExpiringSoon,
+                    subject: $apiKey,
+                    subjectLabel: $apiKey->name,
+                    metadata: [
+                        'expires_at' => $apiKey->expires_at->toIso8601String(),
+                        'days_remaining' => (int) now()->diffInDays($apiKey->expires_at),
+                    ],
+                );
+
+                $this->line("  notified for key #{$apiKey->id} \"{$apiKey->name}\" (agency #{$agencyId})");
+                $notified++;
             }
-
-            // Notify all agency admins (deduplicated by ID)
-            $adminIds = User::query()
-                ->where('agency_id', $agency->id)
-                ->whereHas('roles', fn ($q) => $q->where('role', 'agency_admin'))
-                ->pluck('id');
-
-            $notifiedAdminIds = $adminIds->filter(
-                fn ($id) => $apiKey->createdBy === null || $id !== $apiKey->createdBy->id,
-            );
-
-            User::whereIn('id', $notifiedAdminIds)->get()
-                ->each(fn (User $admin) => $admin->notify(new ApiKeyExpiringSoonNotification($apiKey)));
-
-            ActivityLogger::system(
-                agencyId: $agency->id,
-                event: ActivityLogEvent::ApiKeyExpiringSoon,
-                subject: $apiKey,
-                subjectLabel: $apiKey->name,
-                metadata: [
-                    'expires_at' => $apiKey->expires_at->toIso8601String(),
-                    'days_remaining' => (int) now()->diffInDays($apiKey->expires_at),
-                ],
-            );
-
-            $this->line("  notified for key #{$apiKey->id} \"{$apiKey->name}\" (agency #{$agency->id})");
-            $notified++;
         }
 
         $this->info("Done. Sent notifications for {$notified} expiring key(s).");

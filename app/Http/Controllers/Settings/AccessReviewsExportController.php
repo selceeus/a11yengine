@@ -31,7 +31,7 @@ class AccessReviewsExportController extends Controller
                     foreach ($reviews as $review) {
                         fputcsv($handle, [
                             $review->period,
-                            $review->status,
+                            $review->status->value,
                             $review->due_at->toIso8601String(),
                             $review->completed_at?->toIso8601String(),
                             $review->completedBy?->name,

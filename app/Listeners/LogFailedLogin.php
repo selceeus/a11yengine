@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\SuspiciousLoginNotification;
 use App\Services\ActivityLogger;
@@ -34,7 +35,7 @@ class LogFailedLogin
 
             $admins = User::query()
                 ->where('agency_id', $agencyId)
-                ->whereHas('roles', fn ($q) => $q->where('role', 'agency_admin'))
+                ->whereHas('roles', fn ($q) => $q->where('role', UserRole::AgencyAdmin->value))
                 ->get();
 
             foreach ($admins as $admin) {

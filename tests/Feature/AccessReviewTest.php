@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccessReviewStatus;
 use App\Enums\UserRole;
 use App\Models\AccessReview;
 use App\Models\ActivityLog;
@@ -28,7 +29,7 @@ it('creates one access review per agency via command', function (): void {
 
     $review = AccessReview::withoutGlobalScopes()->first();
     expect($review->agency_id)->toBe($this->agency->id)
-        ->and($review->status)->toBe('pending');
+        ->and($review->status)->toBe(AccessReviewStatus::Pending);
 });
 
 it('sends AccessReviewDueNotification to agency admins on create', function (): void {
@@ -87,7 +88,7 @@ it('marks review as completed and logs AccessReviewCompleted', function (): void
         ->assertRedirect('/settings/access-reviews');
 
     $review->refresh();
-    expect($review->status)->toBe('completed')
+    expect($review->status)->toBe(AccessReviewStatus::Completed)
         ->and($review->completed_at)->not->toBeNull()
         ->and($review->completed_by)->toBe($this->admin->id);
 

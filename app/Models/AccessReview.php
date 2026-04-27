@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AccessReviewStatus;
 use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +35,7 @@ class AccessReview extends Model
         return [
             'due_at' => 'datetime',
             'completed_at' => 'datetime',
+            'status' => AccessReviewStatus::class,
         ];
     }
 
@@ -49,11 +51,11 @@ class AccessReview extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === AccessReviewStatus::Pending;
     }
 
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === AccessReviewStatus::Completed;
     }
 }

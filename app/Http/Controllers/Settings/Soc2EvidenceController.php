@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\AccessReviewStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AccessReview;
 use App\Models\ApiKey;
@@ -29,12 +30,12 @@ class Soc2EvidenceController extends Controller
             ->count();
 
         $lastReview = AccessReview::query()
-            ->where('status', 'completed')
+            ->where('status', AccessReviewStatus::Completed->value)
             ->latest('completed_at')
             ->first();
 
         $pendingReview = AccessReview::query()
-            ->where('status', 'pending')
+            ->where('status', AccessReviewStatus::Pending->value)
             ->first();
 
         return Inertia::render('settings/soc2-evidence', [
