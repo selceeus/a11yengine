@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\AccessReviewStatus;
 use App\Enums\ActivityLogEvent;
 use App\Http\Controllers\Controller;
 use App\Models\AccessReview;
@@ -27,7 +28,7 @@ class AccessReviewController extends Controller
             ->map(fn (AccessReview $review) => [
                 'id' => $review->id,
                 'period' => $review->period,
-                'status' => $review->status,
+                'status' => $review->status->value,
                 'due_at' => $review->due_at->toIso8601String(),
                 'completed_at' => $review->completed_at?->toIso8601String(),
                 'completed_by' => $review->completedBy ? [
@@ -67,7 +68,7 @@ class AccessReviewController extends Controller
             'review' => [
                 'id' => $accessReview->id,
                 'period' => $accessReview->period,
-                'status' => $accessReview->status,
+                'status' => $accessReview->status->value,
                 'due_at' => $accessReview->due_at->toIso8601String(),
                 'completed_at' => $accessReview->completed_at?->toIso8601String(),
             ],
@@ -75,7 +76,7 @@ class AccessReviewController extends Controller
         ]);
     }
 
-    public function confirm(Request $request, AccessReview $accessReview, User $user): RedirectResponse
+    public function confirm(AccessReview $accessReview, User $user): RedirectResponse
     {
         ActivityLogger::log(
             event: ActivityLogEvent::UserAccessConfirmed,
@@ -87,7 +88,7 @@ class AccessReviewController extends Controller
         return redirect()->route('access-reviews.show', $accessReview);
     }
 
-    public function revoke(Request $request, AccessReview $accessReview, User $user): RedirectResponse
+    public function revoke(AccessReview $accessReview, User $user): RedirectResponse
     {
         $agencyId = auth()->user()->agency_id;
 
@@ -112,7 +113,7 @@ class AccessReviewController extends Controller
         }
 
         $accessReview->update([
-            'status' => 'completed',
+            'status' => AccessReviewStatus::Completed,
             'completed_at' => now(),
             'completed_by' => $request->user()->id,
         ]);

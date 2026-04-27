@@ -60,9 +60,7 @@ class RunScanJob implements ShouldQueue
         CrawlerRunner $crawlerRunner,
     ): void {
         $fresh = Scan::withoutGlobalScopes()->find($this->scan->id);
-        if ($fresh && $fresh->status === ScanStatus::Running) {
-            // Job is being retried — scan is already in the running state, skip re-transitioning.
-        } else {
+        if (! $fresh || $fresh->status !== ScanStatus::Running) {
             $scanDomain->start($this->scan);
         }
 

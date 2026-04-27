@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\AccessReviewStatus;
 use App\Enums\ActivityLogEvent;
+use App\Enums\UserRole;
 use App\Models\AccessReview;
 use App\Models\Agency;
 use App\Models\User;
@@ -24,7 +26,7 @@ class CreateAccessReviewsCommand extends Command
         $period = $now->year.'-'.$quarter;
         $dueAt = $now->copy()->endOfQuarter();
 
-        $agencies = Agency::all();
+        $agencies = Agency::cursor();
 
         foreach ($agencies as $agency) {
             $exists = AccessReview::withoutGlobalScopes()
@@ -41,7 +43,7 @@ class CreateAccessReviewsCommand extends Command
             $review = AccessReview::withoutGlobalScopes()->create([
                 'agency_id' => $agency->id,
                 'period' => $period,
-                'status' => 'pending',
+                'status' => AccessReviewStatus::Pending,
                 'due_at' => $dueAt,
             ]);
 
@@ -55,7 +57,7 @@ class CreateAccessReviewsCommand extends Command
 
             $admins = User::query()
                 ->where('agency_id', $agency->id)
-                ->whereHas('roles', fn ($q) => $q->where('role', 'agency_admin'))
+                ->whereHas('roles', fn ($q) => $q->where('role', UserRole::AgencyAdmin->value))
                 ->get();
 
             foreach ($admins as $admin) {
