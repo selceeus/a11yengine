@@ -23,7 +23,6 @@ class SetCurrentAgency
             ->firstOrFail();
 
         app()->instance(Agency::class, $agency);
-        app()->instance('currentAgency', $agency);
 
         return $next($request);
     }

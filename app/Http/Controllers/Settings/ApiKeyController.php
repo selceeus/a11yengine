@@ -6,6 +6,7 @@ use App\Enums\ActivityLogEvent;
 use App\Enums\ApiKeyScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreApiKeyRequest;
+use App\Models\Agency;
 use App\Models\ApiKey;
 use App\Services\ActivityLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -55,7 +56,7 @@ class ApiKeyController extends Controller
 
     public function store(StoreApiKeyRequest $request): RedirectResponse
     {
-        $agency = app('currentAgency');
+        $agency = app(Agency::class);
 
         $token = ApiKey::generateToken();
 

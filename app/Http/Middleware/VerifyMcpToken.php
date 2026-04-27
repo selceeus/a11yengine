@@ -38,7 +38,6 @@ class VerifyMcpToken
             $apiKey->forceFill(['last_used_at' => now()])->saveQuietly();
 
             app()->instance(Agency::class, $apiKey->agency);
-            app()->instance('currentAgency', $apiKey->agency);
 
             return $next($request);
         }
@@ -49,7 +48,6 @@ class VerifyMcpToken
         abort_unless($agency !== null, 401, 'Invalid MCP token.');
 
         app()->instance(Agency::class, $agency);
-        app()->instance('currentAgency', $agency);
 
         return $next($request);
     }

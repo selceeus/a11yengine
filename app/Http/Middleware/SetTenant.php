@@ -45,7 +45,7 @@ use Symfony\Component\HttpFoundation\Response;
  *   }
  *
  *   // Or resolve from the container:
- *   $agency = app('currentAgency'); // App\Models\Agency instance
+ *   $agency = app(Agency::class); // App\Models\Agency instance
  *
  * -----------------------------------------------------------------------
  * USAGE — Eloquent scoping
@@ -68,10 +68,8 @@ class SetTenant
 
         abort_unless($agency !== null, 404);
 
-        // Bind under both the model class (for constructor injection) and a
-        // string key (for explicit container lookups: app('currentAgency')).
+        // Bind under the model class for constructor injection and container lookups.
         app()->instance(Agency::class, $agency);
-        app()->instance('currentAgency', $agency);
 
         return $next($request);
     }

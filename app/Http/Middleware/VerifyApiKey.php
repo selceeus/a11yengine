@@ -36,7 +36,6 @@ class VerifyApiKey
 
         app()->instance(ApiKey::class, $apiKey);
         app()->instance(Agency::class, $apiKey->agency);
-        app()->instance('currentAgency', $apiKey->agency);
 
         return $next($request);
     }

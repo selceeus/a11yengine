@@ -10,7 +10,6 @@ beforeEach(function (): void {
     Route::middleware('tenant')
         ->get('/test-tenant/{tenant}', fn () => response()->json([
             'agency_id' => app(Agency::class)->id,
-            'via_key' => app('currentAgency')->id,
         ]));
 
     // Header variant: slug is supplied via X-Tenant header (no route param).
@@ -25,7 +24,7 @@ it('resolves the agency from the route tenant parameter', function (): void {
 
     $this->getJson("/test-tenant/{$agency->slug}")
         ->assertOk()
-        ->assertJson(['agency_id' => $agency->id, 'via_key' => $agency->id]);
+        ->assertJson(['agency_id' => $agency->id]);
 });
 
 it('resolves the agency from the X-Tenant request header', function (): void {
@@ -50,14 +49,12 @@ it('returns 404 when neither a route param nor a header is present', function ()
     $this->getJson('/test-tenant-header')->assertNotFound();
 });
 
-it('binds the agency under both Agency::class and the currentAgency string key', function (): void {
+it('binds the agency under the Agency::class key', function (): void {
     $agency = Agency::factory()->create(['slug' => 'dual-bind']);
 
     $this->getJson("/test-tenant/{$agency->slug}")->assertOk();
 
-    // Both container bindings point to the same instance.
-    expect(app(Agency::class)->id)->toBe($agency->id)
-        ->and(app('currentAgency')->id)->toBe($agency->id);
+    expect(app(Agency::class)->id)->toBe($agency->id);
 });
 
 it('passes through to the next middleware when the tenant is resolved', function (): void {
