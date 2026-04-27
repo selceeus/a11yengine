@@ -126,6 +126,7 @@ enum IntegrationProvider: string
                 ['key' => 'access_token', 'label' => 'Access Token', 'type' => 'password', 'required' => true],
                 ['key' => 'account_id', 'label' => 'Account ID', 'type' => 'text', 'required' => true],
                 ['key' => 'project_id', 'label' => 'Project ID', 'type' => 'text', 'required' => true],
+                ['key' => 'todolist_id', 'label' => 'Todolist ID', 'type' => 'text', 'required' => true],
                 ['key' => 'webhook_secret', 'label' => 'Webhook Secret', 'type' => 'password', 'required' => false],
             ],
         };

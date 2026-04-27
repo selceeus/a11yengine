@@ -17,23 +17,7 @@ class BasecampProvider implements ProjectManagementProvider
     public function createTask(Integration $integration, Issue $issue): array
     {
         $creds = $integration->credentials;
-        $url = self::BASE_URL."/{$creds['account_id']}/buckets/{$creds['project_id']}/todolists.json";
-
-        // First, get the default todolist for the project
-        $todolistsResponse = Http::withToken($creds['access_token'])
-            ->withHeaders(['User-Agent' => self::USER_AGENT])
-            ->get($url);
-
-        $todolistsResponse->throw();
-
-        $todolists = $todolistsResponse->json();
-        $todolistId = $todolists[0]['id'] ?? null;
-
-        if (! $todolistId) {
-            throw new \RuntimeException('No todolist found in Basecamp project.');
-        }
-
-        $todoUrl = self::BASE_URL."/{$creds['account_id']}/buckets/{$creds['project_id']}/todolists/{$todolistId}/todos.json";
+        $todoUrl = self::BASE_URL."/{$creds['account_id']}/buckets/{$creds['project_id']}/todolists/{$creds['todolist_id']}/todos.json";
 
         $response = Http::withToken($creds['access_token'])
             ->withHeaders(['User-Agent' => self::USER_AGENT])
