@@ -37,7 +37,6 @@ class OrganizationRiskSummaryController extends Controller
             ->all();
 
         return response()->json(array_merge($summary, [
-            'open_issue_count' => $summary['open_issues'],
             'snapshots' => $snapshots,
         ]));
     }

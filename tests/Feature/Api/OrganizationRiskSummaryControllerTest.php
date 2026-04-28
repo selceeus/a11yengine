@@ -130,7 +130,6 @@ it('returns the correct top-level JSON structure', function (): void {
         ->assertJsonStructure([
             'total_risk_score',
             'open_issues',
-            'open_issue_count',
             'by_severity' => ['low', 'medium', 'high', 'critical'],
             'aging_buckets' => ['under_30_days', '30_to_60_days', 'over_60_days'],
             'avg_days_to_resolution',
@@ -138,16 +137,6 @@ it('returns the correct top-level JSON structure', function (): void {
             'net_issue_delta_per_scan',
             'snapshots',
         ]);
-});
-
-it('open_issue_count mirrors open_issues in the response', function (): void {
-    Issue::factory()->for($this->agency)->for($this->organization)->create(['status' => IssueStatus::Open]);
-
-    $response = $this->actingAs($this->agencyAdmin)
-        ->getJson(route('api.organizations.risk-summary', $this->organization->id))
-        ->assertOk();
-
-    expect($response->json('open_issue_count'))->toBe($response->json('open_issues'));
 });
 
 it('returns 404 when the organization does not exist', function (): void {
@@ -256,7 +245,6 @@ it('returns zero values when the organization has no issues', function (): void 
         ->assertJsonFragment([
             'total_risk_score' => 0,
             'open_issues' => 0,
-            'open_issue_count' => 0,
         ]);
 });
 
@@ -271,7 +259,6 @@ it('reflects open issue counts correctly', function (): void {
         ->assertOk();
 
     expect($response->json('open_issues'))->toBe(3)
-        ->and($response->json('open_issue_count'))->toBe(3)
         ->and($response->json('by_severity.high'))->toBe(3);
 });
 
@@ -294,5 +281,5 @@ it('delegates data retrieval to the GetOrganizationRiskSummary service', functio
     $this->actingAs($this->agencyAdmin)
         ->getJson(route('api.organizations.risk-summary', $this->organization->id))
         ->assertOk()
-        ->assertJsonFragment(['total_risk_score' => 42, 'open_issues' => 5, 'open_issue_count' => 5]);
+        ->assertJsonFragment(['total_risk_score' => 42, 'open_issues' => 5]);
 });
