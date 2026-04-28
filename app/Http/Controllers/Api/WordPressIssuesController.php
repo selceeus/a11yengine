@@ -22,7 +22,7 @@ class WordPressIssuesController extends Controller
 
         $issues = Issue::withoutGlobalScopes()
             ->where('property_id', $property->id)
-            ->whereIn('status', array_map(fn (IssueStatus $s) => $s->value, IssueStatus::activeStatuses()))
+            ->whereIn('status', IssueStatus::activeStatusValues())
             ->orderByDesc('risk_weight')
             ->limit(50)
             ->get(['id', 'rule_key', 'page_url', 'severity', 'wcag_criteria', 'description', 'status', 'first_detected_at'])

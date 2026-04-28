@@ -61,7 +61,6 @@ class GenerateGovernanceSummary
                 'affected_wcag_categories',
                 'assistive_technology_risk',
             ]),
-            'generated_at' => $breakdownData['generated_at'],
         ];
     }
 }

@@ -24,7 +24,7 @@ class WordPressRiskSummaryController extends Controller
 
         $openIssues = Issue::withoutGlobalScopes()
             ->where('property_id', $property->id)
-            ->whereIn('status', array_map(fn (IssueStatus $s) => $s->value, IssueStatus::activeStatuses()));
+            ->whereIn('status', IssueStatus::activeStatusValues());
 
         $counts = (clone $openIssues)
             ->selectRaw('severity, COUNT(*) as count')
