@@ -8,6 +8,7 @@ use App\Enums\IssueStatus;
 use App\Models\Finding;
 use App\Models\Issue;
 use App\Models\Scan;
+use Illuminate\Support\Facades\DB;
 
 class NormalizeScanFindings
 {
@@ -15,12 +16,14 @@ class NormalizeScanFindings
     {
         $incrementedIssueIds = [];
 
-        $scan->findings()->each(function (Finding $finding) use (&$incrementedIssueIds): void {
-            $this->normalizeFinding($finding, $incrementedIssueIds);
+        DB::transaction(function () use ($scan, &$incrementedIssueIds): void {
+            $scan->findings()->each(function (Finding $finding) use ($scan, &$incrementedIssueIds): void {
+                $this->normalizeFinding($finding, $scan, $incrementedIssueIds);
+            });
         });
     }
 
-    private function normalizeFinding(Finding $finding, array &$incrementedIssueIds): void
+    private function normalizeFinding(Finding $finding, Scan $scan, array &$incrementedIssueIds): void
     {
         $issue = Issue::query()
             ->where('agency_id', $finding->agency_id)
@@ -48,7 +51,7 @@ class NormalizeScanFindings
 
         $issue = Issue::query()->create([
             'agency_id' => $finding->agency_id,
-            'organization_id' => $finding->scan->organization_id,
+            'organization_id' => $scan->organization_id,
             'property_id' => $finding->property_id,
             'rule_key' => $finding->rule_key,
             'page_url' => $finding->page_url,
