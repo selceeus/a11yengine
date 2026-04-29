@@ -105,3 +105,11 @@ it('sets status to Processing before invoking the service', function (): void {
     // After completion the record must have transitioned all the way to Completed.
     expect($this->advisory->fresh()->status)->toBe(RiskAdvisoryStatus::Completed);
 });
+
+it('implements ShouldBeUnique with the advisory id as the unique key', function (): void {
+    $job = new GenerateRiskAdvisoryJob($this->advisory);
+
+    expect($job)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class)
+        ->and($job->uniqueId())->toBe((string) $this->advisory->id)
+        ->and($job->uniqueFor)->toBe(300);
+});

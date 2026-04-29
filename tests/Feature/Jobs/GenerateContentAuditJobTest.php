@@ -196,3 +196,11 @@ it('formats reading time correctly via the service helper', function (): void {
         ->and($service->formatReadingTime(45))->toBe('45 sec')
         ->and($service->formatReadingTime(0))->toBe('0 sec');
 });
+
+it('implements ShouldBeUnique with the content audit id as the unique key', function (): void {
+    $job = new GenerateContentAuditJob($this->audit);
+
+    expect($job)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class)
+        ->and($job->uniqueId())->toBe((string) $this->audit->id)
+        ->and($job->uniqueFor)->toBe(300);
+});

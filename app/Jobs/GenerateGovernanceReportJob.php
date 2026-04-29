@@ -5,11 +5,12 @@ namespace App\Jobs;
 use App\Domain\Governance\AiGovernanceService;
 use App\Enums\GovernanceReportStatus;
 use App\Models\GovernanceReport;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class GenerateGovernanceReportJob implements ShouldQueue
+class GenerateGovernanceReportJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -17,10 +18,17 @@ class GenerateGovernanceReportJob implements ShouldQueue
 
     public int $tries = 2;
 
+    public int $uniqueFor = 300;
+
     /** @var array<int, int> */
     public array $backoff = [60, 120];
 
     public function __construct(public readonly GovernanceReport $report) {}
+
+    public function uniqueId(): string
+    {
+        return (string) $this->report->id;
+    }
 
     public function handle(AiGovernanceService $service): void
     {

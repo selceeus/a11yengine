@@ -146,3 +146,11 @@ it('can be pushed to the queue', function (): void {
         fn ($job) => $job->audit->is($this->audit),
     );
 });
+
+it('implements ShouldBeUnique with the audit id as the unique key', function (): void {
+    $job = new GenerateAiAuditJob($this->audit);
+
+    expect($job)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class)
+        ->and($job->uniqueId())->toBe((string) $this->audit->id)
+        ->and($job->uniqueFor)->toBe(300);
+});

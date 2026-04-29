@@ -94,3 +94,11 @@ it('sets status to Processing before invoking the service', function (): void {
     // so after completion the record must have transitioned all the way to Completed.
     expect($this->cluster->fresh()->status)->toBe(ClusterStatus::Completed);
 });
+
+it('implements ShouldBeUnique with the cluster id as the unique key', function (): void {
+    $job = new GenerateIssueClusteringJob($this->cluster);
+
+    expect($job)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class)
+        ->and($job->uniqueId())->toBe((string) $this->cluster->id)
+        ->and($job->uniqueFor)->toBe(300);
+});

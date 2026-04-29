@@ -74,3 +74,12 @@ it('marks the issue as completed before dispatching the pattern job', function (
     expect($issue->fresh()->ai_remediation_status)->toBe('completed');
     Queue::assertPushed(IndexRemediationPatternJob::class);
 });
+
+it('implements ShouldBeUnique with the issue id as the unique key', function (): void {
+    $issue = \App\Models\Issue::factory()->create(['agency_id' => $this->agency->id]);
+    $job = new GenerateIssueRemediationJob($issue);
+
+    expect($job)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class)
+        ->and($job->uniqueId())->toBe((string) $issue->id)
+        ->and($job->uniqueFor)->toBe(120);
+});

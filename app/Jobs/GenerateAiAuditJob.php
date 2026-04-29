@@ -5,11 +5,12 @@ namespace App\Jobs;
 use App\Enums\AuditStatus;
 use App\Models\Audit;
 use App\Services\AiAuditService;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class GenerateAiAuditJob implements ShouldQueue
+class GenerateAiAuditJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -17,10 +18,17 @@ class GenerateAiAuditJob implements ShouldQueue
 
     public int $tries = 2;
 
+    public int $uniqueFor = 300;
+
     /** @var array<int, int> */
     public array $backoff = [60, 120];
 
     public function __construct(public readonly Audit $audit) {}
+
+    public function uniqueId(): string
+    {
+        return (string) $this->audit->id;
+    }
 
     public function handle(AiAuditService $service): void
     {

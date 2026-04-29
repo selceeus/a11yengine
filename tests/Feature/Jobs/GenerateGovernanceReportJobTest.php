@@ -154,3 +154,11 @@ it('truncates the error message to 250 characters', function (): void {
 
     expect($this->report->fresh()->error_message)->toHaveLength(250);
 });
+
+it('implements ShouldBeUnique with the report id as the unique key', function (): void {
+    $job = new GenerateGovernanceReportJob($this->report);
+
+    expect($job)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class)
+        ->and($job->uniqueId())->toBe((string) $this->report->id)
+        ->and($job->uniqueFor)->toBe(300);
+});

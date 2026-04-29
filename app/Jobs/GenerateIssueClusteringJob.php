@@ -5,11 +5,12 @@ namespace App\Jobs;
 use App\Domain\Issues\AiIssueClusterService;
 use App\Enums\ClusterStatus;
 use App\Models\IssueCluster;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class GenerateIssueClusteringJob implements ShouldQueue
+class GenerateIssueClusteringJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -17,10 +18,17 @@ class GenerateIssueClusteringJob implements ShouldQueue
 
     public int $tries = 2;
 
+    public int $uniqueFor = 300;
+
     /** @var array<int, int> */
     public array $backoff = [60, 120];
 
     public function __construct(public readonly IssueCluster $issueCluster) {}
+
+    public function uniqueId(): string
+    {
+        return (string) $this->issueCluster->id;
+    }
 
     public function handle(AiIssueClusterService $service): void
     {
