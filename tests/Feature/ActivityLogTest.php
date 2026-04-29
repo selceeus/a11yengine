@@ -154,6 +154,52 @@ it('does not return activity logs from other agencies', function (): void {
         ->assertJsonCount(0, 'data');
 });
 
+// ── ActivityLogger::logForApiKey ─────────────────────────────────────────────
+
+it('logs an api key mutation event with actor_type api_key', function (): void {
+    $token = ApiKey::generateToken();
+    $apiKey = ApiKey::create([
+        'agency_id' => $this->agency->id,
+        'created_by' => $this->user->id,
+        'name' => 'WP Plugin Key',
+        'key_prefix' => $token['prefix'],
+        'token_hash' => $token['hash'],
+        'scopes' => ['wordpress'],
+    ]);
+
+    $scan = \App\Models\Scan::factory()->create(['agency_id' => $this->agency->id]);
+
+    ActivityLogger::logForApiKey($apiKey, ActivityLogEvent::ScanStarted, $scan, 'My Property');
+
+    $log = ActivityLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->event)->toBe(ActivityLogEvent::ScanStarted)
+        ->and($log->actor_type)->toBe('api_key')
+        ->and($log->actor_label)->toBe('WP Plugin Key')
+        ->and($log->agency_id)->toBe($this->agency->id)
+        ->and($log->subject_label)->toBe('My Property')
+        ->and($log->metadata)->toHaveKey('key_prefix');
+});
+
+it('logs an api key mutation event without a subject', function (): void {
+    $token = ApiKey::generateToken();
+    $apiKey = ApiKey::create([
+        'agency_id' => $this->agency->id,
+        'created_by' => $this->user->id,
+        'name' => 'No Subject Key',
+        'key_prefix' => $token['prefix'],
+        'token_hash' => $token['hash'],
+        'scopes' => ['wordpress'],
+    ]);
+
+    ActivityLogger::logForApiKey($apiKey, ActivityLogEvent::ScanStarted);
+
+    $log = ActivityLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->subject_id)->toBeNull()
+        ->and($log->subject_type)->toBeNull();
+});
+
 // ── ActivityFeedController returns logs for agency ───────────────────────────
 
 it('returns activity logs for the authenticated user agency', function (): void {

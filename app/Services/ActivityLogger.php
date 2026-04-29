@@ -123,6 +123,30 @@ class ActivityLogger
     }
 
     /**
+     * Write a mutation event performed by an API key (e.g. scan triggered via WordPress plugin).
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public static function logForApiKey(
+        ApiKey $apiKey,
+        ActivityLogEvent $event,
+        ?Model $subject = null,
+        ?string $subjectLabel = null,
+        array $metadata = [],
+    ): void {
+        self::write([
+            'agency_id' => $apiKey->agency_id,
+            'actor_type' => 'api_key',
+            'actor_label' => $apiKey->name,
+            'event' => $event,
+            'subject_type' => $subject ? self::subjectType($subject) : null,
+            'subject_id' => $subject?->getKey(),
+            'subject_label' => $subjectLabel,
+            'metadata' => array_merge(['key_prefix' => $apiKey->key_prefix], $metadata),
+        ]);
+    }
+
+    /**
      * Write a system-initiated event (no user context).
      *
      * @param  array<string, mixed>  $metadata
