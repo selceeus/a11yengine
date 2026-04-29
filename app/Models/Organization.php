@@ -38,4 +38,29 @@ class Organization extends Model
     {
         return $this->hasMany(Property::class);
     }
+
+    public function scans(): HasMany
+    {
+        return $this->hasMany(Scan::class);
+    }
+
+    public function issues(): HasMany
+    {
+        return $this->hasMany(Issue::class);
+    }
+
+    public function audits(): HasMany
+    {
+        return $this->hasMany(Audit::class);
+    }
+
+    public function governanceReports(): HasMany
+    {
+        return $this->hasMany(GovernanceReport::class);
+    }
+
+    public function riskSnapshots(): HasMany
+    {
+        return $this->hasMany(OrganizationRiskSnapshot::class);
+    }
 }
