@@ -36,7 +36,12 @@ class RunScanJob implements ShouldQueue
      */
     public array $backoff = [10, 30];
 
-    public function __construct(public Scan $scan) {}
+    public function __construct(public Scan $scan)
+    {
+        // Prevent a race where this job starts before the dispatching transaction commits
+        // and Scan::find() returns null inside handle().
+        $this->afterCommit();
+    }
 
     /**
      * Execute the job.

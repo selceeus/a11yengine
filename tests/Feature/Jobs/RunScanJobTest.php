@@ -225,3 +225,9 @@ it('stores the error message via the failed hook when retries are exhausted', fu
 
     expect($this->scan->fresh()->error_message)->toBe('Max retries exceeded');
 });
+
+it('has afterCommit set to true to prevent race conditions with dispatching transactions', function (): void {
+    $job = new RunScanJob($this->scan);
+
+    expect($job->afterCommit)->toBeTrue();
+});
