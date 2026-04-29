@@ -43,7 +43,7 @@ Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactC
 // container. All routes require the `wordpress` scope.
 // ---------------------------------------------------------------------------
 Route::prefix('wordpress')
-    ->middleware('api.key:wordpress')
+    ->middleware(['api.key:wordpress', 'throttle:60,1'])
     ->name('wordpress.')
     ->group(function (): void {
         Route::get('properties', WordPressPropertiesController::class)
@@ -80,7 +80,7 @@ Route::prefix('wordpress')
 //   }
 // ---------------------------------------------------------------------------
 Route::prefix('{tenant}')
-    ->middleware(['tenant', 'api.key:scans:read'])
+    ->middleware(['tenant', 'api.key:scans:read', 'throttle:120,1'])
     ->name('tenant.')
     ->group(function (): void {
         Route::get('risk-summary', AgencyRiskSummaryController::class)

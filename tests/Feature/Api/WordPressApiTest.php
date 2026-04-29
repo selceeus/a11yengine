@@ -194,3 +194,21 @@ it('WordPress scans: returns 404 for an unknown property slug', function (): voi
         'Authorization' => 'Bearer '.$token['plaintext'],
     ])->assertNotFound();
 });
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+
+it('WordPress routes: returns 429 after exceeding the rate limit', function (): void {
+    $agency = Agency::factory()->create();
+    $token = createWordPressApiKey($agency);
+
+    // Exhaust the 60 requests-per-minute limit.
+    for ($i = 0; $i < 60; $i++) {
+        $this->getJson('/api/wordpress/properties', [
+            'Authorization' => 'Bearer '.$token['plaintext'],
+        ]);
+    }
+
+    $this->getJson('/api/wordpress/properties', [
+        'Authorization' => 'Bearer '.$token['plaintext'],
+    ])->assertTooManyRequests();
+})->group('throttle');
