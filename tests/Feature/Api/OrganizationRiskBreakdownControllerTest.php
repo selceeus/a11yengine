@@ -103,3 +103,8 @@ it('returns aggregated risk data for the organizations open issues', function ()
         ->assertJsonPath('highest_risk_rules.0.rule_key', 'wcag-1.1.1')
         ->assertJsonPath('highest_risk_rules.0.risk_contribution', 100);
 });
+
+it('returns 401 for unauthenticated requests', function (): void {
+    $this->getJson(route('api.organizations.risk-breakdown', $this->organization->id))
+        ->assertUnauthorized();
+});

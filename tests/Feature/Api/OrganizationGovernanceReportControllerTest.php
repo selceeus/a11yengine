@@ -108,3 +108,8 @@ it('returns combined breakdown and impact data', function (): void {
         ->assertJsonPath('affected_wcag_categories.perceivable', 1)
         ->assertJsonPath('assistive_technology_risk.screen_reader', 1);
 });
+
+it('returns 401 for unauthenticated requests', function (): void {
+    $this->getJson(route('api.organizations.governance-summary', $this->organization->id))
+        ->assertUnauthorized();
+});
