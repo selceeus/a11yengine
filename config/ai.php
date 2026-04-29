@@ -30,4 +30,18 @@ return [
         'auto_generate_on_scan_complete' => (bool) env('AI_AUDIT_AUTO_GENERATE', false),
         'max_issues_in_prompt' => (int) env('AI_AUDIT_MAX_ISSUES', 30),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Embeddings
+    |--------------------------------------------------------------------------
+    | Embeddings always use OpenAI's text-embedding-3-small model regardless
+    | of the AI_DRIVER setting. Configure this separately to avoid silent
+    | misconfiguration when AI_DRIVER=anthropic.
+    */
+    'embeddings' => [
+        'key' => env('OPENAI_API_KEY'),
+        'model' => env('EMBEDDING_MODEL', 'text-embedding-3-small'),
+        'dimensions' => (int) env('EMBEDDING_DIMENSIONS', 1536),
+    ],
 ];

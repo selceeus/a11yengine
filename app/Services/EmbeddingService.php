@@ -15,7 +15,7 @@ class EmbeddingService
 
     public function __construct()
     {
-        $this->http = Http::withToken(config('ai.providers.openai.key'))
+        $this->http = Http::withToken(config('ai.embeddings.key'))
             ->baseUrl('https://api.openai.com/v1')
             ->timeout(30);
     }
