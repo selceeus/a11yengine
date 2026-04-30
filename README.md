@@ -7,7 +7,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 ## Features
 
 - **Automated Crawling & Scanning** — Discovers all pages and PDF documents on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
-- **PDF Accessibility Scanning** — Automatically discovers linked PDFs during a crawl and audits each document against six WCAG 2.1 criteria (tagged content, title, language, image-only, bookmarks, figure alt text) via a dedicated FastAPI microservice; violations are stored with rule key, severity, WCAG criterion, description, and page number
+- **PDF Accessibility Scanning** — Automatically discovers linked PDFs during a crawl and audits each document against PDF/UA-1 rules via the veraPDF REST microservice; violations are stored with rule key, severity, WCAG criterion, description, and page number
 - **Issue Deduplication & Tracking** — Aggregates raw findings into unique, trackable issues with occurrence counts, severity, WCAG category, tags, element HTML, help URLs, and lifecycle status (`open` → `in_progress` → `resolved`)
 - **Issue Activity Log** — Full audit trail per issue: status changes, assignments, due date updates, bulk actions, and threaded comments
 - **Scan Diff** — Side-by-side comparison of two scans showing new, resolved, and persisting findings
@@ -55,6 +55,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 | **Build Tool**        | Vite 7                                                     |
 | **Database**          | PostgreSQL with pgvector (vector embeddings)               |
 | **Queue**             | Laravel Queues (database driver)                           |
+| **Real-Time**         | Laravel Reverb v1 (WebSockets)                             |
 | **Testing**           | Pest v3, PHPUnit v11, Jest 30                              |
 | **Code Quality**      | Laravel Pint, ESLint v9, Prettier v3                       |
 | **Dev Environment**   | Laravel Sail (Docker)                                      |
@@ -84,7 +85,7 @@ Agency
                 └── PdfViolation  (WCAG finding within the PDF)
 ```
 
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages and PDF documents, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. For each discovered PDF, a `PdfDocument` record is created and `ScanPdfJob` is dispatched to the dedicated `pdf` queue, which calls the FastAPI PDF scanner microservice and stores any `PdfViolation` records. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
+Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages and PDF documents, then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) per page. For each discovered PDF, a `PdfDocument` record is created and `ScanPdfJob` is dispatched to the dedicated `pdf` queue, which calls the veraPDF REST microservice and stores any `PdfViolation` records. During a scan, `ScanProgressUpdated` events are broadcast over the private `agency.{agencyId}` WebSocket channel (via Laravel Reverb) to push real-time progress to connected clients. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
 
 The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
 
@@ -131,8 +132,11 @@ npm run build
 ### Development
 
 ```bash
-# Start HTTP server, queue worker, Vite, and Pail log viewer concurrently
+# Start HTTP server, queue worker, and Vite concurrently
 composer run dev
+
+# Start HTTP server, queue worker, Vite, Pail log viewer, and SSR server concurrently
+composer run dev:ssr
 ```
 
 ---
@@ -163,7 +167,7 @@ composer run dev
 | `AI_DRIVER`              | Provider: `openai` or `anthropic`                          |
 | `OPENAI_API_KEY`         | OpenAI API key (required when driver is `openai`)          |
 | `ANTHROPIC_API_KEY`      | Anthropic API key (required when driver is `anthropic`)    |
-| `AI_AUTO_GENERATE_AUDIT` | Auto-generate AI audit on scan completion (`true`/`false`) |
+| `AI_AUDIT_AUTO_GENERATE` | Auto-generate AI audit on scan completion (`true`/`false`) |
 
 ### Crawler
 
@@ -176,6 +180,7 @@ composer run dev
 | `CRAWLER_PAGE_TIMEOUT_MS`  | Page load timeout in milliseconds (default: `30000`)   |
 | `CRAWLER_NAV_TIMEOUT_MS`   | Navigation timeout in milliseconds (default: `60000`)  |
 | `CRAWLER_REQUEST_DELAY_MS` | Delay between page requests (default: `500`)           |
+| `CRAWLER_LOG_LEVEL`        | Crawler stderr verbosity: `silent`, `error`, `warn`, `info` (default: `error`) |
 
 ### Lighthouse
 
@@ -190,7 +195,7 @@ composer run dev
 
 | Variable              | Purpose                                              |
 | --------------------- | ---------------------------------------------------- |
-| `PDF_SCANNER_URL`     | Base URL of the FastAPI PDF scanner microservice     |
+| `PDF_SCANNER_URL`     | Base URL of the veraPDF REST microservice (default: `http://pdf-scanner:8080`) |
 | `PDF_SCANNER_TIMEOUT` | Max seconds per PDF scan request (default: `120`)    |
 | `PDF_SCANNER_ENABLED` | Enable PDF accessibility scanning (`true` / `false`) |
 
@@ -216,7 +221,7 @@ composer run dev
 3. A `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop form factors) is dispatched per discovered page
 4. On batch completion the scan transitions to `completed`; risk snapshots are recorded at property, organisation, and agency levels
 5. `ScanCompleted` is fired — notifies users, sends routed emails, and dispatches webhook payloads
-6. If `AI_AUTO_GENERATE_AUDIT=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
+6. If `AI_AUDIT_AUTO_GENERATE=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
 7. Any batch failure transitions the scan to `failed` and fires `ScanFailed`, which notifies all agency users and triggers routed email and webhook deliveries
 
 ### Issue Lifecycle
@@ -314,21 +319,22 @@ An append-only `activity_logs` table records all security-relevant events across
 
 #### Logged Events
 
-| Category            | Events                                                                  |
-| ------------------- | ----------------------------------------------------------------------- |
-| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled |
-| **Access Control**  | User invited, role changed                                              |
-| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry     |
-| **Scans**           | Scan started, completed, failed                                         |
-| **Issues**          | Status changed, assigned, comment added                                 |
-| **Audit & Reports** | Audit generated                                                         |
-| **Properties**      | Property created/updated                                                |
-| **Organisations**   | Organisation created/updated                                            |
-| **Maintenance**     | Activity log pruned                                                     |
+| Category            | Events                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled             |
+| **Access Control**  | User invited, role changed                                                          |
+| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry                 |
+| **Scans**           | Scan started, completed, failed                                                     |
+| **Issues**          | Status changed, assigned, comment added                                             |
+| **Audit & Reports** | Audit generated                                                                     |
+| **Properties**      | Property created/updated                                                            |
+| **Organisations**   | Organisation created/updated                                                        |
+| **Access Reviews**  | Review started, review completed, user access confirmed, user access revoked        |
+| **Maintenance**     | Activity log pruned                                                                 |
 
 #### Implementation
 
-- Events are written via `ActivityLogger` — a static service with `log()` (authenticated user), `loginSuccess()`, `logoutSuccess()`, `apiKeyUsed()`, and `system()` (no-user) methods
+- Events are written via `ActivityLogger` — a static service with `log()` (authenticated user), `loginFailed()`, `loginSuccess()`, `logoutSuccess()`, `apiKeyUsed()`, `logForApiKey()` (API key actor), and `system()` (no-user context) methods
 - Login/logout events fire via Laravel's built-in `Auth\Events\Login` / `Auth\Events\Logout` listeners
 - Scan events fire via `ScanCompleted` / `ScanFailed` application events
 - Issue changes are captured in `IssueObserver`; comments in `IssueCommentController`
@@ -425,6 +431,29 @@ In addition to per-user preferences, agencies can route notifications by categor
 
 Delivery is handled by `SendWebhookNotificationJob` (queued, 3 attempts, 30 s / 60 s backoff).
 
+### Real-Time Broadcasting
+
+Laravel Reverb provides a self-hosted WebSocket server for real-time push events. The application broadcasts to private channels authenticated by the user's agency.
+
+| Event                  | Channel                  | Payload                                                  |
+| ---------------------- | ------------------------ | -------------------------------------------------------- |
+| `ScanProgressUpdated`  | `agency.{agencyId}`      | `scan_id`, `pages_scanned`, `status`                     |
+
+Clients subscribe to the private `agency.{agencyId}` channel (authorised via `routes/channels.php` — the user's `agency_id` must match the channel parameter) to receive live scan progress without polling.
+
+**Reverb environment variables:**
+
+| Variable           | Purpose                                        |
+| ------------------ | ---------------------------------------------- |
+| `REVERB_APP_KEY`   | Reverb application key                         |
+| `REVERB_APP_SECRET`| Reverb application secret                      |
+| `REVERB_APP_ID`    | Reverb application ID                          |
+| `REVERB_HOST`      | Reverb server host                             |
+| `REVERB_PORT`      | Reverb server port (default: `443`)            |
+| `REVERB_SCHEME`    | `https` or `http` (default: `https`)           |
+
+---
+
 ### Risk Scoring
 
 Weighted risk scores are calculated and snapshotted at three levels: `PropertyRiskSnapshot`, `OrganizationRiskSnapshot`, and `AgencyRiskSnapshot`. These snapshots power trend charts and governance reports. All three snapshot tiers run on a daily schedule via dedicated Artisan commands (`snapshots:property-risk`, `snapshots:organization-risk`, `snapshots:agency-risk`).
@@ -452,6 +481,14 @@ A dedicated API surface under `/api/wordpress/` provides everything a WordPress 
 | `/api/wordpress/properties/{slug}/issues`       | `GET`  | Recent open issues for a property     |
 | `/api/wordpress/properties/{slug}/risk-summary` | `GET`  | Current risk score and snapshot data  |
 | `/api/wordpress/properties/{slug}/scans`        | `POST` | Trigger a new accessibility scan      |
+
+### Global Search
+
+An authenticated search endpoint allows the UI to perform a unified cross-resource search. Requires a minimum of 2 characters; returns up to 5 results per resource type.
+
+| Endpoint         | Method | Description                                                            |
+| ---------------- | ------ | ---------------------------------------------------------------------- |
+| `/api/search?q=` | `GET`  | Search properties, organisations, and issues by name, URL, or rule key |
 
 ### PDF Accessibility Scanning
 
@@ -532,7 +569,9 @@ Reports can be exported via the `Exportable` concern:
 | ------------------ | -------------- |
 | AI Audit Reports   | JSON, CSV, PDF |
 | Governance Reports | JSON, CSV, PDF |
-| Content Audits     | JSON, CSV      |
+| Risk Advisories    | JSON, CSV, PDF |
+| Content Audits     | JSON, CSV, PDF |
+| Scans              | JSON, CSV      |
 
 ---
 
@@ -541,16 +580,16 @@ Reports can be exported via the `Exportable` concern:
 | Job                           | Purpose                                                                                            | Retries                      | Timeout |
 | ----------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------- | ------- |
 | `RunScanJob`                  | Orchestrates full scan lifecycle                                                                   | 3 (10s / 30s backoff)        | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                               | batch                        | —       |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | batch                        | —       |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                               | 2 (10s / 30s backoff)        | 120s    |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | 2 (30s backoff)              | 180s    |
 | `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                     | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                   | —                            | —       |
-| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                            | —                            | —       |
-| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                   | —                            | —       |
-| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | —                            | —       |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                   | 2 (30s / 60s backoff)        | 120s    |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                            | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                   | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | 2 (60s / 120s backoff)       | 300s    |
 | `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff)       | 300s    |
 | `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff)       | —       |
-| `ScanPdfJob`                  | Downloads a PDF and runs WCAG checks via the FastAPI microservice; stores PdfViolation records     | 2 (30s / 60s backoff)        | 120s    |
+| `ScanPdfJob`                  | Downloads a PDF and runs PDF/UA-1 checks via the veraPDF REST microservice; stores PdfViolation records | 2 (30s / 60s backoff)   | 120s    |
 | `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                          | 3 (30s / 60s backoff)        | —       |
 | `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                 | 3 (30s / 60s / 120s backoff) | 120s    |
 | `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                | 3 (30s / 60s / 120s backoff) | 120s    |
@@ -589,6 +628,7 @@ The Node.js crawler in `crawler/` is a standalone CLI tool invoked by `RunScanJo
 ```bash
 node crawler/scan.js <url> \
   [--max-pages 50] \
+  [--max-depth 5] \
   [--wcag-version wcag21|wcag22] \
   [--include <pattern>]... \
   [--exclude <pattern>]...
@@ -625,7 +665,9 @@ docker compose up pdf-scanner
 ```bash
 composer run setup      # Full initial setup (install, migrate, build)
 composer run dev        # Start server, queue worker, and Vite concurrently
+composer run dev:ssr    # Start server, queue, Vite, Pail, and SSR server
 composer run lint       # Run Laravel Pint formatter
+composer run test:lint  # Pint lint check only (no tests)
 composer run test       # Lint check + full test suite
 ```
 
@@ -695,4 +737,6 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 | Activity Log        | `/settings/activity-log`        | Browse and filter the full activity log with category and date range filters                              |
 | Activity Log Export | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)                                                            |
 | Access Reviews      | `/settings/access-reviews`      | Manage quarterly SOC2 access review cycles                                                                |
-| SOC2 Evidence       | `/settings/soc2-evidence`       | Download user-role, API key, and access review exports for auditors                                       |
+| Notification Emails   | `/settings/notification-email-routes`   | Route notification categories to additional non-user email addresses |
+| Notification Webhooks | `/settings/notification-webhook-routes` | Route notification categories to Slack, Teams, or Discord webhook URLs |
+| SOC2 Evidence         | `/settings/soc2-evidence`               | Download user-role, API key, and access review exports for auditors  |
