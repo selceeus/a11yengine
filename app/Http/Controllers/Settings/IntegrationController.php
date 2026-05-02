@@ -58,7 +58,7 @@ class IntegrationController extends Controller
             'provider' => ['required', 'string'],
             'name' => ['required', 'string', 'max:255'],
             'credentials' => ['required', 'array'],
-            'property_id' => ['nullable', 'integer', 'exists:properties,id'],
+            'property_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('properties', 'id')->where('agency_id', currentAgency()->id)],
         ]);
 
         $provider = IntegrationProvider::from($request->input('provider'));
@@ -124,6 +124,8 @@ class IntegrationController extends Controller
 
     public function test(Integration $integration): JsonResponse
     {
+        abort_unless(request()->user()->canManageAgency($integration->agency_id), 403);
+
         $provider = IntegrationProviderRegistry::make($integration->provider);
 
         $result = $provider->testConnection($integration);
