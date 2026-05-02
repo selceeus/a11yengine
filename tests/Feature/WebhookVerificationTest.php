@@ -44,7 +44,7 @@ describe('LinearProvider webhook verification', function (): void {
         expect((new LinearProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 
-    it('falls back to true when no webhook_secret is configured', function (): void {
+    it('rejects when no webhook_secret is configured', function (): void {
         $integration = Integration::factory()->make([
             'provider' => IntegrationProvider::Linear,
             'credentials' => ['api_key' => 'key', 'team_id' => 'team'],
@@ -52,7 +52,7 @@ describe('LinearProvider webhook verification', function (): void {
 
         $request = Request::create('/webhook', 'POST', [], [], [], [], '{}');
 
-        expect((new LinearProvider)->verifyWebhook($integration, $request))->toBeTrue();
+        expect((new LinearProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 });
 
@@ -88,7 +88,7 @@ describe('ClickUpProvider webhook verification', function (): void {
         expect((new ClickUpProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 
-    it('falls back to true when no webhook_secret is configured', function (): void {
+    it('rejects when no webhook_secret is configured', function (): void {
         $integration = Integration::factory()->make([
             'provider' => IntegrationProvider::ClickUp,
             'credentials' => ['api_token' => 'tok', 'list_id' => '1'],
@@ -96,7 +96,7 @@ describe('ClickUpProvider webhook verification', function (): void {
 
         $request = Request::create('/webhook', 'POST', [], [], [], [], '{}');
 
-        expect((new ClickUpProvider)->verifyWebhook($integration, $request))->toBeTrue();
+        expect((new ClickUpProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 });
 
@@ -132,7 +132,7 @@ describe('BasecampProvider webhook verification', function (): void {
         expect((new BasecampProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 
-    it('falls back to true when no webhook_secret is configured', function (): void {
+    it('rejects when no webhook_secret is configured', function (): void {
         $integration = Integration::factory()->make([
             'provider' => IntegrationProvider::Basecamp,
             'credentials' => ['access_token' => 'tok', 'account_id' => '1', 'project_id' => '2'],
@@ -140,7 +140,7 @@ describe('BasecampProvider webhook verification', function (): void {
 
         $request = Request::create('/webhook', 'POST', [], [], [], [], '{}');
 
-        expect((new BasecampProvider)->verifyWebhook($integration, $request))->toBeTrue();
+        expect((new BasecampProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 });
 
@@ -177,7 +177,7 @@ describe('TrelloProvider webhook verification', function (): void {
         expect((new TrelloProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 
-    it('falls back to true when no api_secret is configured', function (): void {
+    it('rejects when no api_secret is configured', function (): void {
         $integration = Integration::factory()->make([
             'provider' => IntegrationProvider::Trello,
             'credentials' => ['api_key' => 'key', 'token' => 'tok', 'list_id' => '1'],
@@ -185,7 +185,7 @@ describe('TrelloProvider webhook verification', function (): void {
 
         $request = Request::create('/webhook', 'POST', [], [], [], [], '{}');
 
-        expect((new TrelloProvider)->verifyWebhook($integration, $request))->toBeTrue();
+        expect((new TrelloProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 });
 
@@ -231,7 +231,7 @@ describe('AzureDevOpsProvider webhook verification', function (): void {
         expect((new AzureDevOpsProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 
-    it('falls back to true when no webhook_password is configured', function (): void {
+    it('rejects when no webhook_password is configured', function (): void {
         $integration = Integration::factory()->make([
             'provider' => IntegrationProvider::AzureDevOps,
             'credentials' => ['organization' => 'org', 'project' => 'proj', 'pat' => 'pat'],
@@ -239,6 +239,6 @@ describe('AzureDevOpsProvider webhook verification', function (): void {
 
         $request = Request::create('/webhook', 'POST', [], [], [], [], '{}');
 
-        expect((new AzureDevOpsProvider)->verifyWebhook($integration, $request))->toBeTrue();
+        expect((new AzureDevOpsProvider)->verifyWebhook($integration, $request))->toBeFalse();
     });
 });

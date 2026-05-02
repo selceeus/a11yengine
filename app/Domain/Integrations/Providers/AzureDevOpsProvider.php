@@ -65,7 +65,7 @@ class AzureDevOpsProvider implements ProjectManagementProvider
         $webhookPassword = $creds['webhook_password'] ?? null;
 
         if (empty($webhookPassword)) {
-            return true;
+            return false;
         }
 
         $authHeader = $request->header('Authorization', '');

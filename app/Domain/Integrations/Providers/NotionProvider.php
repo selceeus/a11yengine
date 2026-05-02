@@ -75,7 +75,7 @@ class NotionProvider implements ProjectManagementProvider
         $secret = $creds['webhook_secret'] ?? null;
 
         if (empty($secret)) {
-            return true;
+            return false;
         }
 
         $signature = $request->header('X-Notion-Signature', '');

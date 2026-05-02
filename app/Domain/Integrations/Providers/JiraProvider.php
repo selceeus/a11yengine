@@ -84,8 +84,17 @@ class JiraProvider implements ProjectManagementProvider
 
     public function verifyWebhook(Integration $integration, Request $request): bool
     {
-        // Jira uses JWT-signed webhooks; for simplicity accept all (configure IP allowlist).
-        return true;
+        $creds = $integration->credentials;
+        $secret = $creds['webhook_secret'] ?? null;
+
+        if (empty($secret)) {
+            return false;
+        }
+
+        $signature = $request->header('X-Hub-Signature', '');
+        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $secret);
+
+        return hash_equals($expected, $signature);
     }
 
     public function parseWebhookStatus(Request $request): string

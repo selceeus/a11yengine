@@ -56,7 +56,7 @@ class TrelloProvider implements ProjectManagementProvider
         $secret = $creds['api_secret'] ?? null;
 
         if (empty($secret)) {
-            return true;
+            return false;
         }
 
         $signature = $request->header('X-Trello-Webhook', '');

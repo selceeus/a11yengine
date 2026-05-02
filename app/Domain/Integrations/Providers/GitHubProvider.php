@@ -60,7 +60,7 @@ class GitHubProvider implements ProjectManagementProvider
         $secret = $creds['webhook_secret'] ?? null;
 
         if (empty($secret)) {
-            return true;
+            return false;
         }
 
         $signature = $request->header('X-Hub-Signature-256', '');
