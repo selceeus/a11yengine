@@ -33,6 +33,7 @@ Route::get('organizations/{organizationId}/risk-breakdown', OrganizationRiskBrea
     ->name('api.organizations.risk-breakdown');
 
 Route::get('organizations/{organizationId}/user-impact', OrganizationUserImpactController::class)
+    ->middleware('auth')
     ->name('api.organizations.user-impact');
 
 // ---------------------------------------------------------------------------
