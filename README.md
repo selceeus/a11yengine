@@ -171,15 +171,15 @@ composer run dev:ssr
 
 ### Crawler
 
-| Variable                   | Purpose                                                |
-| -------------------------- | ------------------------------------------------------ |
-| `CRAWLER_SCRIPT_PATH`      | Path to `crawler/scan.js` (default: `crawler/scan.js`) |
-| `CRAWLER_TIMEOUT`          | Max seconds for a full crawl (default: `300`)          |
-| `CRAWLER_MAX_PAGES`        | Maximum pages to crawl per scan (default: `50`)        |
-| `CRAWLER_MAX_DEPTH`        | Maximum link depth to follow (default: `5`)            |
-| `CRAWLER_PAGE_TIMEOUT_MS`  | Page load timeout in milliseconds (default: `30000`)   |
-| `CRAWLER_NAV_TIMEOUT_MS`   | Navigation timeout in milliseconds (default: `60000`)  |
-| `CRAWLER_REQUEST_DELAY_MS` | Delay between page requests (default: `500`)           |
+| Variable                   | Purpose                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `CRAWLER_SCRIPT_PATH`      | Path to `crawler/scan.js` (default: `crawler/scan.js`)                         |
+| `CRAWLER_TIMEOUT`          | Max seconds for a full crawl (default: `300`)                                  |
+| `CRAWLER_MAX_PAGES`        | Maximum pages to crawl per scan (default: `50`)                                |
+| `CRAWLER_MAX_DEPTH`        | Maximum link depth to follow (default: `5`)                                    |
+| `CRAWLER_PAGE_TIMEOUT_MS`  | Page load timeout in milliseconds (default: `30000`)                           |
+| `CRAWLER_NAV_TIMEOUT_MS`   | Navigation timeout in milliseconds (default: `60000`)                          |
+| `CRAWLER_REQUEST_DELAY_MS` | Delay between page requests (default: `500`)                                   |
 | `CRAWLER_LOG_LEVEL`        | Crawler stderr verbosity: `silent`, `error`, `warn`, `info` (default: `error`) |
 
 ### Lighthouse
@@ -193,11 +193,11 @@ composer run dev:ssr
 
 ### PDF Scanner
 
-| Variable              | Purpose                                              |
-| --------------------- | ---------------------------------------------------- |
+| Variable              | Purpose                                                                        |
+| --------------------- | ------------------------------------------------------------------------------ |
 | `PDF_SCANNER_URL`     | Base URL of the veraPDF REST microservice (default: `http://pdf-scanner:8080`) |
-| `PDF_SCANNER_TIMEOUT` | Max seconds per PDF scan request (default: `120`)    |
-| `PDF_SCANNER_ENABLED` | Enable PDF accessibility scanning (`true` / `false`) |
+| `PDF_SCANNER_TIMEOUT` | Max seconds per PDF scan request (default: `120`)                              |
+| `PDF_SCANNER_ENABLED` | Enable PDF accessibility scanning (`true` / `false`)                           |
 
 ---
 
@@ -319,18 +319,18 @@ An append-only `activity_logs` table records all security-relevant events across
 
 #### Logged Events
 
-| Category            | Events                                                                              |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled             |
-| **Access Control**  | User invited, role changed                                                          |
-| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry                 |
-| **Scans**           | Scan started, completed, failed                                                     |
-| **Issues**          | Status changed, assigned, comment added                                             |
-| **Audit & Reports** | Audit generated                                                                     |
-| **Properties**      | Property created/updated                                                            |
-| **Organisations**   | Organisation created/updated                                                        |
-| **Access Reviews**  | Review started, review completed, user access confirmed, user access revoked        |
-| **Maintenance**     | Activity log pruned                                                                 |
+| Category            | Events                                                                       |
+| ------------------- | ---------------------------------------------------------------------------- |
+| **Authentication**  | User login, logout, failed login, password change, 2FA enabled/disabled      |
+| **Access Control**  | User invited, role changed                                                   |
+| **API Keys**        | Key created, revoked, used, expiry notified, auto-revoked on expiry          |
+| **Scans**           | Scan started, completed, failed                                              |
+| **Issues**          | Status changed, assigned, comment added                                      |
+| **Audit & Reports** | Audit generated                                                              |
+| **Properties**      | Property created/updated                                                     |
+| **Organisations**   | Organisation created/updated                                                 |
+| **Access Reviews**  | Review started, review completed, user access confirmed, user access revoked |
+| **Maintenance**     | Activity log pruned                                                          |
 
 #### Implementation
 
@@ -435,22 +435,22 @@ Delivery is handled by `SendWebhookNotificationJob` (queued, 3 attempts, 30 s / 
 
 Laravel Reverb provides a self-hosted WebSocket server for real-time push events. The application broadcasts to private channels authenticated by the user's agency.
 
-| Event                  | Channel                  | Payload                                                  |
-| ---------------------- | ------------------------ | -------------------------------------------------------- |
-| `ScanProgressUpdated`  | `agency.{agencyId}`      | `scan_id`, `pages_scanned`, `status`                     |
+| Event                 | Channel             | Payload                              |
+| --------------------- | ------------------- | ------------------------------------ |
+| `ScanProgressUpdated` | `agency.{agencyId}` | `scan_id`, `pages_scanned`, `status` |
 
 Clients subscribe to the private `agency.{agencyId}` channel (authorised via `routes/channels.php` — the user's `agency_id` must match the channel parameter) to receive live scan progress without polling.
 
 **Reverb environment variables:**
 
-| Variable           | Purpose                                        |
-| ------------------ | ---------------------------------------------- |
-| `REVERB_APP_KEY`   | Reverb application key                         |
-| `REVERB_APP_SECRET`| Reverb application secret                      |
-| `REVERB_APP_ID`    | Reverb application ID                          |
-| `REVERB_HOST`      | Reverb server host                             |
-| `REVERB_PORT`      | Reverb server port (default: `443`)            |
-| `REVERB_SCHEME`    | `https` or `http` (default: `https`)           |
+| Variable            | Purpose                              |
+| ------------------- | ------------------------------------ |
+| `REVERB_APP_KEY`    | Reverb application key               |
+| `REVERB_APP_SECRET` | Reverb application secret            |
+| `REVERB_APP_ID`     | Reverb application ID                |
+| `REVERB_HOST`       | Reverb server host                   |
+| `REVERB_PORT`       | Reverb server port (default: `443`)  |
+| `REVERB_SCHEME`     | `https` or `http` (default: `https`) |
 
 ---
 
@@ -577,23 +577,23 @@ Reports can be exported via the `Exportable` concern:
 
 ## Background Jobs
 
-| Job                           | Purpose                                                                                            | Retries                      | Timeout |
-| ----------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------- | ------- |
-| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                   | 3 (10s / 30s backoff)        | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                               | 2 (10s / 30s backoff)        | 120s    |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop) | 2 (30s backoff)              | 180s    |
-| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                     | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                   | 2 (30s / 60s backoff)        | 120s    |
-| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                            | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                   | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                            | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                    | 2 (60s / 120s backoff)       | 300s    |
-| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                             | 3 (30s / 120s backoff)       | —       |
-| `ScanPdfJob`                  | Downloads a PDF and runs PDF/UA-1 checks via the veraPDF REST microservice; stores PdfViolation records | 2 (30s / 60s backoff)   | 120s    |
-| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                          | 3 (30s / 60s backoff)        | —       |
-| `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                 | 3 (30s / 60s / 120s backoff) | 120s    |
-| `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                | 3 (30s / 60s / 120s backoff) | 120s    |
-| `IndexRemediationPatternJob`  | Indexes a resolved issue's remediation pattern into the vector store                               | 3 (30s / 60s / 120s backoff) | 120s    |
+| Job                           | Purpose                                                                                                 | Retries                      | Timeout |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------- | ------- |
+| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                        | 3 (10s / 30s backoff)        | 600s    |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                                    | 2 (10s / 30s backoff)        | 120s    |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop)      | 2 (30s backoff)              | 180s    |
+| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                          | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                        | 2 (30s / 60s backoff)        | 120s    |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                                 | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                        | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on scanned pages                                                 | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                         | 2 (60s / 120s backoff)       | 300s    |
+| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                                  | 3 (30s / 120s backoff)       | —       |
+| `ScanPdfJob`                  | Downloads a PDF and runs PDF/UA-1 checks via the veraPDF REST microservice; stores PdfViolation records | 2 (30s / 60s backoff)        | 120s    |
+| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                               | 3 (30s / 60s backoff)        | —       |
+| `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                      | 3 (30s / 60s / 120s backoff) | 120s    |
+| `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                     | 3 (30s / 60s / 120s backoff) | 120s    |
+| `IndexRemediationPatternJob`  | Indexes a resolved issue's remediation pattern into the vector store                                    | 3 (30s / 60s / 120s backoff) | 120s    |
 
 ---
 
@@ -724,19 +724,19 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 ## Settings
 
-| Page                | Route                           | Description                                                                                               |
-| ------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Profile             | `/settings/profile`             | Name, email, and account details                                                                          |
-| Password            | `/settings/password`            | Change account password                                                                                   |
-| Two-Factor Auth     | `/settings/two-factor`          | Enable/disable 2FA and manage recovery codes                                                              |
-| Appearance          | `/settings/appearance`          | Theme and UI preferences                                                                                  |
-| Notifications       | `/settings/notifications`       | Per-channel notification opt-out preferences                                                              |
-| Scheduled Scans     | `/settings/scheduled-scans`     | Manage recurring scans                                                                                    |
-| API Keys            | `/settings/api-keys`            | Create and revoke scoped API keys; expiry status badges and alert banner for keys expiring within 30 days |
-| Integrations        | `/settings/integrations`        | Connect and manage project management integrations                                                        |
-| Activity Log        | `/settings/activity-log`        | Browse and filter the full activity log with category and date range filters                              |
-| Activity Log Export | `/settings/activity-log/export` | Download SOC2 audit log as CSV (last 365 days)                                                            |
-| Access Reviews      | `/settings/access-reviews`      | Manage quarterly SOC2 access review cycles                                                                |
-| Notification Emails   | `/settings/notification-email-routes`   | Route notification categories to additional non-user email addresses |
-| Notification Webhooks | `/settings/notification-webhook-routes` | Route notification categories to Slack, Teams, or Discord webhook URLs |
-| SOC2 Evidence         | `/settings/soc2-evidence`               | Download user-role, API key, and access review exports for auditors  |
+| Page                  | Route                                   | Description                                                                                               |
+| --------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Profile               | `/settings/profile`                     | Name, email, and account details                                                                          |
+| Password              | `/settings/password`                    | Change account password                                                                                   |
+| Two-Factor Auth       | `/settings/two-factor`                  | Enable/disable 2FA and manage recovery codes                                                              |
+| Appearance            | `/settings/appearance`                  | Theme and UI preferences                                                                                  |
+| Notifications         | `/settings/notifications`               | Per-channel notification opt-out preferences                                                              |
+| Scheduled Scans       | `/settings/scheduled-scans`             | Manage recurring scans                                                                                    |
+| API Keys              | `/settings/api-keys`                    | Create and revoke scoped API keys; expiry status badges and alert banner for keys expiring within 30 days |
+| Integrations          | `/settings/integrations`                | Connect and manage project management integrations                                                        |
+| Activity Log          | `/settings/activity-log`                | Browse and filter the full activity log with category and date range filters                              |
+| Activity Log Export   | `/settings/activity-log/export`         | Download SOC2 audit log as CSV (last 365 days)                                                            |
+| Access Reviews        | `/settings/access-reviews`              | Manage quarterly SOC2 access review cycles                                                                |
+| Notification Emails   | `/settings/notification-email-routes`   | Route notification categories to additional non-user email addresses                                      |
+| Notification Webhooks | `/settings/notification-webhook-routes` | Route notification categories to Slack, Teams, or Discord webhook URLs                                    |
+| SOC2 Evidence         | `/settings/soc2-evidence`               | Download user-role, API key, and access review exports for auditors                                       |
