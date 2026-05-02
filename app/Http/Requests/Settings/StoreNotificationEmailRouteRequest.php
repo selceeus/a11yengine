@@ -10,7 +10,7 @@ class StoreNotificationEmailRouteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->canManageAgency($this->user()->agency_id);
     }
 
     /** @return array<string, mixed> */

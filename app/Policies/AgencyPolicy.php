@@ -36,7 +36,7 @@ class AgencyPolicy
      */
     public function update(User $user, Agency $agency): bool
     {
-        return $user->agency_id === $agency->id;
+        return $user->agency_id === $agency->id && $user->canManageAgency($agency->id);
     }
 
     /**
