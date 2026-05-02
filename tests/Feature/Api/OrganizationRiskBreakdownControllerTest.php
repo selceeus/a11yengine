@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Risk\GenerateRiskBreakdown;
+use App\Enums\UserRole;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -11,7 +12,9 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
     $this->organization = Organization::factory()->create(['agency_id' => $this->agency->id]);
-    $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->user = User::factory()
+        ->withRole(UserRole::AgencyAdmin, agencyId: $this->agency->id)
+        ->create(['agency_id' => $this->agency->id]);
 });
 
 it('returns 200 with the correct response structure', function (): void {

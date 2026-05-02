@@ -2,6 +2,7 @@
 
 use App\Domain\Risk\RecordOrganizationRiskSnapshot;
 use App\Domain\Risk\RecordRiskSnapshot;
+use App\Enums\UserRole;
 use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\User;
@@ -11,7 +12,9 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
     $this->organization = Organization::factory()->create(['agency_id' => $this->agency->id]);
-    $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $this->user = User::factory()
+        ->withRole(UserRole::AgencyAdmin, agencyId: $this->agency->id)
+        ->create(['agency_id' => $this->agency->id]);
 });
 
 it('returns 401 for unauthenticated requests', function (): void {

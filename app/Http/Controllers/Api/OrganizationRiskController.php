@@ -7,6 +7,7 @@ use App\Domain\Risk\RecordRiskSnapshot;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class OrganizationRiskController extends Controller
 {
@@ -15,9 +16,12 @@ class OrganizationRiskController extends Controller
         private readonly RecordRiskSnapshot $snapshotRecorder,
     ) {}
 
-    public function __invoke(int $organizationId): JsonResponse
+    public function __invoke(Request $request, int $organizationId): JsonResponse
     {
         $organization = Organization::withoutGlobalScopes()->findOrFail($organizationId);
+
+        $user = $request->user();
+        abort_unless($user->isSuperUser() || $user->canManageOrg($organization->id), 403);
 
         $snapshot = $this->recorder->handle($organization);
         $this->snapshotRecorder->handle($organization);
