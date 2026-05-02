@@ -30,6 +30,7 @@ class ScheduledScanController extends Controller
     public function toggle(Property $property, ScheduledScan $scheduledScan): JsonResponse
     {
         $this->authorize('create', \App\Models\Scan::class);
+        abort_if($scheduledScan->property_id !== $property->id, 403);
 
         $scheduledScan->update(['is_active' => ! $scheduledScan->is_active]);
 
@@ -67,6 +68,7 @@ class ScheduledScanController extends Controller
     public function update(StoreScheduledScanRequest $request, Property $property, ScheduledScan $scheduledScan): JsonResponse
     {
         $this->authorize('create', \App\Models\Scan::class);
+        abort_if($scheduledScan->property_id !== $property->id, 403);
 
         $data = $request->validated();
         $nextRunAt = $this->computeNextRunAt($data);
@@ -90,6 +92,7 @@ class ScheduledScanController extends Controller
     public function destroy(Property $property, ScheduledScan $scheduledScan): JsonResponse
     {
         $this->authorize('create', \App\Models\Scan::class);
+        abort_if($scheduledScan->property_id !== $property->id, 403);
 
         $scheduledScan->delete();
 
