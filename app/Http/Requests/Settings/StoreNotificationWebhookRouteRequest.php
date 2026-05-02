@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Enums\MessagingPlatform;
 use App\Enums\NotificationEmailCategory;
+use App\Rules\NotPrivateUrl;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class StoreNotificationWebhookRouteRequest extends FormRequest
         return [
             'category' => ['required', 'string', Rule::enum(NotificationEmailCategory::class)],
             'platform' => ['required', 'string', Rule::enum(MessagingPlatform::class)],
-            'webhook_url' => ['required', 'url', 'max:1000'],
+            'webhook_url' => ['required', 'url', 'max:1000', new NotPrivateUrl],
             'label' => ['nullable', 'string', 'max:100'],
         ];
     }
