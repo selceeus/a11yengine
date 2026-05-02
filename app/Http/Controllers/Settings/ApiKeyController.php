@@ -58,6 +58,8 @@ class ApiKeyController extends Controller
     {
         $agency = app(Agency::class);
 
+        abort_unless($request->user()->canManageAgency($agency->id), 403);
+
         $token = ApiKey::generateToken();
 
         $apiKey = ApiKey::create([

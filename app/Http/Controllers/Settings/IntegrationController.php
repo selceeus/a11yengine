@@ -65,6 +65,8 @@ class IntegrationController extends Controller
 
         $agency = currentAgency();
 
+        abort_unless($request->user()->canManageAgency($agency->id), 403);
+
         $integration = Integration::create([
             'agency_id' => $agency->id,
             'property_id' => $request->input('property_id'),
@@ -83,6 +85,8 @@ class IntegrationController extends Controller
 
     public function destroy(Integration $integration): RedirectResponse
     {
+        abort_unless(request()->user()->canManageAgency($integration->agency_id), 403);
+
         if ($integration->provider === IntegrationProvider::Wrike) {
             try {
                 (new DeleteWrikeWebhook)($integration);
