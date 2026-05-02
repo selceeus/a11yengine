@@ -25,8 +25,16 @@ class UpdateTeamMemberRoleRequest extends FormRequest
      */
     public function rules(): array
     {
+        $assignable = [
+            UserRole::AgencyAdmin->value,
+            UserRole::OrgAdmin->value,
+            UserRole::PropAdmin->value,
+            UserRole::Editor->value,
+            UserRole::Viewer->value,
+        ];
+
         return [
-            'role' => ['nullable', Rule::enum(UserRole::class)],
+            'role' => ['nullable', 'string', Rule::in($assignable)],
         ];
     }
 }
