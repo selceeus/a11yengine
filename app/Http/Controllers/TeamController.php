@@ -134,6 +134,7 @@ class TeamController extends Controller
 
     public function destroyMember(User $user): RedirectResponse
     {
+        abort_unless(Auth::user()->canManageAgency($this->agency->id), 403);
         abort_if($user->id === Auth::id(), 422, 'You cannot remove yourself from the team.');
         abort_if($user->agency_id !== $this->agency->id, 403);
 
@@ -144,6 +145,7 @@ class TeamController extends Controller
 
     public function destroyInvitation(AgencyInvitation $invitation): RedirectResponse
     {
+        abort_unless(Auth::user()->canManageAgency($this->agency->id), 403);
         abort_if($invitation->agency_id !== $this->agency->id, 403);
 
         $invitation->delete();
