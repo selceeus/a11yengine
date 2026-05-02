@@ -42,8 +42,9 @@ class VerifyMcpToken
             return $next($request);
         }
 
-        // Legacy fallback: agencies.mcp_token column.
-        $agency = Agency::query()->where('mcp_token', $token)->first();
+        // Legacy fallback: agencies.mcp_token_hash column.
+        $hash = hash('sha256', $token);
+        $agency = Agency::query()->where('mcp_token_hash', $hash)->first();
 
         abort_unless($agency !== null, 401, 'Invalid MCP token.');
 
