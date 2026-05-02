@@ -78,6 +78,9 @@ class AccessReviewController extends Controller
 
     public function confirm(AccessReview $accessReview, User $user): RedirectResponse
     {
+        abort_unless(auth()->user()->canManageAgency(auth()->user()->agency_id), 403);
+        abort_if($user->agency_id !== auth()->user()->agency_id, 403);
+
         ActivityLogger::log(
             event: ActivityLogEvent::UserAccessConfirmed,
             subject: $user,
@@ -90,6 +93,9 @@ class AccessReviewController extends Controller
 
     public function revoke(AccessReview $accessReview, User $user): RedirectResponse
     {
+        abort_unless(auth()->user()->canManageAgency(auth()->user()->agency_id), 403);
+        abort_if($user->agency_id !== auth()->user()->agency_id, 403);
+
         $agencyId = auth()->user()->agency_id;
 
         UserRole::where('user_id', $user->id)
@@ -108,6 +114,8 @@ class AccessReviewController extends Controller
 
     public function complete(Request $request, AccessReview $accessReview): RedirectResponse
     {
+        abort_unless($request->user()->canManageAgency($request->user()->agency_id), 403);
+
         if ($accessReview->isCompleted()) {
             return redirect()->route('access-reviews.show', $accessReview);
         }
