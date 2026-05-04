@@ -103,8 +103,10 @@ class ScanPdfJob implements ShouldQueue
 
         $response = Http::timeout($timeout)
             ->accept('application/json')
-            ->asForm()
-            ->post("{$url}/api/validate/url/ua1", ['url' => $this->pdfDocument->url]);
+            ->asMultipart()
+            ->post("{$url}/api/validate/url/ua1", [
+                ['name' => 'url', 'contents' => $this->pdfDocument->url],
+            ]);
 
         if ($response->failed()) {
             $error = $response->json('message') ?? $response->body();
@@ -167,7 +169,7 @@ class ScanPdfJob implements ShouldQueue
      */
     private function translateVeraPdfResponse(array $body): array
     {
-        $ruleSummaries = $body['report']['jobs'][0]['validationReport']['details']['ruleSummaries'] ?? [];
+        $ruleSummaries = $body['report']['jobs'][0]['validationResult'][0]['details']['ruleSummaries'] ?? [];
 
         $violations = [];
 
