@@ -73,9 +73,15 @@ class RunScanJob implements ShouldQueue
             ? ScanConfig::fromArray($this->scan->scan_config)
             : new ScanConfig;
 
+        $crawlUrl = $this->scan->target_url ?? $this->scan->property->base_url;
+
+        if ($this->scan->target_url !== null) {
+            $scanConfig = new ScanConfig(maxPages: 1, maxDepth: 1, wcagVersion: $scanConfig->wcagVersion);
+        }
+
         try {
             $pageResults = $crawlerRunner->run(
-                $this->scan->property->base_url,
+                $crawlUrl,
                 config('crawler.timeout', 300),
                 $scanConfig,
             );

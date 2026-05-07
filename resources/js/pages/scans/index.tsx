@@ -4,6 +4,7 @@ import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
@@ -23,6 +24,7 @@ type Scan = {
     pages_discovered: number | null;
     total_violations: number | null;
     created_at: string;
+    target_url: string | null;
     property: Property | null;
     canDelete: boolean;
 };
@@ -70,7 +72,8 @@ function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destr
 }
 
 export default function Index({ scans, properties }: { scans: Scan[]; properties: Property[] }) {
-    const { data, setData, post, processing, errors } = useForm({ property_id: '' });
+    const { data, setData, post, processing, errors } = useForm({ property_id: '', target_url: '' });
+    const [singlePage, setSinglePage] = useState(false);
     const [overview, setOverview] = useState<OverviewState>({ open: false });
 
     // Schedule scan dialog state
@@ -154,7 +157,12 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        post(ScanController.store().url);
+        post(ScanController.store().url, {
+            data: {
+                property_id: data.property_id,
+                ...(singlePage && data.target_url ? { target_url: data.target_url } : {}),
+            },
+        });
     }
 
     function deleteScan(scan: Scan) {
@@ -217,7 +225,37 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                             )}
                         </div>
 
-                        <Button type="submit" disabled={processing || !data.property_id}>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={singlePage}
+                                    onChange={(e) => {
+                                        setSinglePage(e.target.checked);
+                                        if (!e.target.checked) setData('target_url', '');
+                                    }}
+                                    className="rounded border-input"
+                                />
+                                Scan a single page only
+                            </label>
+                            {singlePage && (
+                                <div className="flex flex-col gap-1">
+                                    <Input
+                                        id="target_url"
+                                        type="url"
+                                        placeholder="https://example.com/page"
+                                        value={data.target_url}
+                                        onChange={(e) => setData('target_url', e.target.value)}
+                                        className="w-80"
+                                    />
+                                    {errors.target_url && (
+                                        <p className="text-xs text-destructive">{errors.target_url}</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <Button type="submit" disabled={processing || !data.property_id || (singlePage && !data.target_url)}>
                             {processing ? 'Starting…' : 'Start scan'}
                         </Button>
                     </form>
@@ -250,7 +288,12 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                 scans.map((scan) => (
                                     <tr key={scan.id} className="transition-colors hover:bg-muted/30">
                                         <td className="px-4 py-3 font-medium">
-                                            {scan.property?.name ?? '—'}
+                                            <div className="flex items-center gap-2">
+                                                {scan.property?.name ?? '—'}
+                                                {scan.target_url && (
+                                                    <Badge variant="outline" className="text-xs">Single page</Badge>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3">
                                             <Badge variant={statusVariant(scan.status)}>

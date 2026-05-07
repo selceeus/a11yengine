@@ -119,6 +119,39 @@ it('redirects unauthenticated users from store', function (): void {
         ->assertRedirect(route('login'));
 });
 
+it('stores target_url when a single-page scan is requested', function (): void {
+    Queue::fake();
+
+    $this->post(route('scans.store'), [
+        'property_id' => $this->property->id,
+        'target_url' => 'https://example.com/about',
+    ])->assertRedirect();
+
+    $scan = Scan::query()->first();
+
+    expect($scan->target_url)->toBe('https://example.com/about');
+});
+
+it('creates a full-site scan when target_url is omitted', function (): void {
+    Queue::fake();
+
+    $this->post(route('scans.store'), ['property_id' => $this->property->id])
+        ->assertRedirect();
+
+    expect(Scan::query()->first()->target_url)->toBeNull();
+});
+
+it('rejects an invalid target_url', function (): void {
+    Queue::fake();
+
+    $this->post(route('scans.store'), [
+        'property_id' => $this->property->id,
+        'target_url' => 'not-a-url',
+    ])->assertSessionHasErrors('target_url');
+
+    Queue::assertNothingPushed();
+});
+
 // ─── show ────────────────────────────────────────────────────────────────────
 
 it('returns the scan show page', function (): void {

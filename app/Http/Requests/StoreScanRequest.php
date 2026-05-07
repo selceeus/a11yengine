@@ -15,6 +15,7 @@ class StoreScanRequest extends FormRequest
     {
         return [
             'property_id' => ['required', 'integer', 'exists:properties,id'],
+            'target_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
             'scan_config' => ['sometimes', 'nullable', 'array'],
             'scan_config.max_pages' => ['sometimes', 'integer', 'min:1', 'max:500'],
             'scan_config.include_patterns' => ['sometimes', 'array'],

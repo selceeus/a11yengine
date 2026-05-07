@@ -17,6 +17,7 @@ class Scan extends Model
         'agency_id',
         'organization_id',
         'property_id',
+        'target_url',
         'status',
         'pages_scanned',
         'pages_discovered',

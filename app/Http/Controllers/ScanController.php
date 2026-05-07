@@ -84,6 +84,7 @@ class ScanController extends Controller
             'agency_id' => $this->agency->id,
             'organization_id' => $property->organization_id,
             'property_id' => $property->id,
+            'target_url' => $request->validated()['target_url'] ?? null,
             'status' => ScanStatus::Pending,
             'scan_config' => $resolvedConfig->toArray(),
         ]);

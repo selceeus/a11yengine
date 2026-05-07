@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Head, Link, usePoll } from '@inertiajs/react';
+import { Head, Link, router, usePoll } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
 import PdfDocumentController from '@/actions/App/Http/Controllers/PdfDocumentController';
+import AuditController from '@/actions/App/Http/Controllers/AuditController';
+import ContentAuditController from '@/actions/App/Http/Controllers/ContentAuditController';
+import RiskAdvisoryController from '@/actions/App/Http/Controllers/RiskAdvisoryController';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -35,6 +39,7 @@ type Scan = {
     started_at: string | null;
     completed_at: string | null;
     created_at: string;
+    target_url: string | null;
     property: Property | null;
     scan_pages: ScanPage[];
 };
@@ -629,6 +634,8 @@ export default function Show({
                     </div>
                 )}
 
+                <GenerateReports scan={scan} />
+
                 <div className="text-sm">
                     <Link href={ScanController.index().url} className="text-primary hover:underline">
                         ← Back to scans
@@ -636,6 +643,95 @@ export default function Show({
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+function GenerateReports({ scan }: { scan: Scan }) {
+    if (scan.status !== 'completed' || !scan.property) return null;
+
+    const propertyId = scan.property.id;
+    const [auditLoading, setAuditLoading] = useState(false);
+    const [contentLoading, setContentLoading] = useState(false);
+    const [riskLoading, setRiskLoading] = useState(false);
+    const anyLoading = auditLoading || contentLoading || riskLoading;
+
+    function generateAudit() {
+        setAuditLoading(true);
+        router.post(
+            AuditController.store().url,
+            { property_id: propertyId, scan_ids: [scan.id] },
+            { onFinish: () => setAuditLoading(false) },
+        );
+    }
+
+    async function generateContentAudit() {
+        setContentLoading(true);
+        try {
+            const res = await fetch(`/api/properties/${propertyId}/content-audit/generate`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+            });
+            if (res.ok || res.status === 202) {
+                router.visit(ContentAuditController.index().url);
+            }
+        } finally {
+            setContentLoading(false);
+        }
+    }
+
+    async function generateRiskAdvisory() {
+        setRiskLoading(true);
+        try {
+            const res = await fetch(`/api/properties/${propertyId}/risk-advisory/generate`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+            });
+            if (res.ok || res.status === 202) {
+                router.visit(RiskAdvisoryController.index().url);
+            }
+        } finally {
+            setRiskLoading(false);
+        }
+    }
+
+    return (
+        <div className="rounded-xl border bg-card p-5">
+            <h3 className="mb-1 text-sm font-semibold">Generate reports</h3>
+            <p className="mb-4 text-xs text-muted-foreground">
+                Run AI-powered analysis on this scan to produce remediation plans and insights.
+            </p>
+            <div className="flex flex-wrap gap-3">
+                <Button
+                    onClick={generateAudit}
+                    disabled={anyLoading}
+                    size="sm"
+                >
+                    {auditLoading ? 'Creating…' : 'AI Accessibility Audit'}
+                </Button>
+                <Button
+                    variant="outline"
+                    onClick={generateContentAudit}
+                    disabled={anyLoading}
+                    size="sm"
+                >
+                    {contentLoading ? 'Creating…' : 'Content Audit'}
+                </Button>
+                <Button
+                    variant="outline"
+                    onClick={generateRiskAdvisory}
+                    disabled={anyLoading}
+                    size="sm"
+                >
+                    {riskLoading ? 'Creating…' : 'Risk Advisory'}
+                </Button>
+            </div>
+        </div>
     );
 }
 
