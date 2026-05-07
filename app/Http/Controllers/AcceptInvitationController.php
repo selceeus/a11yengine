@@ -16,7 +16,7 @@ class AcceptInvitationController extends Controller
 {
     public function show(Request $request, string $token): Response
     {
-        $invitation = AgencyInvitation::where('token', $token)->firstOrFail();
+        $invitation = AgencyInvitation::where('token_hash', hash('sha256', $token))->firstOrFail();
 
         abort_if($invitation->isExpired(), 410, 'This invitation has expired.');
         abort_if($invitation->accepted_at !== null, 410, 'This invitation has already been accepted.');
@@ -29,7 +29,7 @@ class AcceptInvitationController extends Controller
 
     public function accept(AcceptInvitationRequest $request, string $token): RedirectResponse
     {
-        $invitation = AgencyInvitation::where('token', $token)->firstOrFail();
+        $invitation = AgencyInvitation::where('token_hash', hash('sha256', $token))->firstOrFail();
 
         abort_if($invitation->isExpired(), 410, 'This invitation has expired.');
         abort_if($invitation->accepted_at !== null, 410, 'This invitation has already been accepted.');

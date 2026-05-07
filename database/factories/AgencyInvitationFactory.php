@@ -18,10 +18,12 @@ class AgencyInvitationFactory extends Factory
      */
     public function definition(): array
     {
+        $token = Str::random(64);
+
         return [
             'agency_id' => Agency::factory(),
             'email' => $this->faker->unique()->safeEmail(),
-            'token' => Str::random(64),
+            'token_hash' => hash('sha256', $token),
             'accepted_at' => null,
         ];
     }

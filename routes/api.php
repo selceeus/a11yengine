@@ -98,4 +98,5 @@ Route::prefix('{tenant}')
     });
 
 Route::post('webhooks/integrations/{integration}', IntegrationWebhookController::class)
+    ->middleware('throttle:120,1')
     ->name('api.webhooks.integrations');

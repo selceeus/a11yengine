@@ -229,6 +229,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('api.organizations.properties.top-risk');
 
     Route::get('api/search', SearchController::class)
+        ->middleware('throttle:30,1')
         ->name('api.search');
 
     Route::get('api/notifications', [NotificationController::class, 'index'])

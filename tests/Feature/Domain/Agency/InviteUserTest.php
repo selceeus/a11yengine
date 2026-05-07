@@ -31,7 +31,7 @@ it('returns the created invitation', function (): void {
 
     expect($invitation)->toBeInstanceOf(AgencyInvitation::class)
         ->and($invitation->email)->toBe('invitee@example.com')
-        ->and($invitation->token)->toHaveLength(64);
+        ->and($invitation->plainToken)->toHaveLength(64);
 });
 
 it('sends the notification email', function (): void {

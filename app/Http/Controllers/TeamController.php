@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\UserRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -104,7 +105,7 @@ class TeamController extends Controller
         abort_if($user->agency_id !== $this->agency->id, 403);
 
         $user->update([
-            'password' => $request->string('password')->toString(),
+            'password' => Hash::make($request->string('password')->toString()),
             'must_change_password' => true,
         ]);
 

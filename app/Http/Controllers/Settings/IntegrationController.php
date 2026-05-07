@@ -63,6 +63,11 @@ class IntegrationController extends Controller
 
         $provider = IntegrationProvider::from($request->input('provider'));
 
+        $allowedKeys = collect($provider->credentialFields())->pluck('key')->all();
+        $credentials = collect($request->input('credentials', []))
+            ->only($allowedKeys)
+            ->all();
+
         $agency = currentAgency();
 
         abort_unless($request->user()->canManageAgency($agency->id), 403);
@@ -72,7 +77,7 @@ class IntegrationController extends Controller
             'property_id' => $request->input('property_id'),
             'provider' => $provider,
             'name' => $request->input('name'),
-            'credentials' => $request->input('credentials'),
+            'credentials' => $credentials,
             'status' => IntegrationStatus::Active,
         ]);
 

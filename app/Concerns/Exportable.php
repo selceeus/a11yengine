@@ -43,6 +43,10 @@ trait Exportable
     {
         $html = view($view, $data)->render();
 
-        return response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

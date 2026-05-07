@@ -169,7 +169,13 @@ class AuditController extends Controller
     {
         $html = view('audits.pdf', ['audit' => $audit])->render();
 
-        return response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
+        $filename = 'audit-'.$audit->id.'-'.now()->format('Y-m-d').'.html';
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

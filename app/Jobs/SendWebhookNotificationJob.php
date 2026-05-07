@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\MessagingPlatform;
+use App\Services\IpSafetyChecker;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
@@ -25,8 +26,20 @@ class SendWebhookNotificationJob implements ShouldQueue
         public readonly string $body,
     ) {}
 
-    public function handle(): void
+    public function handle(IpSafetyChecker $checker): void
     {
+        if (! $checker->isSafe($this->url, $reason)) {
+            Log::warning('Webhook blocked: URL resolved to a private or reserved IP.', [
+                'url' => $this->url,
+                'reason' => $reason,
+            ]);
+
+            // Do not retry — this is a configuration issue, not a transient failure.
+            $this->fail(new \RuntimeException("Webhook URL blocked by SSRF protection: {$reason}"));
+
+            return;
+        }
+
         $payload = match ($this->platform) {
             MessagingPlatform::Slack => $this->buildSlackPayload(),
             MessagingPlatform::Teams => $this->buildTeamsPayload(),

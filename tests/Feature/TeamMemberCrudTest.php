@@ -4,6 +4,7 @@ use App\Enums\UserRole as UserRoleEnum;
 use App\Models\Agency;
 use App\Models\User;
 use App\Models\UserRole;
+use Illuminate\Support\Facades\Hash;
 
 beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
@@ -175,7 +176,10 @@ it('resets a member password and sets must_change_password', function (): void {
         ])
         ->assertRedirectToRoute('team.members.edit', $member);
 
-    expect($member->fresh()->must_change_password)->toBeTrue();
+    $fresh = $member->fresh();
+    expect($fresh->must_change_password)->toBeTrue();
+    expect($fresh->password)->not->toBe('NewPassword1!');
+    expect(Hash::check('NewPassword1!', $fresh->password))->toBeTrue();
 });
 
 // ─── Role ────────────────────────────────────────────────────────────────────

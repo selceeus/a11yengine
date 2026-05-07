@@ -10,10 +10,16 @@ class AgencyInvitation extends Model
 {
     use HasFactory;
 
+    /**
+     * Transient property — populated by InviteUser when the invitation is
+     * freshly created. Never persisted to the database.
+     */
+    public ?string $plainToken = null;
+
     protected $fillable = [
         'agency_id',
         'email',
-        'token',
+        'token_hash',
         'accepted_at',
     ];
 

@@ -20,13 +20,17 @@ class InviteUser
         $this->assertNoExistingMember($agency, $email);
         $this->assertNoPendingInvitation($agency, $email);
 
+        $token = Str::random(64);
+
         $invitation = AgencyInvitation::create([
             'agency_id' => $agency->id,
             'email' => $email,
-            'token' => Str::random(64),
+            'token_hash' => hash('sha256', $token),
         ]);
 
-        Notification::route('mail', $email)->notify(new AgencyInvitationNotification($invitation));
+        $invitation->plainToken = $token;
+
+        Notification::route('mail', $email)->notify(new AgencyInvitationNotification($invitation, $token));
 
         return $invitation;
     }

@@ -12,7 +12,10 @@ class AgencyInvitationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public readonly AgencyInvitation $invitation) {}
+    public function __construct(
+        public readonly AgencyInvitation $invitation,
+        public readonly string $plaintextToken,
+    ) {}
 
     /**
      * @return array<int, string>
@@ -25,7 +28,7 @@ class AgencyInvitationNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $agencyName = $this->invitation->agency->name;
-        $url = route('invitations.show', $this->invitation->token);
+        $url = route('invitations.show', $this->plaintextToken);
 
         return (new MailMessage)
             ->subject("You've been invited to join {$agencyName}")

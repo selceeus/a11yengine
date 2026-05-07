@@ -185,7 +185,9 @@ it('exports a completed audit as PDF (HTML)', function (): void {
 
     $this->get(route('audits.export', ['audit' => $audit, 'format' => 'pdf']))
         ->assertOk()
-        ->assertHeader('Content-Type', 'text/html; charset=utf-8');
+        ->assertHeader('Content-Type', 'text/html; charset=utf-8')
+        ->assertHeader('Content-Disposition')
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
 });
 
 // --- show: trend prop --------------------------------------------------------
