@@ -42,6 +42,7 @@ use App\Http\Controllers\PdfDocumentController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RiskAdvisoryController;
 use App\Http\Controllers\ScanController;
+use App\Http\Controllers\ScanJourneyController;
 use App\Http\Controllers\SendInvitationController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
@@ -88,6 +89,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
     Route::delete('scans/{scan}', [ScanController::class, 'destroy'])->name('scans.destroy');
     Route::get('scans/{scan}/diff', [\App\Http\Controllers\ScanDiffController::class, 'show'])->name('scans.diff');
+
+    Route::get('journeys', [ScanJourneyController::class, 'index'])->name('journeys.index');
+    Route::get('journeys/create', [ScanJourneyController::class, 'create'])->name('journeys.create');
+    Route::post('journeys', [ScanJourneyController::class, 'store'])->name('journeys.store');
+    Route::get('journeys/{scanJourney}/edit', [ScanJourneyController::class, 'edit'])->name('journeys.edit');
+    Route::patch('journeys/{scanJourney}', [ScanJourneyController::class, 'update'])->name('journeys.update');
+    Route::delete('journeys/{scanJourney}', [ScanJourneyController::class, 'destroy'])->name('journeys.destroy');
 
     Route::get('team', [TeamController::class, 'index'])->name('team.index');
     Route::get('team/members/create', [TeamController::class, 'create'])->name('team.members.create');
@@ -241,6 +249,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('api/activity-feed', ActivityFeedController::class)
         ->name('api.activity-feed');
+
+    Route::get('api/properties/{property}/journeys', function (\App\Models\Property $property) {
+        $journeys = \App\Models\ScanJourney::query()
+            ->where('property_id', $property->id)
+            ->withCount('steps')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($j) => ['id' => $j->id, 'name' => $j->name, 'steps_count' => $j->steps_count]);
+
+        return response()->json($journeys);
+    })->name('api.properties.journeys.index');
 });
 
 Route::middleware('guest')->group(function (): void {

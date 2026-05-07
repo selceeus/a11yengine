@@ -41,6 +41,7 @@ function parseArgs() {
     let wcagVersion = 'wcag21';
     const includePatterns = [];
     const excludePatterns = [];
+    const urlList = [];
 
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
@@ -54,6 +55,8 @@ function parseArgs() {
             includePatterns.push(args[++i]);
         } else if (arg === '--exclude' && args[i + 1]) {
             excludePatterns.push(args[++i]);
+        } else if (arg === '--urls' && args[i + 1]) {
+            urlList.push(args[++i]);
         } else if (!arg.startsWith('--') && i === 1) {
             // Legacy positional depth
             maxDepth = parseInt(arg, 10);
@@ -70,6 +73,7 @@ function parseArgs() {
         wcagVersion,
         includePatterns,
         excludePatterns,
+        urlList,
     };
 }
 
@@ -98,10 +102,58 @@ function matchesPatterns(url, includePatterns, excludePatterns) {
 }
 
 /**
+ * Scans an explicit ordered list of URLs without crawling.
+ * Each URL is visited in sequence; axe runs on each.
+ * Returns the same { pages, pdfs: [] } shape as the BFS crawler.
+ *
+ * @param {{ urlList: string[], wcagVersion: string, axeConfig: object, browser: import('playwright').Browser }} opts
+ * @returns {Promise<{pages: object[], pdfs: string[]}>}
+ */
+async function scanUrlList({ urlList, wcagVersion: _wcagVersion, axeConfig, browser }) {
+    const results = [];
+
+    for (let i = 0; i < urlList.length; i++) {
+        const normalisedUrl = normaliseUrl(urlList[i]);
+        log('info', `Scanning journey step [${i + 1}/${urlList.length}] ${normalisedUrl}`);
+
+        if (i > 0 && config.requestDelayMs > 0) {
+            await new Promise((resolve) => setTimeout(resolve, config.requestDelayMs));
+        }
+
+        const page = await browser.newPage();
+        page.setDefaultNavigationTimeout(config.navigationTimeoutMs);
+        page.setDefaultTimeout(config.pageTimeoutMs);
+
+        try {
+            const response = await page.goto(normalisedUrl, {
+                waitUntil: 'domcontentloaded',
+                timeout: config.navigationTimeoutMs,
+            });
+
+            if (!response || response.status() >= 400) {
+                log('warn', `Recording ${normalisedUrl} as failed — HTTP ${response?.status() ?? 'no response'}`);
+                results.push({ url: normalisedUrl, violations: [], error: true, httpStatus: response?.status() ?? null });
+                continue;
+            }
+
+            const pageResult = await runAxe(page, axeConfig);
+            results.push(pageResult);
+            log('info', `Found ${pageResult.violations.length} violation(s) on ${normalisedUrl}`);
+        } catch (pageError) {
+            log('error', `Error scanning ${normalisedUrl}: ${pageError.message}`);
+        } finally {
+            await page.close();
+        }
+    }
+
+    return { pages: results, pdfs: [] };
+}
+
+/**
  * Main crawler entry point.
  */
 async function scan() {
-    const { baseUrl, maxDepth, maxPages, wcagVersion, includePatterns, excludePatterns } = parseArgs();
+    const { baseUrl, maxDepth, maxPages, wcagVersion, includePatterns, excludePatterns, urlList } = parseArgs();
 
     log('info', `Starting scan: ${baseUrl} (maxDepth=${maxDepth}, maxPages=${maxPages}, wcag=${wcagVersion})`);
 
@@ -113,10 +165,22 @@ async function scan() {
     }
     axeConfig.runOnly = { type: 'tag', values: tags };
 
+    const browser = await chromium.launch(config.playwright);
+
+    // Journey mode: scan an explicit ordered list of URLs, no crawling.
+    if (urlList.length > 0) {
+        log('info', `Journey mode: scanning ${urlList.length} URL(s) in order`);
+        try {
+            const output = await scanUrlList({ urlList, wcagVersion, axeConfig, browser });
+            process.stdout.write(JSON.stringify(output));
+        } finally {
+            await browser.close();
+        }
+        process.exit(0);
+    }
+
     const robotsTxt = await fetchRobotsTxt(baseUrl);
     log('info', robotsTxt ? 'Loaded robots.txt' : 'No robots.txt found — all paths allowed');
-
-    const browser = await chromium.launch(config.playwright);
 
     /** @type {Set<string>} */
     const visited = new Set();
@@ -205,7 +269,7 @@ async function scan() {
     process.exit(0);
 }
 
-module.exports = { scan, log, parseArgs };
+module.exports = { scan, scanUrlList, log, parseArgs };
 
 if (require.main === module) {
     scan().catch((error) => {

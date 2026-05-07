@@ -18,6 +18,7 @@ class Scan extends Model
         'organization_id',
         'property_id',
         'target_url',
+        'scan_journey_id',
         'status',
         'pages_scanned',
         'pages_discovered',
@@ -77,5 +78,10 @@ class Scan extends Model
     public function pdfDocuments(): HasMany
     {
         return $this->hasMany(PdfDocument::class);
+    }
+
+    public function scanJourney(): BelongsTo
+    {
+        return $this->belongsTo(ScanJourney::class);
     }
 }

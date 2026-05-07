@@ -17,6 +17,12 @@ type Property = {
     base_url: string;
 };
 
+type ScanJourney = {
+    id: number;
+    name: string;
+    steps_count: number;
+};
+
 type Scan = {
     id: number;
     status: 'pending' | 'running' | 'completed' | 'failed';
@@ -25,6 +31,7 @@ type Scan = {
     total_violations: number | null;
     created_at: string;
     target_url: string | null;
+    scan_journey_id: number | null;
     property: Property | null;
     canDelete: boolean;
 };
@@ -72,8 +79,9 @@ function statusVariant(status: Scan['status']): 'default' | 'secondary' | 'destr
 }
 
 export default function Index({ scans, properties }: { scans: Scan[]; properties: Property[] }) {
-    const { data, setData, post, processing, errors } = useForm({ property_id: '', target_url: '' });
-    const [singlePage, setSinglePage] = useState(false);
+    const { data, setData, post, processing, errors } = useForm({ property_id: '', target_url: '', scan_journey_id: '' });
+    const [scanMode, setScanMode] = useState<'full' | 'single' | 'journey'>('full');
+    const [journeys, setJourneys] = useState<ScanJourney[]>([]);
     const [overview, setOverview] = useState<OverviewState>({ open: false });
 
     // Schedule scan dialog state
@@ -155,14 +163,40 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
         }
     }, [hasActiveScans]);
 
+    async function onPropertyChange(propertyId: string) {
+        setData('property_id', propertyId);
+        setData('scan_journey_id', '');
+        if (propertyId && scanMode === 'journey') {
+            const res = await fetch(`/api/properties/${propertyId}/journeys`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const json = await res.json();
+            setJourneys(json);
+        }
+    }
+
+    async function onScanModeChange(mode: 'full' | 'single' | 'journey') {
+        setScanMode(mode);
+        setData('target_url', '');
+        setData('scan_journey_id', '');
+        if (mode === 'journey' && data.property_id) {
+            const res = await fetch(`/api/properties/${data.property_id}/journeys`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const json = await res.json();
+            setJourneys(json);
+        }
+    }
+
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        post(ScanController.store().url, {
-            data: {
-                property_id: data.property_id,
-                ...(singlePage && data.target_url ? { target_url: data.target_url } : {}),
-            },
-        });
+        const payload: Record<string, string> = { property_id: data.property_id };
+        if (scanMode === 'single' && data.target_url) {
+            payload.target_url = data.target_url;
+        } else if (scanMode === 'journey' && data.scan_journey_id) {
+            payload.scan_journey_id = data.scan_journey_id;
+        }
+        post(ScanController.store().url, { data: payload });
     }
 
     function deleteScan(scan: Scan) {
@@ -198,7 +232,12 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                 {/* Page header */}
                 <div className="flex items-center justify-between gap-4">
                     <h1 className="text-xl font-semibold">Scans</h1>
-                    <Button variant="outline" size="sm" onClick={openScheduleDialog}>Schedule Scan</Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href="/journeys">Manage Journeys</Link>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={openScheduleDialog}>Schedule Scan</Button>
+                    </div>
                 </div>
 
                 {/* Trigger form */}
@@ -208,7 +247,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                     <form onSubmit={submit} className="flex flex-wrap items-end gap-4">
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="property_id">Property</Label>
-                            <Select value={data.property_id} onValueChange={(v) => setData('property_id', v)}>
+                            <Select value={data.property_id} onValueChange={onPropertyChange}>
                                 <SelectTrigger id="property_id" className="w-64">
                                     <SelectValue placeholder="Select a property…" />
                                 </SelectTrigger>
@@ -226,36 +265,63 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    checked={singlePage}
-                                    onChange={(e) => {
-                                        setSinglePage(e.target.checked);
-                                        if (!e.target.checked) setData('target_url', '');
-                                    }}
-                                    className="rounded border-input"
-                                />
-                                Scan a single page only
-                            </label>
-                            {singlePage && (
-                                <div className="flex flex-col gap-1">
-                                    <Input
-                                        id="target_url"
-                                        type="url"
-                                        placeholder="https://example.com/page"
-                                        value={data.target_url}
-                                        onChange={(e) => setData('target_url', e.target.value)}
-                                        className="w-80"
-                                    />
-                                    {errors.target_url && (
-                                        <p className="text-xs text-destructive">{errors.target_url}</p>
-                                    )}
-                                </div>
-                            )}
+                            <Label>Scan mode</Label>
+                            <div className="flex items-center gap-4">
+                                {(['full', 'single', 'journey'] as const).map((mode) => (
+                                    <label key={mode} className="flex cursor-pointer items-center gap-1.5 text-sm">
+                                        <input
+                                            type="radio"
+                                            name="scan_mode"
+                                            value={mode}
+                                            checked={scanMode === mode}
+                                            onChange={() => onScanModeChange(mode)}
+                                            className="accent-primary"
+                                        />
+                                        {mode === 'full' ? 'Full site' : mode === 'single' ? 'Single page' : 'User journey'}
+                                    </label>
+                                ))}
+                            </div>
                         </div>
 
-                        <Button type="submit" disabled={processing || !data.property_id || (singlePage && !data.target_url)}>
+                        {scanMode === 'single' && (
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="target_url">Page URL</Label>
+                                <Input
+                                    id="target_url"
+                                    type="url"
+                                    placeholder="https://example.com/page"
+                                    value={data.target_url}
+                                    onChange={(e) => setData('target_url', e.target.value)}
+                                    className="w-80"
+                                />
+                                {errors.target_url && (
+                                    <p className="text-xs text-destructive">{errors.target_url}</p>
+                                )}
+                            </div>
+                        )}
+
+                        {scanMode === 'journey' && (
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="scan_journey_id">Journey</Label>
+                                <Select value={data.scan_journey_id} onValueChange={(v) => setData('scan_journey_id', v)}>
+                                    <SelectTrigger id="scan_journey_id" className="w-64">
+                                        <SelectValue placeholder={journeys.length === 0 ? 'No journeys for this property' : 'Select a journey…'} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {journeys.map((j) => (
+                                            <SelectItem key={j.id} value={String(j.id)}>
+                                                {j.name} <span className="text-muted-foreground">({j.steps_count} steps)</span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.scan_journey_id && (
+                                    <p className="text-xs text-destructive">{errors.scan_journey_id}</p>
+                                )}
+                            </div>
+                        )}
+
+                        <Button type="submit" disabled={processing || !data.property_id || (scanMode === 'single' && !data.target_url) || (scanMode === 'journey' && !data.scan_journey_id)}>
                             {processing ? 'Starting…' : 'Start scan'}
                         </Button>
                     </form>
@@ -292,6 +358,9 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                                 {scan.property?.name ?? '—'}
                                                 {scan.target_url && (
                                                     <Badge variant="outline" className="text-xs">Single page</Badge>
+                                                )}
+                                                {scan.scan_journey_id && (
+                                                    <Badge variant="outline" className="text-xs">Journey</Badge>
                                                 )}
                                             </div>
                                         </td>

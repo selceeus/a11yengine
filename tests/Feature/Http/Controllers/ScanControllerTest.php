@@ -7,6 +7,7 @@ use App\Models\Agency;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Scan;
+use App\Models\ScanJourney;
 use App\Models\ScanPage;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -139,6 +140,23 @@ it('creates a full-site scan when target_url is omitted', function (): void {
         ->assertRedirect();
 
     expect(Scan::query()->first()->target_url)->toBeNull();
+});
+
+it('stores scan_journey_id when a journey scan is requested', function (): void {
+    Queue::fake();
+
+    $journey = ScanJourney::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $this->property->id,
+    ]);
+
+    $this->post(route('scans.store'), [
+        'property_id' => $this->property->id,
+        'scan_journey_id' => $journey->id,
+    ])->assertRedirect();
+
+    expect(Scan::query()->first()->scan_journey_id)->toBe($journey->id);
 });
 
 it('rejects an invalid target_url', function (): void {

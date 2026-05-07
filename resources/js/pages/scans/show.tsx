@@ -29,6 +29,13 @@ type SeverityRow = {
     count: number;
 };
 
+type ScanJourneyStep = {
+    id: number;
+    position: number;
+    label: string;
+    url: string;
+};
+
 type Scan = {
     id: number;
     status: 'pending' | 'running' | 'completed' | 'failed';
@@ -40,6 +47,7 @@ type Scan = {
     completed_at: string | null;
     created_at: string;
     target_url: string | null;
+    scan_journey: { id: number; name: string; steps: ScanJourneyStep[] } | null;
     property: Property | null;
     scan_pages: ScanPage[];
 };
@@ -168,6 +176,12 @@ export default function Show({
                         </h1>
                         {scan.property && (
                             <p className="text-sm text-muted-foreground">{scan.property.base_url}</p>
+                        )}
+                        {scan.target_url && (
+                            <p className="text-sm text-muted-foreground">Single page: {scan.target_url}</p>
+                        )}
+                        {scan.scan_journey && (
+                            <p className="text-sm text-muted-foreground">Journey: {scan.scan_journey.name} ({scan.scan_journey.steps.length} steps)</p>
                         )}
                     </div>
                     <Badge variant={statusVariant(scan.status)} className="mt-1 capitalize">

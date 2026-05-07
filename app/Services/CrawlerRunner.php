@@ -37,19 +37,29 @@ class CrawlerRunner
             'node',
             config('crawler.script_path'),
             $url,
-            '--max-pages', (string) $config->maxPages,
-            '--max-depth', (string) $config->maxDepth,
             '--wcag-version', $config->wcagVersion,
         ];
 
-        foreach ($config->includePatterns as $pattern) {
-            $cmd[] = '--include';
-            $cmd[] = $pattern;
-        }
+        if ($config->orderedUrls !== []) {
+            foreach ($config->orderedUrls as $orderedUrl) {
+                $cmd[] = '--urls';
+                $cmd[] = $orderedUrl;
+            }
+        } else {
+            $cmd[] = '--max-pages';
+            $cmd[] = (string) $config->maxPages;
+            $cmd[] = '--max-depth';
+            $cmd[] = (string) $config->maxDepth;
 
-        foreach ($config->excludePatterns as $pattern) {
-            $cmd[] = '--exclude';
-            $cmd[] = $pattern;
+            foreach ($config->includePatterns as $pattern) {
+                $cmd[] = '--include';
+                $cmd[] = $pattern;
+            }
+
+            foreach ($config->excludePatterns as $pattern) {
+                $cmd[] = '--exclude';
+                $cmd[] = $pattern;
+            }
         }
 
         $result = Process::timeout($timeout)->run($cmd);

@@ -79,6 +79,11 @@ class RunScanJob implements ShouldQueue
             $scanConfig = new ScanConfig(maxPages: 1, maxDepth: 1, wcagVersion: $scanConfig->wcagVersion);
         }
 
+        if ($this->scan->scan_journey_id !== null) {
+            $steps = $this->scan->scanJourney->steps()->orderBy('position')->pluck('url')->all();
+            $scanConfig = new ScanConfig(orderedUrls: $steps, wcagVersion: $scanConfig->wcagVersion);
+        }
+
         try {
             $pageResults = $crawlerRunner->run(
                 $crawlUrl,

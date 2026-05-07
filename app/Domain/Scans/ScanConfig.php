@@ -12,6 +12,8 @@ class ScanConfig
         /** @var string[] */
         public readonly array $excludePatterns = [],
         public readonly string $wcagVersion = 'wcag21',
+        /** @var string[] */
+        public readonly array $orderedUrls = [],
     ) {}
 
     /**
@@ -31,6 +33,9 @@ class ScanConfig
             wcagVersion: in_array($data['wcag_version'] ?? 'wcag21', ['wcag21', 'wcag22'], true)
                 ? ($data['wcag_version'] ?? 'wcag21')
                 : 'wcag21',
+            orderedUrls: isset($data['ordered_urls']) && is_array($data['ordered_urls'])
+                ? array_values(array_filter($data['ordered_urls'], 'is_string'))
+                : [],
         );
     }
 
@@ -45,6 +50,7 @@ class ScanConfig
             'include_patterns' => $this->includePatterns,
             'exclude_patterns' => $this->excludePatterns,
             'wcag_version' => $this->wcagVersion,
+            'ordered_urls' => $this->orderedUrls,
         ];
     }
 
@@ -56,6 +62,7 @@ class ScanConfig
             includePatterns: $override->includePatterns !== [] ? $override->includePatterns : $this->includePatterns,
             excludePatterns: $override->excludePatterns !== [] ? $override->excludePatterns : $this->excludePatterns,
             wcagVersion: $override->wcagVersion !== 'wcag21' ? $override->wcagVersion : $this->wcagVersion,
+            orderedUrls: $override->orderedUrls !== [] ? $override->orderedUrls : $this->orderedUrls,
         );
     }
 

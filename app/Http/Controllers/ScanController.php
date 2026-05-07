@@ -85,6 +85,7 @@ class ScanController extends Controller
             'organization_id' => $property->organization_id,
             'property_id' => $property->id,
             'target_url' => $request->validated()['target_url'] ?? null,
+            'scan_journey_id' => $request->validated()['scan_journey_id'] ?? null,
             'status' => ScanStatus::Pending,
             'scan_config' => $resolvedConfig->toArray(),
         ]);
@@ -100,6 +101,8 @@ class ScanController extends Controller
 
         $scan->load([
             'property:id,name,base_url',
+            'scanJourney:id,name',
+            'scanJourney.steps' => fn ($q) => $q->orderBy('position'),
             'scanPages' => fn ($q) => $q->orderByDesc('violations_count'),
             'pdfDocuments' => fn ($q) => $q->orderByDesc('created_at'),
         ]);
