@@ -7,6 +7,8 @@ An enterprise web accessibility auditing and risk management platform. It automa
 ## Features
 
 - **Automated Crawling & Scanning** — Discovers all pages and PDF documents on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
+- **Scan Journeys** — Define ordered multi-step URL sequences (journeys) per property; each journey is a named, reusable list of labelled pages that can be run as a single targeted scan, enabling consistent auditing of critical user flows such as checkout, login, or onboarding
+- **User Avatars** — Users can upload a profile picture (JPEG, PNG, GIF, or WebP up to 2 MB) from the Profile settings page; avatars are stored on the public disk and displayed throughout the UI
 - **PDF Accessibility Scanning** — Automatically discovers linked PDFs during a crawl and audits each document against PDF/UA-1 rules via the veraPDF REST microservice; violations are stored with rule key, severity, WCAG criterion, description, and page number
 - **Issue Deduplication & Tracking** — Aggregates raw findings into unique, trackable issues with occurrence counts, severity, WCAG category, tags, element HTML, help URLs, and lifecycle status (`open` → `in_progress` → `resolved`)
 - **Issue Activity Log** — Full audit trail per issue: status changes, assignments, due date updates, bulk actions, and threaded comments
@@ -49,7 +51,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 | **Frontend**          | React 19, TypeScript 5.7, Inertia.js v2                    |
 | **Styling**           | Tailwind CSS v4                                            |
 | **UI Components**     | Radix UI, Headless UI                                      |
-| **Visualisation**     | D3.js v7, Three.js                                         |
+| **Visualisation**     | D3.js v7, Three.js, React Three Fiber, Chart.js            |
 | **Type-Safe Routing** | Laravel Wayfinder v0                                       |
 | **Crawler**           | Node.js ≥18, Playwright 1.51, axe-core 4.10, Lighthouse 13 |
 | **Build Tool**        | Vite 7                                                     |
@@ -73,6 +75,8 @@ The application follows a multi-tenant domain-driven structure:
 Agency
 └── Organization
     └── Property
+        ├── ScanJourney           (ordered multi-step URL sequence)
+        │   └── ScanJourneyStep   (labelled URL at a given position)
         └── Scan
             ├── ScanPage          (per-page crawl record)
             ├── ScanMetric        (immutable time-series metrics per page)
@@ -226,11 +230,28 @@ composer run dev:ssr
 
 ### Issue Lifecycle
 
-Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. Issues flow through: `open` → `in_progress` → `resolved` (or `ignored` / `false_positive`). Issues can be assigned to team members, carry AI-generated remediation guidance with code fixes and legal precedents, and log a full activity trail covering status changes, assignments, due date updates, bulk actions, and comments.
+Raw axe-core `Finding` records are normalised by `IssueNormalizer` into deduplicated `Issue` records enriched with WCAG criteria, descriptive tags, help URLs, and the problematic element's HTML. Issues flow through: `open` → `in_progress` → `resolved` (or `ignored` / `false_positive`). Scan journeys can be attached to a scan to scope the crawl to a predefined set of URLs rather than a full-domain crawl. Issues can be assigned to team members, carry AI-generated remediation guidance with code fixes and legal precedents, and log a full activity trail covering status changes, assignments, due date updates, bulk actions, and comments.
 
 ### Scan Diff
 
 `ScanDiffController` compares a scan against its most recent preceding completed scan. It fingerprints every `Finding` to produce three buckets — new findings (introduced in this scan), resolved findings (present in the prior scan but absent now), and an unchanged count — rendered in a unified diff view.
+
+### Scan Journeys
+
+A `ScanJourney` is a named, reusable sequence of labelled URLs scoped to a property. Each journey contains one or more `ScanJourneyStep` records (ordered by `position`) that together define a critical user flow — for example, a checkout funnel or an onboarding sequence.
+
+When a scan is created from a journey, the crawler targets only the URLs in that journey's steps rather than crawling the entire domain. This enables fast, focused audits of the pages that matter most without re-scanning the full site.
+
+Journeys are managed at `/journeys` and can be attached to both one-off and scheduled scans.
+
+| Route                     | Description                      |
+| ------------------------- | -------------------------------- |
+| `GET /journeys`           | List all journeys for the agency |
+| `GET /journeys/create`    | Create a new journey             |
+| `POST /journeys`          | Store a new journey with steps   |
+| `GET /journeys/{id}/edit` | Edit a journey and its steps     |
+| `PATCH /journeys/{id}`    | Update a journey                 |
+| `DELETE /journeys/{id}`   | Delete a journey                 |
 
 ### AI Intelligence Suite
 
@@ -405,6 +426,7 @@ Users manage preferences per notification type and channel in **Settings → Not
 | `SuspiciousLoginNotification`    | Consecutive failed login attempts detected for an account                           |
 | `AccessReviewDueNotification`    | A new quarterly access review cycle has been created for the agency                 |
 | `ApiKeyExpiringSoonNotification` | An API key is expiring within 30 days (sent to the key's creator and agency admins) |
+| `JobFailedNotification`          | A long-running background job (AI generation, scan) fails unexpectedly              |
 
 #### Agency-Level Notification Routing
 
@@ -608,7 +630,7 @@ Reports can be exported via the `Exportable` concern:
 | `php artisan snapshots:agency-risk`       | Record a point-in-time risk snapshot for every agency                                 |
 | `php artisan governance:generate-reports` | Generate scheduled governance reports                                                 |
 | `php artisan digest:weekly`               | Send weekly accessibility digest emails to all users                                  |
-| `php artisan app:backfill-user-roles`     | Populate historical user role records                                                 |
+| `php artisan app:backfill-user-roles`     | Populate historical user role records (`--dry-run` to preview without writing)        |
 | `php artisan access-reviews:create`       | Create a new quarterly access review cycle for every agency (runs quarterly)          |
 | `php artisan api-keys:notify-expiring`    | Send expiry warning notifications for API keys expiring within 30 days (runs daily)   |
 | `php artisan api-keys:revoke-expired`     | Auto-revoke any API keys past their expiry date (runs daily)                          |
@@ -726,7 +748,7 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 
 | Page                  | Route                                   | Description                                                                                               |
 | --------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Profile               | `/settings/profile`                     | Name, email, and account details                                                                          |
+| Profile               | `/settings/profile`                     | Name, email, and account details; upload or remove a profile avatar                                       |
 | Password              | `/settings/password`                    | Change account password                                                                                   |
 | Two-Factor Auth       | `/settings/two-factor`                  | Enable/disable 2FA and manage recovery codes                                                              |
 | Appearance            | `/settings/appearance`                  | Theme and UI preferences                                                                                  |
