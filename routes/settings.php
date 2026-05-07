@@ -6,6 +6,7 @@ use App\Http\Controllers\Settings\ActivityLogController;
 use App\Http\Controllers\Settings\ActivityLogExportController;
 use App\Http\Controllers\Settings\ApiKeyController;
 use App\Http\Controllers\Settings\ApiKeyInventoryExportController;
+use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\IntegrationController;
 use App\Http\Controllers\Settings\NotificationEmailRouteController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
@@ -24,6 +25,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('settings/profile/avatar', [AvatarController::class, 'store'])->name('profile.avatar.store');
+    Route::delete('settings/profile/avatar', [AvatarController::class, 'destroy'])->name('profile.avatar.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

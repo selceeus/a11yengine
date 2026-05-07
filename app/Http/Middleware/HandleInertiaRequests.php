@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'agency_id' => $user->agency_id,
+                    'avatar' => $user->avatar,
                     'must_change_password' => $user->must_change_password,
                     'two_factor_enabled' => ! empty($user->two_factor_secret),
                 ] : null,

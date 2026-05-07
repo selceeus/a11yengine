@@ -3,6 +3,7 @@ export type User = {
     name: string;
     email: string;
     agency_id: number | null;
+    avatar?: string | null;
     must_change_password: boolean;
     two_factor_enabled: boolean;
 };
