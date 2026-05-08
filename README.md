@@ -8,6 +8,7 @@ An enterprise web accessibility auditing and risk management platform. It automa
 
 - **Automated Crawling & Scanning** — Discovers all pages and PDF documents on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
 - **Scan Journeys** — Define ordered multi-step URL sequences (journeys) per property; each journey is a named, reusable list of labelled pages that can be run as a single targeted scan, enabling consistent auditing of critical user flows such as checkout, login, or onboarding
+- **Single-Page Scan** — Scope any scan to a single URL by providing a `target_url`; the crawler is forced into single-page mode, auditing only that URL rather than crawling the whole domain — ideal for quick spot-checks of a specific page without triggering a full site crawl
 - **User Avatars** — Users can upload a profile picture (JPEG, PNG, GIF, or WebP up to 2 MB) from the Profile settings page; avatars are stored on the public disk and displayed throughout the UI
 - **PDF Accessibility Scanning** — Automatically discovers linked PDFs during a crawl and audits each document against PDF/UA-1 rules via the veraPDF REST microservice; violations are stored with rule key, severity, WCAG criterion, description, and page number
 - **Issue Deduplication & Tracking** — Aggregates raw findings into unique, trackable issues with occurrence counts, severity, WCAG category, tags, element HTML, help URLs, and lifecycle status (`open` → `in_progress` → `resolved`)
@@ -252,6 +253,20 @@ Journeys are managed at `/journeys` and can be attached to both one-off and sche
 | `GET /journeys/{id}/edit` | Edit a journey and its steps     |
 | `PATCH /journeys/{id}`    | Update a journey                 |
 | `DELETE /journeys/{id}`   | Delete a journey                 |
+
+### Single-Page Scan
+
+Any scan can be scoped to a single URL by setting a `target_url` on the scan record. When present, `RunScanJob` forces the crawler into single-page mode — only that URL is crawled, and axe-core and Lighthouse are run against it exclusively. This is useful for quick spot-checks of a specific page without triggering a full-domain crawl.
+
+The **scans index** (`/scans`) offers a toggle to enable single-page mode and a URL input field. Scans created in this mode display a **Single Page** badge alongside the scan entry.
+
+The **scan detail page** (`/scans/{id}`) includes a **Generate Reports** panel that provides one-click dispatch of on-demand AI analysis jobs directly from the scan view:
+
+| Button                 | Job dispatched            |
+| ---------------------- | ------------------------- |
+| Generate AI Audit      | `GenerateAiAuditJob`      |
+| Generate Content Audit | `GenerateContentAuditJob` |
+| Generate Risk Advisory | `GenerateRiskAdvisoryJob` |
 
 ### AI Intelligence Suite
 
