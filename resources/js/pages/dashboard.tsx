@@ -162,7 +162,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader>
                                     <CardTitle>Organisation Risk Trends</CardTitle>
@@ -176,7 +176,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader>
                                     <CardTitle>Top At-Risk Properties</CardTitle>
@@ -190,7 +190,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader>
                                     <CardTitle>Accessibility Risk Landscape</CardTitle>
@@ -200,7 +200,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Latest Audit Scores</CardTitle>

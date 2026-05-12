@@ -50,7 +50,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-semibold">Properties</h1>
+                    <h1 className="text-2xl font-semibold">Properties</h1>
                     <Button asChild>
                         <Link href={PropertyController.create().url}>Add property</Link>
                     </Button>
@@ -65,16 +65,16 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                     aria-label="Search properties"
                 />
 
-                <div className="rounded-xl border">
+                <div className="rounded-md border">
                     <table className="w-full text-sm">
-                        <thead className="border-b bg-muted/50">
-                            <tr className="text-xs text-muted-foreground">
-                                <th className="px-4 py-3 text-left font-medium">Name</th>
-                                <th className="px-4 py-3 text-left font-medium">URL</th>
-                                <th className="px-4 py-3 text-left font-medium">Organization</th>
-                                <th className="px-4 py-3 text-left font-medium">Industry</th>
-                                <th className="px-4 py-3 text-left font-medium">Legal Risk</th>
-                                <th className="px-4 py-3 text-left font-medium">Status</th>
+                        <thead className="border-b bg-muted/100">
+                            <tr className="text-sm text-muted-foreground">
+                                <th className="px-4 py-3 text-left font-semibold">Name</th>
+                                <th className="px-4 py-3 text-left font-semibold">URL</th>
+                                <th className="px-4 py-3 text-left font-semibold">Organization</th>
+                                <th className="px-4 py-3 text-left font-semibold">Industry</th>
+                                <th className="px-4 py-3 text-left font-semibold">Legal Risk</th>
+                                <th className="px-4 py-3 text-left font-semibold">Status</th>
                                 <th className="px-4 py-3"></th>
                             </tr>
                         </thead>
@@ -83,7 +83,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                                 <tr>
                                     <td
                                         colSpan={7}
-                                        className="px-4 py-10 text-center text-sm text-muted-foreground"
+                                        className="px-4 py-10 text-center text-semibold text-md text-muted-foreground"
                                     >
                                         No properties yet.{' '}
                                         <Link
@@ -101,7 +101,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                                         key={property.id}
                                         className="transition-colors hover:bg-muted/30"
                                     >
-                                        <td className="px-4 py-3 font-medium">{property.name}</td>
+                                        <td className="px-4 py-3 font-semibold">{property.name}</td>
                                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                             <a
                                                 href={property.base_url}
@@ -112,7 +112,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                                                 {property.base_url}
                                             </a>
                                         </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
+                                        <td className="px-4 py-3 text-xs text-muted-foreground">
                                             {property.organization?.name ?? '—'}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
@@ -133,7 +133,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                                         <td className="px-4 py-3 text-right">
                                             <Link
                                                 href={PropertyController.show(property.id).url}
-                                                className="text-sm text-primary hover:underline"
+                                                className="text-md font-semibold text-primary hover:underline"
                                             >
                                                 View
                                             </Link>
