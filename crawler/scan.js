@@ -5,6 +5,7 @@ const config = require('./config');
 const { normaliseUrl, isSameDomain, extractLinks, extractPdfLinks, fetchRobotsTxt, isAllowedByRobots } = require('./crawlUtils');
 const { runAxe } = require('./axeRunner');
 const { runScreenReader } = require('./screenReaderRunner');
+const { runContent } = require('./contentRunner');
 
 /**
  * Log to stderr only — stdout is reserved for the JSON payload consumed by
@@ -149,8 +150,20 @@ async function scanUrlList({ urlList, wcagVersion: _wcagVersion, axeConfig, brow
                 }
             }
 
-            results.push({ ...pageResult, screenReaderViolations });
-            log('info', `Found ${pageResult.violations.length} axe violation(s) and ${screenReaderViolations.length} SR issue(s) on ${normalisedUrl}`);
+            let contentViolations = [];
+            let visibleText = '';
+            if (config.content.enabled) {
+                try {
+                    const contentResult = await runContent(page, config.content);
+                    contentViolations = contentResult.violations;
+                    visibleText = contentResult.visibleText;
+                } catch (contentError) {
+                    log('warn', `Content check failed for ${normalisedUrl}: ${contentError.message}`);
+                }
+            }
+
+            results.push({ ...pageResult, screenReaderViolations, contentViolations, visibleText });
+            log('info', `Found ${pageResult.violations.length} axe, ${screenReaderViolations.length} SR, ${contentViolations.length} content issue(s) on ${normalisedUrl}`);
         } catch (pageError) {
             log('error', `Error scanning ${normalisedUrl}: ${pageError.message}`);
         } finally {
@@ -241,21 +254,30 @@ async function scan() {
 
                 const pageResult = await runAxe(page, axeConfig);
 
-            let screenReaderViolations = [];
-            if (config.screenReader.enabled) {
-                try {
-                    const srResult = await runScreenReader(page, config.screenReader);
-                    screenReaderViolations = srResult.violations;
-                } catch (srError) {
-                    log('warn', `Screen reader check failed for ${normalisedUrl}: ${srError.message}`);
+                let screenReaderViolations = [];
+                if (config.screenReader.enabled) {
+                    try {
+                        const srResult = await runScreenReader(page, config.screenReader);
+                        screenReaderViolations = srResult.violations;
+                    } catch (srError) {
+                        log('warn', `Screen reader check failed for ${normalisedUrl}: ${srError.message}`);
+                    }
                 }
-            }
 
-            results.push({ ...pageResult, screenReaderViolations });
+                let contentViolations = [];
+                let visibleText = '';
+                if (config.content.enabled) {
+                    try {
+                        const contentResult = await runContent(page, config.content);
+                        contentViolations = contentResult.violations;
+                        visibleText = contentResult.visibleText;
+                    } catch (contentError) {
+                        log('warn', `Content check failed for ${normalisedUrl}: ${contentError.message}`);
+                    }
+                }
 
-            log(
-                'info',
-                `Found ${pageResult.violations.length} axe violation(s) and ${screenReaderViolations.length} SR issue(s) on ${normalisedUrl}`
+                results.push({ ...pageResult, screenReaderViolations, contentViolations, visibleText });
+                log('info', `Found ${pageResult.violations.length} axe, ${screenReaderViolations.length} SR, ${contentViolations.length} content issue(s) on ${normalisedUrl}`);
 
                 if (depth < maxDepth) {
                     const links = await extractLinks(page, baseUrl);

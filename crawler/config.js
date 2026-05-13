@@ -33,4 +33,9 @@ module.exports = {
         // Set to false to disable the virtual screen reader checks entirely.
         enabled: true,
     },
+
+    content: {
+        // Set to false to disable the deterministic content-quality checks entirely.
+        enabled: true,
+    },
 };
