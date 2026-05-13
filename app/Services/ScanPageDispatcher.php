@@ -9,6 +9,7 @@ use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
 use App\Jobs\RunAxeScanPageJob;
 use App\Jobs\RunLighthouseScanJob;
+use App\Jobs\RunScreenReaderAuditJob;
 use App\Models\Scan as ScanModel;
 use App\Models\ScanPage as ScanPageModel;
 use Illuminate\Bus\Batch;
@@ -29,6 +30,7 @@ class ScanPageDispatcher
     public function dispatch(ScanModel $scan, array $pageResults): void
     {
         $lighthouseEnabled = config('lighthouse.enabled', true);
+        $screenReaderEnabled = config('screen_reader.enabled', true);
         $jobs = [];
         $scan->update(['pages_discovered' => count($pageResults)]);
 
@@ -41,6 +43,7 @@ class ScanPageDispatcher
                         'status' => ScanPageStatus::Failed,
                         'axe_completed' => true,
                         'lighthouse_completed' => $lighthouseEnabled ? true : null,
+                        'screen_reader_completed' => $screenReaderEnabled ? true : null,
                     ],
                 );
 
@@ -54,6 +57,7 @@ class ScanPageDispatcher
                     'status' => ScanPageStatus::Pending,
                     'axe_completed' => false,
                     'lighthouse_completed' => $lighthouseEnabled ? false : null,
+                    'screen_reader_completed' => $screenReaderEnabled ? false : null,
                 ],
             );
 
@@ -62,6 +66,10 @@ class ScanPageDispatcher
             if ($lighthouseEnabled) {
                 $jobs[] = new RunLighthouseScanJob($scan, $pageResult['url'], 'mobile');
                 $jobs[] = new RunLighthouseScanJob($scan, $pageResult['url'], 'desktop');
+            }
+
+            if ($screenReaderEnabled) {
+                $jobs[] = new RunScreenReaderAuditJob($scan, $pageResult['url'], $pageResult['screenReaderViolations'] ?? []);
             }
         }
 
