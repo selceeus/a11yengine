@@ -28,4 +28,9 @@ module.exports = {
             '--disable-gpu',
         ],
     },
+
+    screenReader: {
+        // Set to false to disable the virtual screen reader checks entirely.
+        enabled: true,
+    },
 };

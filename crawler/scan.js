@@ -4,6 +4,7 @@ const { chromium } = require('playwright');
 const config = require('./config');
 const { normaliseUrl, isSameDomain, extractLinks, extractPdfLinks, fetchRobotsTxt, isAllowedByRobots } = require('./crawlUtils');
 const { runAxe } = require('./axeRunner');
+const { runScreenReader } = require('./screenReaderRunner');
 
 /**
  * Log to stderr only — stdout is reserved for the JSON payload consumed by
@@ -137,8 +138,19 @@ async function scanUrlList({ urlList, wcagVersion: _wcagVersion, axeConfig, brow
             }
 
             const pageResult = await runAxe(page, axeConfig);
-            results.push(pageResult);
-            log('info', `Found ${pageResult.violations.length} violation(s) on ${normalisedUrl}`);
+
+            let screenReaderViolations = [];
+            if (config.screenReader.enabled) {
+                try {
+                    const srResult = await runScreenReader(page, config.screenReader);
+                    screenReaderViolations = srResult.violations;
+                } catch (srError) {
+                    log('warn', `Screen reader check failed for ${normalisedUrl}: ${srError.message}`);
+                }
+            }
+
+            results.push({ ...pageResult, screenReaderViolations });
+            log('info', `Found ${pageResult.violations.length} axe violation(s) and ${screenReaderViolations.length} SR issue(s) on ${normalisedUrl}`);
         } catch (pageError) {
             log('error', `Error scanning ${normalisedUrl}: ${pageError.message}`);
         } finally {
@@ -228,12 +240,22 @@ async function scan() {
                 }
 
                 const pageResult = await runAxe(page, axeConfig);
-                results.push(pageResult);
 
-                log(
-                    'info',
-                    `Found ${pageResult.violations.length} violation(s) on ${normalisedUrl}`
-                );
+            let screenReaderViolations = [];
+            if (config.screenReader.enabled) {
+                try {
+                    const srResult = await runScreenReader(page, config.screenReader);
+                    screenReaderViolations = srResult.violations;
+                } catch (srError) {
+                    log('warn', `Screen reader check failed for ${normalisedUrl}: ${srError.message}`);
+                }
+            }
+
+            results.push({ ...pageResult, screenReaderViolations });
+
+            log(
+                'info',
+                `Found ${pageResult.violations.length} axe violation(s) and ${screenReaderViolations.length} SR issue(s) on ${normalisedUrl}`
 
                 if (depth < maxDepth) {
                     const links = await extractLinks(page, baseUrl);
