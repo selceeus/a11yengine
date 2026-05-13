@@ -8,6 +8,7 @@ use App\Domain\Scans\Scan as ScanDomain;
 use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
 use App\Jobs\RunAxeScanPageJob;
+use App\Jobs\RunContentAuditJob;
 use App\Jobs\RunLighthouseScanJob;
 use App\Jobs\RunScreenReaderAuditJob;
 use App\Models\Scan as ScanModel;
@@ -31,6 +32,7 @@ class ScanPageDispatcher
     {
         $lighthouseEnabled = config('lighthouse.enabled', true);
         $screenReaderEnabled = config('screen_reader.enabled', true);
+        $contentEnabled = config('content.enabled', true);
         $jobs = [];
         $scan->update(['pages_discovered' => count($pageResults)]);
 
@@ -44,6 +46,7 @@ class ScanPageDispatcher
                         'axe_completed' => true,
                         'lighthouse_completed' => $lighthouseEnabled ? true : null,
                         'screen_reader_completed' => $screenReaderEnabled ? true : null,
+                        'content_completed' => $contentEnabled ? true : null,
                     ],
                 );
 
@@ -58,6 +61,7 @@ class ScanPageDispatcher
                     'axe_completed' => false,
                     'lighthouse_completed' => $lighthouseEnabled ? false : null,
                     'screen_reader_completed' => $screenReaderEnabled ? false : null,
+                    'content_completed' => $contentEnabled ? false : null,
                 ],
             );
 
@@ -70,6 +74,10 @@ class ScanPageDispatcher
 
             if ($screenReaderEnabled) {
                 $jobs[] = new RunScreenReaderAuditJob($scan, $pageResult['url'], $pageResult['screenReaderViolations'] ?? []);
+            }
+
+            if ($contentEnabled) {
+                $jobs[] = new RunContentAuditJob($scan, $pageResult['url'], $pageResult['contentViolations'] ?? [], $pageResult['visibleText'] ?? '');
             }
         }
 
