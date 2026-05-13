@@ -20,6 +20,7 @@ class ScanPage extends Model
         'status',
         'axe_completed',
         'lighthouse_completed',
+        'screen_reader_completed',
     ];
 
     protected static function booted(): void
@@ -34,6 +35,7 @@ class ScanPage extends Model
             'violations_count' => 'integer',
             'axe_completed' => 'boolean',
             'lighthouse_completed' => 'boolean',
+            'screen_reader_completed' => 'boolean',
         ];
     }
 
