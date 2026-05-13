@@ -8,10 +8,9 @@ use App\Models\ContentAudit;
 use App\Models\Finding;
 use App\Models\Issue;
 use App\Models\Scan;
+use App\Models\ScanPage;
 use App\Services\RagRetrievalService;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class AiContentAuditService
 {
@@ -19,6 +18,7 @@ class AiContentAuditService
      * Axe rule keys considered content-level issues.
      */
     private const CONTENT_RULES = [
+        // Axe-core rules
         'link-name',
         'link-in-text-block',
         'heading-order',
@@ -33,9 +33,27 @@ class AiContentAuditService
         'input-image-alt',
         'svg-img-alt',
         'document-title',
+        // Deterministic content runner rules
+        'content-img-filename-alt',
+        'content-img-generic-alt',
+        'content-img-long-alt',
+        'content-img-redundant-descriptor',
+        'content-link-url-as-text',
+        'content-duplicate-link-text',
+        'content-multiple-h1',
+        'content-generic-page-title',
+        'content-video-missing-captions',
+        'content-video-missing-transcript',
+        'content-audio-missing-transcript',
+        'content-youtube-captions-unknown',
+        'content-vimeo-captions-unknown',
+        'content-video-embed-unverified',
     ];
 
-    public function __construct(private readonly RagRetrievalService $ragService) {}
+    public function __construct(
+        private readonly RagRetrievalService $ragService,
+        private readonly ContentMetricsService $metricsService,
+    ) {}
 
     /**
      * Generate AI-powered content issue observations for the given ContentAudit record.
@@ -77,13 +95,10 @@ class AiContentAuditService
             ->get(['id', 'rule_key', 'page_url'])
             ->keyBy(fn (Issue $issue) => $issue->rule_key.'|'.$issue->page_url);
 
-        // Build page context array: findings + fetched HTML
+        // Build page context array: findings only (no HTML fetching)
         $pageContexts = $topPages->map(function ($pageFindings, string $url) use ($issueIndex): array {
-            $html = $this->fetchPageHtml($url);
-
             return [
                 'url' => $url,
-                'html_snippet' => $html,
                 'findings' => $pageFindings->map(fn (Finding $f) => [
                     'rule_key' => $f->rule_key,
                     'element_html' => $f->element_html,
@@ -115,7 +130,22 @@ class AiContentAuditService
         }, $contentIssues);
 
         $pagesAnalyzed = count($topPages);
-        $readingMetrics = $result['reading_metrics'] ?? [];
+
+        // Compute reading metrics server-side using Flesch-Kincaid (no LLM estimation)
+        $pageUrls = array_column($pageContexts, 'url');
+        $visibleTextByUrl = ScanPage::withoutGlobalScopes()
+            ->whereIn('url', $pageUrls)
+            ->whereNotNull('visible_text')
+            ->pluck('visible_text', 'url');
+
+        $readingMetrics = collect($pageUrls)
+            ->map(fn (string $url) => $this->metricsService->computeMetrics(
+                $visibleTextByUrl->get($url, ''),
+                $url,
+            ))
+            ->filter(fn (array $m) => $m['word_count'] > 0)
+            ->values()
+            ->all();
 
         // Compute site-wide averages from per-page metrics
         $avgReadingLevel = null;
@@ -157,44 +187,6 @@ class AiContentAuditService
     }
 
     /**
-     * Fetch and sanitise raw HTML from the given URL.
-     * Returns null if the page is unreachable (auth-protected, timeout, 4xx/5xx).
-     */
-    public function fetchPageHtml(string $url): ?string
-    {
-        try {
-            $response = Http::timeout(10)
-                ->withHeaders(['User-Agent' => 'AccessibilityAuditBot/1.0'])
-                ->get($url);
-
-            if ($response->failed()) {
-                return null;
-            }
-
-            $body = $response->body();
-
-            // Strip scripts, styles, comments, and inline SVGs
-            $body = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $body) ?? $body;
-            $body = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $body) ?? $body;
-            $body = preg_replace('/<!--.*?-->/s', '', $body) ?? $body;
-            $body = preg_replace('/<svg\b[^>]*>.*?<\/svg>/is', '', $body) ?? $body;
-
-            // Collapse whitespace
-            $body = preg_replace('/\s{2,}/', ' ', $body) ?? $body;
-
-            // Truncate to ~5000 characters to keep prompt size manageable
-            return mb_substr(trim($body), 0, 5000);
-        } catch (\Throwable $e) {
-            Log::debug('ContentAudit: failed to fetch page HTML', [
-                'url' => $url,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
      * Extract the numeric Flesch-Kincaid grade from a reading level string.
      */
     private function extractGradeNumber(string $level): ?int
@@ -204,25 +196,6 @@ class AiContentAuditService
         }
 
         return null;
-    }
-
-    /**
-     * Format a duration in seconds as a human-readable string.
-     */
-    public function formatReadingTime(int $seconds): string
-    {
-        $mins = intdiv($seconds, 60);
-        $secs = $seconds % 60;
-
-        if ($mins > 0 && $secs > 0) {
-            return "{$mins} min {$secs} sec";
-        }
-
-        if ($mins > 0) {
-            return "{$mins} min";
-        }
-
-        return "{$secs} sec";
     }
 
     /**
@@ -247,14 +220,12 @@ Analyse {$count} page(s) for content-level accessibility issues that automated s
 - Missing or misleading alt text on images
 - Unclear or absent form labels
 - Document title issues
+- Video and media accessibility (captions, transcripts)
 - Any other content clarity or readability problems that affect assistive technology users
-
-Additionally, for each page with an available `html_snippet`, estimate the reading level using Flesch-Kincaid grade and the reading time based on ~230 words per minute from the visible text content.
 
 ## Pages & Findings
 Each page entry includes:
 - `url` — the page URL
-- `html_snippet` — raw page HTML (may be null if the page was unreachable or auth-protected)
 - `findings` — automated scanner findings filtered to content-related rules, each with `rule_key`, `element_html`, `message`, `severity`, `wcag_criteria`, and `issue_id` (null if no matching issue record exists)
 
 {$pagesJson}
@@ -271,8 +242,8 @@ Return a single JSON object matching this exact schema (no prose, no markdown fe
     {
       "page_url": "<URL of the page>",
       "issue_id": <integer matching finding's issue_id, or null if not matched>,
-      "rule_key": "<axe rule key or 'manual' for issues found only in the HTML>",
-      "category": "link_text|alt_text|heading_structure|form_label|readability",
+      "rule_key": "<axe or content rule key or 'manual' for issues found only in the findings context>",
+      "category": "link_text|alt_text|heading_structure|form_label|readability|video_media",
       "issue_type": "<short human-readable type label>",
       "element_html": "<the offending HTML element>",
       "current_text": "<the current visible or attribute text, or null>",
@@ -284,24 +255,13 @@ Return a single JSON object matching this exact schema (no prose, no markdown fe
       "writer_note": "<guidance for content editors to fix this>",
       "developer_note": "<guidance for developers to implement the fix>"
     }
-  ],
-  "reading_metrics": [
-    {
-      "page_url": "<URL of the page>",
-      "reading_level": "<e.g. Grade 8 (Flesch-Kincaid)>",
-      "reading_time": "<e.g. 2 min 30 sec>",
-      "reading_time_seconds": <integer seconds>,
-      "word_count": <integer>,
-      "flesch_score": <number 0-100 or null>
-    }
   ]
 }
 
 Rules:
 - Report at most 30 issues total across all pages.
 - Prioritise critical and serious issues first.
-- Do not invent issues not evidenced by the findings or HTML.
-- If `html_snippet` is null for a page, rely only on the `findings` array for that page and omit that page from `reading_metrics`.
+- Do not invent issues not evidenced by the findings data.
 - For `alt_text` issues: write a concise, descriptive `suggested_alt_text` value — the exact text to place in the `alt` attribute, written in plain language from the user's perspective. Use `""` for purely decorative images. Set `suggested_alt_text` to `null` for all other categories.
 PROMPT;
     }

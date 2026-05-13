@@ -30,7 +30,7 @@ class ContentAuditAgent implements Agent, HasStructuredOutput
                     'page_url' => $schema->string()->required(),
                     'issue_id' => $schema->integer()->nullable()->required(),
                     'rule_key' => $schema->string()->required(),
-                    'category' => $schema->string()->enum(['link_text', 'alt_text', 'heading_structure', 'form_label', 'readability'])->required(),
+                    'category' => $schema->string()->enum(['link_text', 'alt_text', 'heading_structure', 'form_label', 'readability', 'video_media'])->required(),
                     'issue_type' => $schema->string()->required(),
                     'element_html' => $schema->string()->nullable()->required(),
                     'current_text' => $schema->string()->nullable()->required(),
@@ -41,16 +41,6 @@ class ContentAuditAgent implements Agent, HasStructuredOutput
                     'wcag_criteria' => $schema->string()->required(),
                     'writer_note' => $schema->string()->required(),
                     'developer_note' => $schema->string()->required(),
-                ])->withoutAdditionalProperties()
-            )->required(),
-            'reading_metrics' => $schema->array()->items(
-                $schema->object([
-                    'page_url' => $schema->string()->required(),
-                    'reading_level' => $schema->string()->required(),
-                    'reading_time' => $schema->string()->required(),
-                    'reading_time_seconds' => $schema->integer()->required(),
-                    'word_count' => $schema->integer()->required(),
-                    'flesch_score' => $schema->number()->nullable()->required(),
                 ])->withoutAdditionalProperties()
             )->required(),
         ];
