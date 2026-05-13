@@ -21,6 +21,8 @@ class ScanPage extends Model
         'axe_completed',
         'lighthouse_completed',
         'screen_reader_completed',
+        'content_completed',
+        'visible_text',
     ];
 
     protected static function booted(): void
@@ -36,6 +38,7 @@ class ScanPage extends Model
             'axe_completed' => 'boolean',
             'lighthouse_completed' => 'boolean',
             'screen_reader_completed' => 'boolean',
+            'content_completed' => 'boolean',
         ];
     }
 
