@@ -29,6 +29,6 @@ class ProcessScreenReaderScan
         $this->processHtmlScan->handle($scan, [
             'url' => $url,
             'violations' => $violations,
-        ]);
+        ], updateScanPage: false);
     }
 }

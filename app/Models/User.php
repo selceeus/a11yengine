@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -34,7 +33,7 @@ class User extends Authenticatable
     public function getAvatarAttribute(): ?string
     {
         return $this->avatar_path
-            ? Storage::disk('public')->url($this->avatar_path)
+            ? '/storage/'.$this->avatar_path
             : null;
     }
 

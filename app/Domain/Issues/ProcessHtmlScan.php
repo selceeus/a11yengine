@@ -21,12 +21,15 @@ class ProcessHtmlScan
     ) {}
 
     /**
-     * Process a single axe-core page result, persisting findings and issues
-     * then triggering risk and governance recalculation.
+     * Process a single page result, persisting findings and issues.
+     *
+     * Pass $updateScanPage = false when called from non-axe pipelines (screen
+     * reader, content) so that violations_count on ScanPage is not overwritten
+     * with a partial count from a secondary audit type.
      *
      * @param  array{url: string, violations: array<int, array{id: string, impact: string|null, description?: string, helpUrl?: string, tags?: list<string>, nodes: array<int, array{target: array<string>, html?: string, failureSummary?: string}>}>}  $pageResult
      */
-    public function handle(Scan $scan, array $pageResult): ScanPage
+    public function handle(Scan $scan, array $pageResult, bool $updateScanPage = true): ScanPage
     {
         $url = $pageResult['url'];
         $violations = $pageResult['violations'] ?? [];
@@ -35,7 +38,14 @@ class ProcessHtmlScan
         $findings = $this->persistFindings($scan, $url, $violations, $detectedAt);
         $this->normalizeFindings($findings, $scan);
 
-        $page = $this->scanPage->record($scan, $url, $findings->count());
+        if ($updateScanPage) {
+            $page = $this->scanPage->record($scan, $url, $findings->count());
+        } else {
+            $page = ScanPage::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+                ->where('scan_id', $scan->id)
+                ->where('url', $url)
+                ->firstOrNew(['scan_id' => $scan->id, 'url' => $url]);
+        }
 
         return $page;
     }

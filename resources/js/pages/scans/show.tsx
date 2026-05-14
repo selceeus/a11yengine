@@ -90,6 +90,12 @@ type PdfDocument = {
     scanned_at: string | null;
 };
 
+type ScreenReaderResult = {
+    rule_key: string;
+    severity: SeverityRow['severity'];
+    count: number;
+};
+
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
     serious: 'bg-orange-500',
@@ -128,6 +134,7 @@ export default function Show({
     scan,
     severityBreakdown,
     topRules,
+    screenReaderResults,
     lighthouseResults,
     delta,
     experiencePillars,
@@ -137,6 +144,7 @@ export default function Show({
     scan: Scan;
     severityBreakdown: SeverityRow[];
     topRules: Record<string, number>;
+    screenReaderResults: ScreenReaderResult[];
     lighthouseResults: LighthouseResult[];
     delta: Delta | null;
     experiencePillars: ExperiencePillars;
@@ -145,7 +153,7 @@ export default function Show({
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
     const { start, stop } = usePoll(3000, {}, { autoStart: false });
-    const [tab, setTab] = useState<'wcag' | 'lighthouse' | 'pdfs'>('wcag');
+    const [tab, setTab] = useState<'wcag' | 'screen-reader' | 'lighthouse' | 'pdfs'>('wcag');
     const [lighthouseFormFactor, setLighthouseFormFactor] = useState<'mobile' | 'desktop'>('mobile');
 
     const mobileLighthouse = lighthouseResults.filter((r) => r.form_factor === 'mobile');
@@ -396,9 +404,20 @@ export default function Show({
                 {/* Tabbed results — only shown once completed */}
                 {scan.status === 'completed' && (
                     <div className="flex flex-col gap-4">
-                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'lighthouse' | 'pdfs')}>
+                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'screen-reader' | 'lighthouse' | 'pdfs')}>
                             <TabsList>
                                 <TabsTrigger value="wcag">WCAG Scores</TabsTrigger>
+                                <TabsTrigger value="screen-reader" disabled={screenReaderResults.length === 0}>
+                                    Screen Reader
+                                    {screenReaderResults.length > 0 && (
+                                        <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                                            {screenReaderResults.reduce((s, r) => s + r.count, 0)}
+                                        </span>
+                                    )}
+                                    {screenReaderResults.length === 0 && (
+                                        <span className="ml-1.5 text-xs opacity-50">(none)</span>
+                                    )}
+                                </TabsTrigger>
                                 <TabsTrigger value="lighthouse" disabled={lighthouseResults.length === 0}>
                                     Lighthouse Scores
                                     {lighthouseResults.length === 0 && (
@@ -458,6 +477,39 @@ export default function Show({
                             ) : (
                                 <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
                                     No pages were recorded for this scan.
+                                </div>
+                            )
+                        )}
+
+                        {/* Screen Reader tab */}
+                        {tab === 'screen-reader' && (
+                            screenReaderResults.length > 0 ? (
+                                <div className="rounded-xl border">
+                                    <table className="w-full text-sm">
+                                        <caption className="px-4 py-3">Screen Reader Audit Results</caption>
+                                        <thead className="border-b bg-muted/50">
+                                            <tr className="text-xs text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">Rule</th>
+                                                <th className="px-4 py-3 text-left font-medium">Severity</th>
+                                                <th className="px-4 py-3 text-right font-medium">Violations</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {screenReaderResults.map((row) => (
+                                                <tr key={row.rule_key + row.severity} className="transition-colors hover:bg-muted/30">
+                                                    <td className="px-4 py-3 font-mono text-xs">{row.rule_key}</td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge variant="outline" className="capitalize">{row.severity}</Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums font-medium">{row.count}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                                    No screen reader violations were detected for this scan.
                                 </div>
                             )
                         )}

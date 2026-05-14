@@ -120,11 +120,26 @@ class ScanController extends Controller
 
         $topRules = Finding::query()
             ->where('scan_id', $scan->id)
+            ->where('rule_key', 'not like', 'sr-%')
+            ->where('rule_key', 'not like', 'content-%')
             ->select('rule_key', DB::raw('count(*) as count'))
             ->groupBy('rule_key')
             ->orderByDesc('count')
             ->limit(10)
             ->pluck('count', 'rule_key');
+
+        $screenReaderResults = Finding::query()
+            ->where('scan_id', $scan->id)
+            ->where('rule_key', 'like', 'sr-%')
+            ->select('rule_key', 'severity', DB::raw('count(*) as count'))
+            ->groupBy('rule_key', 'severity')
+            ->orderByDesc('count')
+            ->get()
+            ->map(fn ($row) => [
+                'rule_key' => $row->rule_key,
+                'severity' => $row->severity->value,
+                'count' => $row->count,
+            ]);
 
         $lighthouseResults = LighthouseResult::query()
             ->where('scan_id', $scan->id)
@@ -202,6 +217,7 @@ class ScanController extends Controller
             'scan' => $scan,
             'severityBreakdown' => $severityBreakdown,
             'topRules' => $topRules,
+            'screenReaderResults' => $screenReaderResults,
             'lighthouseResults' => $lighthouseResults,
             'delta' => $delta,
             'experiencePillars' => $experiencePillars,
