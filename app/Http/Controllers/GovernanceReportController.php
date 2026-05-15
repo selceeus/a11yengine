@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Governance\CreateGovernanceReport;
 use App\Concerns\Exportable;
-use App\Enums\GovernanceReportStatus;
 use App\Http\Requests\StoreGovernanceReportRequest;
-use App\Jobs\GenerateGovernanceReportJob;
 use App\Models\GovernanceReport;
 use App\Models\Property;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -57,7 +56,7 @@ class GovernanceReportController extends Controller
         ]);
     }
 
-    public function store(StoreGovernanceReportRequest $request): RedirectResponse
+    public function store(StoreGovernanceReportRequest $request, CreateGovernanceReport $action): RedirectResponse
     {
         $user = $request->user();
         $validated = $request->validated();
@@ -75,18 +74,14 @@ class GovernanceReportController extends Controller
             $organizationId = null;
         }
 
-        $report = GovernanceReport::withoutGlobalScopes()->create([
+        $report = $action->handle([
             'agency_id' => $agencyId,
             'organization_id' => $organizationId,
             'property_id' => $propertyId,
             'report_scope' => $validated['report_scope'],
             'period_from' => $validated['period_from'],
             'period_to' => $validated['period_to'],
-            'status' => GovernanceReportStatus::Pending,
-            'is_scheduled' => false,
         ]);
-
-        GenerateGovernanceReportJob::dispatch($report);
 
         return redirect()->route('governance.show', $report);
     }
