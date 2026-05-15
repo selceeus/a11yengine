@@ -1,10 +1,10 @@
 <?php
 
-use App\Domain\Risk\RecordOrganizationRiskSnapshot;
 use App\Domain\Risk\RecordRiskSnapshot;
 use App\Enums\UserRole;
 use App\Models\Agency;
 use App\Models\Organization;
+use App\Models\RiskSnapshot;
 use App\Models\User;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -23,20 +23,16 @@ it('returns 401 for unauthenticated requests', function (): void {
 });
 
 it('returns the risk snapshot for an authenticated user', function (): void {
-    $snapshot = \App\Models\OrganizationRiskSnapshot::create([
+    $snapshot = RiskSnapshot::factory()->create([
+        'agency_id' => $this->agency->id,
         'organization_id' => $this->organization->id,
-        'risk_score' => 75,
-        'calculated_at' => now(),
+        'total_risk_score' => 75,
     ]);
-
-    $this->mock(RecordOrganizationRiskSnapshot::class)
-        ->shouldReceive('handle')
-        ->once()
-        ->andReturn($snapshot);
 
     $this->mock(RecordRiskSnapshot::class)
         ->shouldReceive('handle')
-        ->once();
+        ->once()
+        ->andReturn($snapshot);
 
     $this->actingAs($this->user)
         ->postJson(route('api.organizations.risk-snapshot', $this->organization->id))

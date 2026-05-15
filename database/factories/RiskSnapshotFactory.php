@@ -24,6 +24,7 @@ class RiskSnapshotFactory extends Factory
             'total_risk_score' => fake()->numberBetween(0, 500),
             'open_issue_count' => fake()->numberBetween(0, 50),
             'snapshot_date' => fake()->dateTimeBetween('-90 days', 'now')->format('Y-m-d'),
+            'created_at' => fake()->dateTimeBetween('-90 days', 'now'),
         ];
     }
 }

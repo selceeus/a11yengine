@@ -58,9 +58,4 @@ class Organization extends Model
     {
         return $this->hasMany(GovernanceReport::class);
     }
-
-    public function riskSnapshots(): HasMany
-    {
-        return $this->hasMany(OrganizationRiskSnapshot::class);
-    }
 }

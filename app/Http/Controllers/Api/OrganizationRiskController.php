@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Domain\Risk\RecordOrganizationRiskSnapshot;
 use App\Domain\Risk\RecordRiskSnapshot;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 class OrganizationRiskController extends Controller
 {
     public function __construct(
-        private readonly RecordOrganizationRiskSnapshot $recorder,
         private readonly RecordRiskSnapshot $snapshotRecorder,
     ) {}
 
@@ -23,14 +21,13 @@ class OrganizationRiskController extends Controller
         $user = $request->user();
         abort_unless($user->isSuperUser() || $user->canManageOrg($organization->id), 403);
 
-        $snapshot = $this->recorder->handle($organization);
-        $this->snapshotRecorder->handle($organization);
+        $snapshot = $this->snapshotRecorder->handle($organization);
 
         return response()->json([
             'organization_id' => $organization->id,
             'organization_name' => $organization->name,
-            'risk_score' => $snapshot->risk_score,
-            'calculated_at' => $snapshot->calculated_at->toIso8601String(),
+            'risk_score' => $snapshot->total_risk_score,
+            'calculated_at' => $snapshot->created_at->toIso8601String(),
         ]);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Domain\Risk\RecordOrganizationRiskSnapshot;
+use App\Domain\Risk\RecordRiskSnapshot;
 use App\Models\Organization;
 use Illuminate\Console\Command;
 
@@ -12,7 +12,7 @@ class SnapshotOrganizationRisk extends Command
 
     protected $description = 'Record a risk snapshot for every organization based on aggregated property scores';
 
-    public function handle(RecordOrganizationRiskSnapshot $recorder): int
+    public function handle(RecordRiskSnapshot $recorder): int
     {
         $organizations = Organization::query()->orderBy('id')->get();
 

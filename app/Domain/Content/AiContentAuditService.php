@@ -83,10 +83,10 @@ class AiContentAuditService
             ->get(['page_url', 'rule_key', 'element_html', 'element_identifier', 'message', 'severity', 'wcag_category', 'wcag_criteria', 'description', 'tags'])
             ->groupBy('page_url');
 
-        // Take the top 20 pages by finding count
+        // Take the top 30 pages by finding count
         $topPages = $findings
             ->sortByDesc(fn ($group) => $group->count())
-            ->take(20);
+            ->take(30);
 
         // Load matching Issue records for linkage (rule_key + page_url + property_id)
         $issueIndex = Issue::withoutGlobalScopes()
