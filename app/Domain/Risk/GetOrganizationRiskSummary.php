@@ -38,7 +38,7 @@ class GetOrganizationRiskSummary
 
         $totalRiskScore = $this->calculator->handle($organizationId);
 
-        $openIssues = (clone $base)->count();
+        $openIssues = $this->calculator->openIssueCount($organizationId);
 
         $severityCounts = (clone $base)
             ->selectRaw('severity, COUNT(*) as count')
@@ -49,17 +49,7 @@ class GetOrganizationRiskSummary
             ->mapWithKeys(fn (IssueSeverity $s): array => [$s->value => (int) ($severityCounts[$s->value] ?? 0)])
             ->all();
 
-        $agingBuckets = [
-            'under_30_days' => (clone $base)
-                ->where('first_detected_at', '>=', $now->copy()->subDays(30))
-                ->count(),
-            '30_to_60_days' => (clone $base)
-                ->whereBetween('first_detected_at', [$now->copy()->subDays(60), $now->copy()->subDays(30)])
-                ->count(),
-            'over_60_days' => (clone $base)
-                ->where('first_detected_at', '<', $now->copy()->subDays(60))
-                ->count(),
-        ];
+        $agingBuckets = $this->calculator->agingBuckets($organizationId);
 
         $avgDaysToResolution = Issue::query()
             ->where('organization_id', $organizationId)

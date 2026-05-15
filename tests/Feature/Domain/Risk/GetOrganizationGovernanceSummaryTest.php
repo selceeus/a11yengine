@@ -3,6 +3,7 @@
 use App\Domain\Risk\GetOrganizationGovernanceSummary;
 use App\Enums\IssueSeverity;
 use App\Enums\IssueStatus;
+use App\Enums\UserRole;
 use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -16,7 +17,9 @@ beforeEach(function (): void {
     $this->agency = Agency::factory()->create();
     $this->organization = Organization::factory()->create(['agency_id' => $this->agency->id]);
 
-    $user = User::factory()->create(['agency_id' => $this->agency->id]);
+    $user = User::factory()
+        ->withRole(UserRole::AgencyAdmin, agencyId: $this->agency->id)
+        ->create(['agency_id' => $this->agency->id]);
     $this->actingAs($user);
 
     $this->service = app(GetOrganizationGovernanceSummary::class);

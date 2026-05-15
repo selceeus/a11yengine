@@ -42,7 +42,7 @@ class GenerateRiskBreakdown
 
         $totalRiskScore = $this->calculator->handle($organization);
 
-        $openIssues = (clone $base)->count();
+        $openIssues = $this->calculator->openIssueCount($organization->id);
 
         $severityRows = (clone $base)
             ->selectRaw('severity, COUNT(*) as count, SUM(risk_weight * occurrence_count) as risk_contribution')
@@ -61,17 +61,7 @@ class GenerateRiskBreakdown
             })
             ->all();
 
-        $agingDistribution = [
-            'under_30_days' => (clone $base)
-                ->where('first_detected_at', '>=', $now->copy()->subDays(30))
-                ->count(),
-            '30_to_60_days' => (clone $base)
-                ->whereBetween('first_detected_at', [$now->copy()->subDays(60), $now->copy()->subDays(30)])
-                ->count(),
-            'over_60_days' => (clone $base)
-                ->where('first_detected_at', '<', $now->copy()->subDays(60))
-                ->count(),
-        ];
+        $agingDistribution = $this->calculator->agingBuckets($organization->id);
 
         $highestRiskRules = (clone $base)
             ->selectRaw('rule_key, COUNT(*) as issue_count, SUM(risk_weight * occurrence_count) as risk_contribution')

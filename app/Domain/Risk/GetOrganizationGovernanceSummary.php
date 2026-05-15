@@ -48,10 +48,7 @@ class GetOrganizationGovernanceSummary
             ? $snapshots->first() - $snapshots->last()
             : null;
 
-        $openIssues = Issue::query()
-            ->where('organization_id', $organizationId)
-            ->whereIn('status', IssueStatus::activeStatusValues())
-            ->count();
+        $openIssues = $this->calculator->openIssueCount($organizationId);
 
         // Last completed scan timestamp
         $lastScan = Scan::withoutGlobalScopes()

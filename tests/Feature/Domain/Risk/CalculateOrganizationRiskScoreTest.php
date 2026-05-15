@@ -6,6 +6,7 @@ use App\Models\Agency;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\Date;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -83,4 +84,90 @@ it('only scores issues belonging to the given organization', function (): void {
     ]);
 
     expect($this->service->handle($this->organization))->toBe(20);
+});
+
+// openIssueCount
+
+it('openIssueCount returns zero when there are no open issues', function (): void {
+    expect($this->service->openIssueCount($this->organization->id))->toBe(0);
+});
+
+it('openIssueCount counts only active-status issues', function (): void {
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Open,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Resolved,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    expect($this->service->openIssueCount($this->organization->id))->toBe(1);
+});
+
+it('openIssueCount only counts issues for the given organization', function (): void {
+    $other = Organization::factory()->create(['agency_id' => $this->agency->id]);
+
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Open,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+    Issue::factory()->for($this->agency)->for($other)->create([
+        'status' => IssueStatus::Open,
+        'first_detected_at' => now(),
+        'last_detected_at' => now(),
+    ]);
+
+    expect($this->service->openIssueCount($this->organization->id))->toBe(1);
+});
+
+// agingBuckets
+
+it('agingBuckets returns all-zero buckets when there are no issues', function (): void {
+    expect($this->service->agingBuckets($this->organization->id))->toBe([
+        'under_30_days' => 0,
+        '30_to_60_days' => 0,
+        'over_60_days' => 0,
+    ]);
+});
+
+it('agingBuckets places issues in the correct bucket based on first_detected_at', function (): void {
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Open,
+        'first_detected_at' => Date::now()->subDays(10),
+        'last_detected_at' => now(),
+    ]);
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Open,
+        'first_detected_at' => Date::now()->subDays(45),
+        'last_detected_at' => now(),
+    ]);
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Open,
+        'first_detected_at' => Date::now()->subDays(90),
+        'last_detected_at' => now(),
+    ]);
+
+    expect($this->service->agingBuckets($this->organization->id))->toBe([
+        'under_30_days' => 1,
+        '30_to_60_days' => 1,
+        'over_60_days' => 1,
+    ]);
+});
+
+it('agingBuckets excludes resolved issues', function (): void {
+    Issue::factory()->for($this->agency)->for($this->organization)->create([
+        'status' => IssueStatus::Resolved,
+        'first_detected_at' => Date::now()->subDays(10),
+        'last_detected_at' => now(),
+    ]);
+
+    expect($this->service->agingBuckets($this->organization->id))->toBe([
+        'under_30_days' => 0,
+        '30_to_60_days' => 0,
+        'over_60_days' => 0,
+    ]);
 });
