@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Issues\ProcessContentScan;
+use App\Domain\Issues\ProcessHtmlScan;
 use App\Enums\ScanPageStatus;
 use App\Jobs\RunContentAuditJob;
 use App\Models\Agency;
@@ -53,7 +53,7 @@ it('can be dispatched to the queue', function (): void {
 // ─── Completion flag ──────────────────────────────────────────────────────────
 
 it('marks content_completed on the ScanPage stub after handling', function (): void {
-    $processor = Mockery::mock(ProcessContentScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once();
 
     (new RunContentAuditJob($this->scan, 'https://example.com/', [
@@ -64,7 +64,7 @@ it('marks content_completed on the ScanPage stub after handling', function (): v
 });
 
 it('marks content_completed even when violations array is empty', function (): void {
-    $processor = Mockery::mock(ProcessContentScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once();
 
     (new RunContentAuditJob($this->scan, 'https://example.com/', []))->handle($processor);
@@ -73,7 +73,7 @@ it('marks content_completed even when violations array is empty', function (): v
 });
 
 it('saves visible_text to the ScanPage stub', function (): void {
-    $processor = Mockery::mock(ProcessContentScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once();
 
     (new RunContentAuditJob($this->scan, 'https://example.com/', [], 'Hello world this is visible text.'))->handle($processor);
@@ -82,7 +82,7 @@ it('saves visible_text to the ScanPage stub', function (): void {
 });
 
 it('stores null for visible_text when empty string is passed', function (): void {
-    $processor = Mockery::mock(ProcessContentScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once();
 
     (new RunContentAuditJob($this->scan, 'https://example.com/', [], ''))->handle($processor);
@@ -95,7 +95,7 @@ it('stores null for visible_text when empty string is passed', function (): void
 it('catches processor exceptions and still marks completion', function (): void {
     Log::spy();
 
-    $processor = Mockery::mock(ProcessContentScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once()->andThrow(new RuntimeException('Processing error'));
 
     (new RunContentAuditJob($this->scan, 'https://example.com/', []))->handle($processor);

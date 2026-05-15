@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Issues\ProcessScreenReaderScan;
+use App\Domain\Issues\ProcessHtmlScan;
 use App\Enums\FindingSeverity;
 use App\Enums\IssueSeverity;
 use App\Enums\IssueStatus;
@@ -23,7 +23,7 @@ beforeEach(function (): void {
     $this->actingAs($user);
 
     $this->scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->create();
-    $this->service = app(ProcessScreenReaderScan::class);
+    $this->service = app(ProcessHtmlScan::class);
 });
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ function srNode(string $selector, string $summary = 'Fix this SR issue'): array
 // ─── Empty violations — no-op ─────────────────────────────────────────────────
 
 it('does nothing when violations array is empty', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', []);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => []], updateScanPage: false);
 
     expect(Finding::query()->count())->toBe(0)
         ->and(Issue::query()->count())->toBe(0);
@@ -77,15 +77,15 @@ it('creates a finding for each SR violation node', function (): void {
         srViolation('sr-image-no-alt', 'critical', [srNode('#img')]),
     ];
 
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
 
     expect(Finding::query()->count())->toBe(3);
 });
 
 it('stores the SR rule key as-is on the finding', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => [
         srViolation('sr-missing-h1', 'moderate', [srNode('#body')]),
-    ]);
+    ]], updateScanPage: false);
 
     expect(Finding::query()->first()->rule_key)->toBe('sr-missing-h1');
 });
@@ -93,9 +93,9 @@ it('stores the SR rule key as-is on the finding', function (): void {
 it('stores the page url, element identifier, and message on the finding', function (): void {
     $node = srNode('#main-content', 'Add a <main> landmark.');
 
-    $this->service->handle($this->scan, 'https://example.com/about', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/about', 'violations' => [
         srViolation('sr-missing-main-landmark', 'serious', [$node]),
-    ]);
+    ]], updateScanPage: false);
 
     $finding = Finding::query()->first();
 
@@ -112,7 +112,7 @@ it('maps SR violation impact to FindingSeverity correctly', function (): void {
         srViolation('sr-d', 'minor', [srNode('#d')]),
     ];
 
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
 
     $severities = Finding::query()->orderBy('id')->pluck('severity');
 
@@ -127,8 +127,8 @@ it('maps SR violation impact to FindingSeverity correctly', function (): void {
 it('does not create a duplicate finding when called twice with the same violation', function (): void {
     $violations = [srViolation('sr-missing-page-title', 'serious', [srNode('#title')])];
 
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
 
     expect(Finding::query()->count())->toBe(1);
 });
@@ -141,15 +141,15 @@ it('creates an issue for each unique SR rule+page combination', function (): voi
         srViolation('sr-image-no-alt', 'critical'),
     ];
 
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
 
     expect(Issue::query()->count())->toBe(2);
 });
 
 it('sets correct severity and risk_weight on the SR issue', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => [
         srViolation('sr-missing-main-landmark', 'serious'),
-    ]);
+    ]], updateScanPage: false);
 
     $issue = Issue::query()->first();
 
@@ -167,18 +167,18 @@ it('increments occurrence_count when an open issue already exists for the same S
         'last_detected_at' => now(),
     ]);
 
-    $this->service->handle($this->scan, 'https://example.com/', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => [
         srViolation('sr-missing-main-landmark', 'serious'),
-    ]);
+    ]], updateScanPage: false);
 
     expect(Issue::query()->count())->toBe(1)
         ->and(Issue::query()->first()->occurrence_count)->toBe(2);
 });
 
 it('resolves SR tags to the correct WCAG category', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => [
         srViolation('sr-missing-lang-attribute', 'serious', [srNode('#html')], ['wcag311', 'wcag2a', 'cat.language']),
-    ]);
+    ]], updateScanPage: false);
 
     expect(Finding::query()->first()->wcag_category)->toBe('understandable');
 });

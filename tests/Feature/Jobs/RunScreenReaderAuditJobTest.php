@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Issues\ProcessScreenReaderScan;
+use App\Domain\Issues\ProcessHtmlScan;
 use App\Enums\ScanPageStatus;
 use App\Jobs\RunScreenReaderAuditJob;
 use App\Models\Agency;
@@ -52,7 +52,7 @@ it('can be dispatched to the queue', function (): void {
 // ─── Completion flag ──────────────────────────────────────────────────────────
 
 it('marks screen_reader_completed on the ScanPage stub after handling', function (): void {
-    $processor = Mockery::mock(ProcessScreenReaderScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once();
 
     (new RunScreenReaderAuditJob($this->scan, 'https://example.com/', [
@@ -63,7 +63,7 @@ it('marks screen_reader_completed on the ScanPage stub after handling', function
 });
 
 it('marks screen_reader_completed even when violations array is empty', function (): void {
-    $processor = Mockery::mock(ProcessScreenReaderScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once();
 
     (new RunScreenReaderAuditJob($this->scan, 'https://example.com/', []))->handle($processor);
@@ -76,7 +76,7 @@ it('marks screen_reader_completed even when violations array is empty', function
 it('catches processor exceptions and still marks completion', function (): void {
     Log::spy();
 
-    $processor = Mockery::mock(ProcessScreenReaderScan::class);
+    $processor = Mockery::mock(ProcessHtmlScan::class);
     $processor->expects('handle')->once()->andThrow(new RuntimeException('Processing error'));
 
     (new RunScreenReaderAuditJob($this->scan, 'https://example.com/', []))->handle($processor);

@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Issues\ProcessContentScan;
+use App\Domain\Issues\ProcessHtmlScan;
 use App\Enums\FindingSeverity;
 use App\Models\Agency;
 use App\Models\Finding;
@@ -21,7 +21,7 @@ beforeEach(function (): void {
     $this->actingAs($user);
 
     $this->scan = Scan::factory()->for($this->agency)->for($this->organization)->for($this->property)->create();
-    $this->service = app(ProcessContentScan::class);
+    $this->service = app(ProcessHtmlScan::class);
 });
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ function contentNode(string $selector, string $summary = 'Fix this content issue
 // ─── Empty violations — no-op ─────────────────────────────────────────────────
 
 it('does nothing when violations array is empty', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', []);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => []], updateScanPage: false);
 
     expect(Finding::query()->count())->toBe(0)
         ->and(Issue::query()->count())->toBe(0);
@@ -70,23 +70,23 @@ it('creates a finding for each content violation node', function (): void {
         contentViolation('content-img-generic-alt', 'moderate', [contentNode('img')]),
     ];
 
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
 
     expect(Finding::query()->count())->toBe(3);
 });
 
 it('stores the content rule key as-is on the finding', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => [
         contentViolation('content-link-url-as-text', 'moderate', [contentNode('a')]),
-    ]);
+    ]], updateScanPage: false);
 
     expect(Finding::query()->first()->rule_key)->toBe('content-link-url-as-text');
 });
 
 it('stores the page url on the finding', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/about', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/about', 'violations' => [
         contentViolation('content-multiple-h1', 'moderate', [contentNode('h1')]),
-    ]);
+    ]], updateScanPage: false);
 
     expect(Finding::query()->first()->page_url)->toBe('https://example.com/about');
 });
@@ -94,9 +94,9 @@ it('stores the page url on the finding', function (): void {
 // ─── Issues ──────────────────────────────────────────────────────────────────
 
 it('creates an issue for a content violation', function (): void {
-    $this->service->handle($this->scan, 'https://example.com/', [
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => [
         contentViolation('content-generic-page-title', 'serious', [contentNode('title')]),
-    ]);
+    ]], updateScanPage: false);
 
     expect(Issue::query()->count())->toBe(1);
 });
@@ -106,8 +106,8 @@ it('does not create duplicate issues for the same rule on the same page', functi
         contentViolation('content-multiple-h1', 'moderate', [contentNode('h1'), contentNode('h1')]),
     ];
 
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
-    $this->service->handle($this->scan, 'https://example.com/', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/', 'violations' => $violations], updateScanPage: false);
 
     expect(Issue::query()->where('rule_key', 'content-multiple-h1')->count())->toBe(1);
 });
@@ -126,7 +126,7 @@ it('creates a finding for video missing captions violation', function (): void {
         ),
     ];
 
-    $this->service->handle($this->scan, 'https://example.com/video', $violations);
+    $this->service->handle($this->scan, ['url' => 'https://example.com/video', 'violations' => $violations], updateScanPage: false);
 
     $finding = Finding::query()->first();
     expect($finding->rule_key)->toBe('content-video-missing-captions')

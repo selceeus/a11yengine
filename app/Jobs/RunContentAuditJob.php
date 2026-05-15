@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Domain\Issues\ProcessContentScan;
+use App\Domain\Issues\ProcessHtmlScan;
 use App\Models\Scan;
 use App\Models\ScanPage;
 use Illuminate\Bus\Batchable;
@@ -46,7 +46,7 @@ class RunContentAuditJob implements ShouldQueue
     /**
      * Execute the job.
      *
-     * Delegates to ProcessContentScan which persists content Findings through
+     * Delegates to ProcessHtmlScan which persists content Findings through
      * the same Finding + Issue pipeline used by the axe-core scan.
      *
      * Failures are treated as soft failures: any Throwable is caught and
@@ -54,10 +54,10 @@ class RunContentAuditJob implements ShouldQueue
      * perspective. This ensures content check unavailability never blocks the
      * main scan.
      */
-    public function handle(ProcessContentScan $processor): void
+    public function handle(ProcessHtmlScan $processor): void
     {
         try {
-            $processor->handle($this->scan, $this->pageUrl, $this->violations);
+            $processor->handle($this->scan, ['url' => $this->pageUrl, 'violations' => $this->violations], updateScanPage: false);
         } catch (Throwable $e) {
             Log::warning('Content audit failed', [
                 'url' => $this->pageUrl,

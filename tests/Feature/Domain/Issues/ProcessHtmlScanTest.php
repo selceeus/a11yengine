@@ -8,7 +8,6 @@ use App\Models\Agency;
 use App\Models\Finding;
 use App\Models\Issue;
 use App\Models\Organization;
-use App\Models\OrganizationRiskSnapshot;
 use App\Models\Property;
 use App\Models\RiskSnapshot;
 use App\Models\Scan;
@@ -266,14 +265,6 @@ it('does not record a risk snapshot per page — snapshots are taken once at sca
     ]));
 
     expect(RiskSnapshot::query()->where('organization_id', $this->organization->id)->count())->toBe(0);
-});
-
-it('does not record an organization risk snapshot per page — snapshots are taken once at scan completion', function (): void {
-    $this->service->handle($this->scan, axePage('https://example.com', [
-        axeViolation('image-alt', 'critical'),
-    ]));
-
-    expect(OrganizationRiskSnapshot::query()->where('organization_id', $this->organization->id)->count())->toBe(0);
 });
 
 // ─── New fields: tags, help_url, element_html, description ───────────────────

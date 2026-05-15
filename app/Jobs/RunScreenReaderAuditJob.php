@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Domain\Issues\ProcessScreenReaderScan;
+use App\Domain\Issues\ProcessHtmlScan;
 use App\Models\Scan;
 use App\Models\ScanPage;
 use Illuminate\Bus\Batchable;
@@ -45,17 +45,17 @@ class RunScreenReaderAuditJob implements ShouldQueue
     /**
      * Execute the job.
      *
-     * Delegates to ProcessScreenReaderScan which persists SR Findings through
+     * Delegates to ProcessHtmlScan which persists SR Findings through
      * the same Finding + Issue pipeline used by the axe-core scan.
      *
      * Failures are treated as soft failures: any Throwable is caught and
      * logged as a warning so the job always succeeds from the queue's
      * perspective. This ensures SR unavailability never blocks the main scan.
      */
-    public function handle(ProcessScreenReaderScan $processor): void
+    public function handle(ProcessHtmlScan $processor): void
     {
         try {
-            $processor->handle($this->scan, $this->pageUrl, $this->violations);
+            $processor->handle($this->scan, ['url' => $this->pageUrl, 'violations' => $this->violations], updateScanPage: false);
         } catch (Throwable $e) {
             Log::warning('Screen reader audit failed', [
                 'url' => $this->pageUrl,
