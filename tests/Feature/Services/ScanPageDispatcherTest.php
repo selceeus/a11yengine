@@ -4,6 +4,8 @@ use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
 use App\Events\ScanCompleted;
 use App\Jobs\RunAxeScanPageJob;
+use App\Jobs\RunInteractiveAuditJob;
+use App\Jobs\RunKeyboardAuditJob;
 use App\Jobs\RunLighthouseScanJob;
 use App\Models\Agency;
 use App\Models\Organization;
@@ -81,7 +83,9 @@ it('creates stubs with Pending status and axe_completed=false', function (): voi
 
     expect($stub->status)->toBe(ScanPageStatus::Pending)
         ->and($stub->axe_completed)->toBeFalse()
-        ->and($stub->lighthouse_completed)->toBeNull();
+        ->and($stub->lighthouse_completed)->toBeNull()
+        ->and($stub->keyboard_completed)->toBeFalse()
+        ->and($stub->interactive_completed)->toBeFalse();
 });
 
 it('sets lighthouse_completed=false on stubs when lighthouse is enabled', function (): void {
@@ -101,7 +105,7 @@ it('sets lighthouse_completed=false on stubs when lighthouse is enabled', functi
 
 it('dispatches a RunAxeScanPageJob for every page when lighthouse is disabled', function (): void {
     Bus::fake();
-    config(['lighthouse.enabled' => false]);
+    config(['lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false, 'interactive.enabled' => false]);
 
     $this->dispatcher->dispatch($this->scan, [
         ['url' => 'https://example.com/', 'violations' => []],
@@ -235,7 +239,7 @@ it('creates a Failed ScanPage stub for pages with the error flag set', function 
 
 it('does not dispatch jobs for error pages', function (): void {
     Bus::fake();
-    config(['lighthouse.enabled' => false]);
+    config(['lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false, 'interactive.enabled' => false]);
 
     $this->dispatcher->dispatch($this->scan, [
         ['url' => 'https://example.com/missing', 'violations' => [], 'error' => true, 'httpStatus' => 404],
@@ -282,4 +286,112 @@ it('does not fire ScanCompleted a second time if the then() callback is re-invok
     ]);
 
     Event::assertDispatched(ScanCompleted::class, 1);
+});
+
+// ─── Keyboard audit feature flag ─────────────────────────────────────────────
+
+it('dispatches RunKeyboardAuditJob when keyboard is enabled', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => true, 'interactive.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => [], 'keyboardViolations' => []],
+    ]);
+
+    Bus::assertBatched(function (PendingBatch $batch): bool {
+        return $batch->jobs->contains(fn ($job) => $job instanceof RunKeyboardAuditJob);
+    });
+});
+
+it('does not dispatch RunKeyboardAuditJob when keyboard is disabled', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false, 'interactive.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => [], 'keyboardViolations' => []],
+    ]);
+
+    Bus::assertBatched(function (PendingBatch $batch): bool {
+        return $batch->jobs->doesntContain(fn ($job) => $job instanceof RunKeyboardAuditJob);
+    });
+});
+
+it('sets keyboard_completed=null on stub when keyboard is disabled', function (): void {
+    Bus::fake();
+    config(['keyboard.enabled' => false, 'lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'interactive.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    $stub = ScanPage::withoutGlobalScopes()->where('scan_id', $this->scan->id)->first();
+
+    expect($stub->keyboard_completed)->toBeNull();
+});
+
+it('sets keyboard_completed=false on stub when keyboard is enabled', function (): void {
+    Bus::fake();
+    config(['keyboard.enabled' => true, 'lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'interactive.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    $stub = ScanPage::withoutGlobalScopes()->where('scan_id', $this->scan->id)->first();
+
+    expect($stub->keyboard_completed)->toBeFalse();
+});
+
+// ─── Interactive audit feature flag ──────────────────────────────────────────
+
+it('dispatches RunInteractiveAuditJob when interactive is enabled', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false, 'interactive.enabled' => true]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => [], 'interactiveViolations' => []],
+    ]);
+
+    Bus::assertBatched(function (PendingBatch $batch): bool {
+        return $batch->jobs->contains(fn ($job) => $job instanceof RunInteractiveAuditJob);
+    });
+});
+
+it('does not dispatch RunInteractiveAuditJob when interactive is disabled', function (): void {
+    Bus::fake();
+    config(['lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false, 'interactive.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => [], 'interactiveViolations' => []],
+    ]);
+
+    Bus::assertBatched(function (PendingBatch $batch): bool {
+        return $batch->jobs->doesntContain(fn ($job) => $job instanceof RunInteractiveAuditJob);
+    });
+});
+
+it('sets interactive_completed=null on stub when interactive is disabled', function (): void {
+    Bus::fake();
+    config(['interactive.enabled' => false, 'lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    $stub = ScanPage::withoutGlobalScopes()->where('scan_id', $this->scan->id)->first();
+
+    expect($stub->interactive_completed)->toBeNull();
+});
+
+it('sets interactive_completed=false on stub when interactive is enabled', function (): void {
+    Bus::fake();
+    config(['interactive.enabled' => true, 'lighthouse.enabled' => false, 'screen_reader.enabled' => false, 'content.enabled' => false, 'keyboard.enabled' => false]);
+
+    $this->dispatcher->dispatch($this->scan, [
+        ['url' => 'https://example.com/', 'violations' => []],
+    ]);
+
+    $stub = ScanPage::withoutGlobalScopes()->where('scan_id', $this->scan->id)->first();
+
+    expect($stub->interactive_completed)->toBeFalse();
 });

@@ -9,6 +9,8 @@ use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
 use App\Jobs\RunAxeScanPageJob;
 use App\Jobs\RunContentAuditJob;
+use App\Jobs\RunInteractiveAuditJob;
+use App\Jobs\RunKeyboardAuditJob;
 use App\Jobs\RunLighthouseScanJob;
 use App\Jobs\RunScreenReaderAuditJob;
 use App\Models\Scan as ScanModel;
@@ -33,6 +35,8 @@ class ScanPageDispatcher
         $lighthouseEnabled = config('lighthouse.enabled', true);
         $screenReaderEnabled = config('screen_reader.enabled', true);
         $contentEnabled = config('content.enabled', true);
+        $keyboardEnabled = config('keyboard.enabled', true);
+        $interactiveEnabled = config('interactive.enabled', true);
         $jobs = [];
         $scan->update(['pages_discovered' => count($pageResults)]);
 
@@ -47,6 +51,8 @@ class ScanPageDispatcher
                         'lighthouse_completed' => $lighthouseEnabled ? true : null,
                         'screen_reader_completed' => $screenReaderEnabled ? true : null,
                         'content_completed' => $contentEnabled ? true : null,
+                        'keyboard_completed' => $keyboardEnabled ? true : null,
+                        'interactive_completed' => $interactiveEnabled ? true : null,
                     ],
                 );
 
@@ -62,6 +68,8 @@ class ScanPageDispatcher
                     'lighthouse_completed' => $lighthouseEnabled ? false : null,
                     'screen_reader_completed' => $screenReaderEnabled ? false : null,
                     'content_completed' => $contentEnabled ? false : null,
+                    'keyboard_completed' => $keyboardEnabled ? false : null,
+                    'interactive_completed' => $interactiveEnabled ? false : null,
                 ],
             );
 
@@ -78,6 +86,14 @@ class ScanPageDispatcher
 
             if ($contentEnabled) {
                 $jobs[] = new RunContentAuditJob($scan, $pageResult['url'], $pageResult['contentViolations'] ?? [], $pageResult['visibleText'] ?? '');
+            }
+
+            if ($keyboardEnabled) {
+                $jobs[] = new RunKeyboardAuditJob($scan, $pageResult['url'], $pageResult['keyboardViolations'] ?? []);
+            }
+
+            if ($interactiveEnabled) {
+                $jobs[] = new RunInteractiveAuditJob($scan, $pageResult['url'], $pageResult['interactiveViolations'] ?? []);
             }
         }
 
