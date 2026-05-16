@@ -6,6 +6,8 @@ const { normaliseUrl, isSameDomain, extractLinks, extractPdfLinks, fetchRobotsTx
 const { runAxe } = require('./axeRunner');
 const { runScreenReader } = require('./screenReaderRunner');
 const { runContent } = require('./contentRunner');
+const { runKeyboard } = require('./keyboardRunner');
+const { runInteractive } = require('./interactiveRunner');
 
 /**
  * Log to stderr only — stdout is reserved for the JSON payload consumed by
@@ -162,8 +164,28 @@ async function scanUrlList({ urlList, wcagVersion: _wcagVersion, axeConfig, brow
                 }
             }
 
-            results.push({ ...pageResult, screenReaderViolations, contentViolations, visibleText });
-            log('info', `Found ${pageResult.violations.length} axe, ${screenReaderViolations.length} SR, ${contentViolations.length} content issue(s) on ${normalisedUrl}`);
+            let keyboardViolations = [];
+            if (config.keyboard.enabled) {
+                try {
+                    const kbResult = await runKeyboard(page, config.keyboard);
+                    keyboardViolations = kbResult.violations;
+                } catch (kbError) {
+                    log('warn', `Keyboard check failed for ${normalisedUrl}: ${kbError.message}`);
+                }
+            }
+
+            let interactiveViolations = [];
+            if (config.interactive.enabled) {
+                try {
+                    const intResult = await runInteractive(page, config.interactive);
+                    interactiveViolations = intResult.violations;
+                } catch (intError) {
+                    log('warn', `Interactive check failed for ${normalisedUrl}: ${intError.message}`);
+                }
+            }
+
+            results.push({ ...pageResult, screenReaderViolations, contentViolations, visibleText, keyboardViolations, interactiveViolations });
+            log('info', `Found ${pageResult.violations.length} axe, ${screenReaderViolations.length} SR, ${contentViolations.length} content, ${keyboardViolations.length} keyboard, ${interactiveViolations.length} interactive issue(s) on ${normalisedUrl}`);
         } catch (pageError) {
             log('error', `Error scanning ${normalisedUrl}: ${pageError.message}`);
         } finally {
@@ -276,8 +298,28 @@ async function scan() {
                     }
                 }
 
-                results.push({ ...pageResult, screenReaderViolations, contentViolations, visibleText });
-                log('info', `Found ${pageResult.violations.length} axe, ${screenReaderViolations.length} SR, ${contentViolations.length} content issue(s) on ${normalisedUrl}`);
+                let keyboardViolations = [];
+                if (config.keyboard.enabled) {
+                    try {
+                        const kbResult = await runKeyboard(page, config.keyboard);
+                        keyboardViolations = kbResult.violations;
+                    } catch (kbError) {
+                        log('warn', `Keyboard check failed for ${normalisedUrl}: ${kbError.message}`);
+                    }
+                }
+
+                let interactiveViolations = [];
+                if (config.interactive.enabled) {
+                    try {
+                        const intResult = await runInteractive(page, config.interactive);
+                        interactiveViolations = intResult.violations;
+                    } catch (intError) {
+                        log('warn', `Interactive check failed for ${normalisedUrl}: ${intError.message}`);
+                    }
+                }
+
+                results.push({ ...pageResult, screenReaderViolations, contentViolations, visibleText, keyboardViolations, interactiveViolations });
+                log('info', `Found ${pageResult.violations.length} axe, ${screenReaderViolations.length} SR, ${contentViolations.length} content, ${keyboardViolations.length} keyboard, ${interactiveViolations.length} interactive issue(s) on ${normalisedUrl}`);
 
                 if (depth < maxDepth) {
                     const links = await extractLinks(page, baseUrl);

@@ -38,4 +38,19 @@ module.exports = {
         // Set to false to disable the deterministic content-quality checks entirely.
         enabled: true,
     },
+
+    keyboard: {
+        // Set to false to disable the DOM-based keyboard navigation checks entirely.
+        enabled: true,
+    },
+
+    interactive: {
+        // Set to false to disable the Playwright-driven interactive checks entirely.
+        // Includes tab navigation, interaction contrast, reflow, reduced motion, and touch targets.
+        enabled: true,
+        // Maximum number of Tab key presses during the tab navigation phase.
+        maxTabSteps: 100,
+        // Viewport dimensions to restore after the reflow phase.
+        originalViewport: { width: 1280, height: 720 },
+    },
 };
