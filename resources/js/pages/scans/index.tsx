@@ -51,10 +51,12 @@ type LighthouseAverages = {
     seo: number | null;
 };
 
+type PdfStats = { total: number; violations: number };
+
 type OverviewState =
     | { open: false }
     | { open: true; scanId: number; scanName: string; loading: true }
-    | { open: true; scanId: number; scanName: string; loading: false; severityBreakdown: SeverityRow[]; lighthouseAverages: LighthouseAverages | null };
+    | { open: true; scanId: number; scanName: string; loading: false; severityBreakdown: SeverityRow[]; lighthouseAverages: LighthouseAverages | null; pdfStats: PdfStats; screenReaderViolations: number };
 
 type PropertyGroup = {
     propertyId: number | null;
@@ -260,6 +262,8 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
             loading: false,
             severityBreakdown: json.severityBreakdown,
             lighthouseAverages: json.lighthouseAverages,
+            pdfStats: json.pdfStats,
+            screenReaderViolations: json.screenReaderViolations,
         });
     }
 
@@ -542,6 +546,25 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                 ) : (
                                     <p className="text-sm text-muted-foreground">No violation data available.</p>
                                 )}
+                            </div>
+
+                            {/* PDF & Screen Reader Stats */}
+                            <div>
+                                <h3 className="mb-3 text-sm font-semibold">Additional checks</h3>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="rounded-xl border bg-card p-4">
+                                        <p className="text-xs text-muted-foreground">PDFs found</p>
+                                        <p className="mt-1 text-xl font-semibold tabular-nums">{overview.pdfStats.total}</p>
+                                    </div>
+                                    <div className="rounded-xl border bg-card p-4">
+                                        <p className="text-xs text-muted-foreground">PDF violations</p>
+                                        <p className="mt-1 text-xl font-semibold tabular-nums">{overview.pdfStats.violations}</p>
+                                    </div>
+                                    <div className="rounded-xl border bg-card p-4">
+                                        <p className="text-xs text-muted-foreground">Screen reader violations</p>
+                                        <p className="mt-1 text-xl font-semibold tabular-nums">{overview.screenReaderViolations}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
