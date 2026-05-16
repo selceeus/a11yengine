@@ -1,19 +1,20 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ChevronDown, ChevronUp, ChevronsUpDown, Filter, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
 
 type Property = { id: number; name: string };
-type Organization = { id: number; name: string };
 
 type Issue = {
     id: number;
@@ -21,13 +22,12 @@ type Issue = {
     severity: string;
     status: string;
     occurrence_count: number;
-    risk_weight: number | null;
     wcag_category: string | null;
     wcag_criteria: string | null;
     last_detected_at: string;
     due_date: string | null;
     property: Property | null;
-    organization: Organization | null;
+    organization: { id: number; name: string } | null;
     assigned_user: { id: number; name: string } | null;
 };
 
@@ -35,6 +35,9 @@ type PaginatedIssues = {
     data: Issue[];
     current_page: number;
     last_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
     next_page_url: string | null;
     prev_page_url: string | null;
 };
@@ -48,37 +51,16 @@ type Filters = {
     date_to?: string;
     assigned_user_id?: string;
     search?: string;
+    sort?: string;
+    direction?: string;
+    per_page?: number;
 };
 
-// in the component props:
-export default function Index({
-    issues,
-    filters,
-    properties,
-    teamMembers,
-}: {
-    issues: PaginatedIssues;
-    filters: Filters;
-    properties: Property[];
-    teamMembers: { id: number; name: string }[];
-}) {
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Issues', href: IssueController.index().url },
-];
-
-const severityVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    critical: 'destructive',
-    high: 'destructive',
-    medium: 'default',
-    low: 'secondary',
-};
-
-const statusLabels: Record<string, string> = {
-    open: 'Open',
-    in_progress: 'In progress',
-    resolved: 'Resolved',
-    accepted_risk: 'Accepted risk',
+type Summary = {
+    total: number;
+    critical: number;
+    overdue: number;
+    unassigned: number;
 };
 
 type UserIssue = {
@@ -96,87 +78,187 @@ type ModalState =
     | { open: true; userName: string; issues: UserIssue[]; loading: false }
     | { open: true; userName: string; issues: []; loading: true };
 
-const [modal, setModal] = useState<ModalState>({ open: false });
-const [selectedIds, setSelectedIds] = useState<number[]>([]);
-const [bulkAction, setBulkAction] = useState<string>('');
-const [bulkStatus, setBulkStatus] = useState<string>('');
-const [bulkUserId, setBulkUserId] = useState<string>('');
-const [bulkDueDate, setBulkDueDate] = useState<string>('');
-const [bulkLoading, setBulkLoading] = useState(false);
+const severityVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    critical: 'destructive',
+    high: 'destructive',
+    medium: 'default',
+    low: 'secondary',
+};
 
-const allPageIds = issues.data.map((i) => i.id);
-const allSelected = allPageIds.length > 0 && allPageIds.every((id) => selectedIds.includes(id));
-const someSelected = selectedIds.length > 0;
+const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    open: 'outline',
+    in_progress: 'default',
+    resolved: 'secondary',
+    ignored: 'secondary',
+    false_positive: 'secondary',
+    accepted_risk: 'secondary',
+};
 
-function toggleAll() {
-    setSelectedIds(allSelected ? [] : allPageIds);
+const statusLabels: Record<string, string> = {
+    open: 'Open',
+    in_progress: 'In progress',
+    resolved: 'Resolved',
+    ignored: 'Ignored',
+    false_positive: 'False positive',
+    accepted_risk: 'Accepted risk',
+};
+
+function SortableHeader({
+    children,
+    column,
+    currentSort,
+    currentDirection,
+    onSort,
+    className,
+}: {
+    children: React.ReactNode;
+    column: string;
+    currentSort: string;
+    currentDirection: string;
+    onSort: (col: string, dir: string) => void;
+    className?: string;
+}) {
+    const isActive = currentSort === column;
+    const nextDirection = isActive && currentDirection === 'desc' ? 'asc' : 'desc';
+    const Icon = isActive ? (currentDirection === 'desc' ? ChevronDown : ChevronUp) : ChevronsUpDown;
+
+    return (
+        <th className={cn('px-4 py-3 font-medium', className)}>
+            <button
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => onSort(column, nextDirection)}
+            >
+                {children}
+                <Icon className="h-3 w-3" />
+            </button>
+        </th>
+    );
 }
 
-function toggleOne(id: number) {
-    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-}
+export default function Index({
+    issues,
+    summary,
+    filters,
+    properties,
+    teamMembers,
+}: {
+    issues: PaginatedIssues;
+    summary: Summary;
+    filters: Filters;
+    properties: Property[];
+    teamMembers: { id: number; name: string }[];
+}) {
+    const breadcrumbs: BreadcrumbItem[] = [{ title: 'Issues', href: IssueController.index().url }];
 
-async function executeBulkAction() {
-    if (!selectedIds.length) return;
-    const body: Record<string, unknown> = { ids: selectedIds, action: bulkAction };
-    if (bulkAction === 'status_change') body.status = bulkStatus;
-    if (bulkAction === 'assign') body.user_id = (bulkUserId && bulkUserId !== '__unassigned') ? Number(bulkUserId) : null;
-    if (bulkAction === 'set_due_date') body.due_date = bulkDueDate || null;
-    setBulkLoading(true);
-    try {
-        const response = await fetch('/api/issues/bulk', {
-            method: 'POST',
+    const [modal, setModal] = useState<ModalState>({ open: false });
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkAction, setBulkAction] = useState<string>('');
+    const [bulkStatus, setBulkStatus] = useState<string>('');
+    const [bulkUserId, setBulkUserId] = useState<string>('');
+    const [bulkDueDate, setBulkDueDate] = useState<string>('');
+    const [bulkLoading, setBulkLoading] = useState(false);
+    const [moreFiltersOpen, setMoreFiltersOpen] = useState(
+        !!(filters.wcag_category || filters.assigned_user_id || filters.date_from || filters.date_to),
+    );
+
+    const allPageIds = issues.data.map((i) => i.id);
+    const allSelected = allPageIds.length > 0 && allPageIds.every((id) => selectedIds.includes(id));
+    const someSelected = selectedIds.length > 0;
+
+    const activeExtraFilterCount = [
+        filters.wcag_category,
+        filters.assigned_user_id,
+        filters.date_from,
+        filters.date_to,
+    ].filter(Boolean).length;
+
+    const currentSort = filters.sort ?? 'severity';
+    const currentDirection = filters.direction ?? 'desc';
+
+    function toggleAll() {
+        setSelectedIds(allSelected ? [] : allPageIds);
+    }
+
+    function toggleOne(id: number) {
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    }
+
+    function filter(patch: Partial<Filters>, current: Filters) {
+        const next = { ...current, ...patch } as Record<string, unknown>;
+        Object.keys(next).forEach((k) => !next[k] && delete next[k]);
+        router.get(IssueController.index().url, next as Record<string, string>, {
+            preserveState: true,
+            replace: true,
+        });
+    }
+
+    function handleSort(col: string, dir: string) {
+        filter({ sort: col, direction: dir }, filters);
+    }
+
+    async function executeBulkAction() {
+        if (!selectedIds.length) return;
+        const body: Record<string, unknown> = { ids: selectedIds, action: bulkAction };
+        if (bulkAction === 'status_change') body.status = bulkStatus;
+        if (bulkAction === 'assign') body.user_id = bulkUserId && bulkUserId !== '__unassigned' ? Number(bulkUserId) : null;
+        if (bulkAction === 'set_due_date') body.due_date = bulkDueDate || null;
+        setBulkLoading(true);
+        try {
+            const response = await fetch('/api/issues/bulk', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                },
+                body: JSON.stringify(body),
+            });
+            if (!response.ok) {
+                console.error('Bulk action failed', response.status, await response.text());
+                return;
+            }
+            setSelectedIds([]);
+            setBulkAction('');
+            setBulkStatus('');
+            setBulkUserId('');
+            router.reload();
+        } finally {
+            setBulkLoading(false);
+        }
+    }
+
+    function getCsrfToken(): string {
+        return decodeURIComponent(
+            document.cookie
+                .split('; ')
+                .find((r) => r.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1] ?? '',
+        );
+    }
+
+    async function openUserModal(userId: number, userName: string) {
+        setModal({ open: true, userName, issues: [], loading: true });
+        const response = await fetch(`/api/users/${userId}/issues`, {
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-XSRF-TOKEN': getCsrfToken() },
-            body: JSON.stringify(body),
+            headers: { Accept: 'application/json' },
         });
         if (!response.ok) {
-            console.error('Bulk action failed', response.status, await response.text());
+            setModal({ open: false });
             return;
         }
-        setSelectedIds([]);
-        setBulkAction('');
-        setBulkStatus('');
-        setBulkUserId('');
-        router.reload();
-    } finally {
-        setBulkLoading(false);
-    }
-}
-
-function getCsrfToken(): string {
-    return decodeURIComponent(document.cookie.split('; ').find((r) => r.startsWith('XSRF-TOKEN='))?.split('=')[1] ?? '');
-}
-
-async function openUserModal(userId: number, userName: string) {
-    setModal({ open: true, userName, issues: [], loading: true });
-
-    const response = await fetch(`/api/users/${userId}/issues`, {
-        credentials: 'include',
-        headers: { Accept: 'application/json' },
-    });
-
-    if (!response.ok) {
-        setModal({ open: false });
-        return;
+        const data = (await response.json()) as { issues: UserIssue[] };
+        setModal({ open: true, userName, issues: data.issues, loading: false });
     }
 
-    const data = (await response.json()) as { issues: UserIssue[] };
-    setModal({ open: true, userName, issues: data.issues, loading: false });
-}
-
-function filter(patch: Partial<Filters>, current: Filters) {
-    const next = { ...current, ...patch };
-    // remove falsy values
-    Object.keys(next).forEach((k) => !(next as Record<string, unknown>)[k] && delete (next as Record<string, unknown>)[k]);
-    router.get(IssueController.index().url, next as Record<string, string>, { preserveState: true, replace: true });
-}
+    const columnCount = filters.property_id ? 10 : 11;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Issues" />
 
             <div className="flex flex-col gap-6 p-6">
+                {/* Header */}
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">Issues</h1>
                     {someSelected && (
@@ -184,23 +266,55 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     )}
                 </div>
 
-                {/* Property tabs */}
-                <Tabs
-                    value={filters.property_id ?? 'all'}
-                    onValueChange={(v) => filter({ property_id: v === 'all' ? '' : v }, filters)}
-                >
-                    <TabsList>
-                        <TabsTrigger value="all">All properties</TabsTrigger>
-                        {properties.map((p) => (
-                            <TabsTrigger key={p.id} value={String(p.id)}>
-                                {p.name}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-                </Tabs>
+                {/* Summary stats */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <button
+                        onClick={() => filter({ property_id: filters.property_id, severity: undefined, status: undefined }, {})}
+                        className="rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+                    >
+                        <p className="text-2xl font-semibold tabular-nums">{summary.total}</p>
+                        <p className="text-sm text-muted-foreground">Total issues</p>
+                    </button>
 
-                {/* Filters */}
-                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={() => filter({ ...filters, severity: 'critical' }, {})}
+                        className="rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+                    >
+                        <p className="text-2xl font-semibold tabular-nums text-destructive">{summary.critical}</p>
+                        <p className="text-sm text-muted-foreground">Critical</p>
+                    </button>
+
+                    <div className="rounded-xl border bg-card p-4">
+                        <p className="text-2xl font-semibold tabular-nums">{summary.overdue}</p>
+                        <p className="text-sm text-muted-foreground">Overdue</p>
+                    </div>
+
+                    <div className="rounded-xl border bg-card p-4">
+                        <p className="text-2xl font-semibold tabular-nums">{summary.unassigned}</p>
+                        <p className="text-sm text-muted-foreground">Unassigned</p>
+                    </div>
+                </div>
+
+                {/* Primary filters */}
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Property picker */}
+                    <Select
+                        value={filters.property_id ?? 'all'}
+                        onValueChange={(v) => filter({ ...filters, property_id: v === 'all' ? '' : v }, {})}
+                    >
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="All properties" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All properties</SelectItem>
+                            {properties.map((p) => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                    {p.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <Input
                         type="search"
                         className="w-56"
@@ -209,9 +323,10 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         onChange={(e) => filter({ search: e.target.value }, filters)}
                         aria-label="Search issues"
                     />
+
                     <Select
                         value={filters.status ?? 'all'}
-                        onValueChange={(v) => filter({ status: v === 'all' ? '' : v }, filters)}
+                        onValueChange={(v) => filter({ ...filters, status: v === 'all' ? '' : v }, {})}
                     >
                         <SelectTrigger className="w-40">
                             <SelectValue placeholder="All statuses" />
@@ -221,13 +336,15 @@ function filter(patch: Partial<Filters>, current: Filters) {
                             <SelectItem value="open">Open</SelectItem>
                             <SelectItem value="in_progress">In progress</SelectItem>
                             <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="ignored">Ignored</SelectItem>
+                            <SelectItem value="false_positive">False positive</SelectItem>
                             <SelectItem value="accepted_risk">Accepted risk</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Select
                         value={filters.severity ?? 'all'}
-                        onValueChange={(v) => filter({ severity: v === 'all' ? '' : v }, filters)}
+                        onValueChange={(v) => filter({ ...filters, severity: v === 'all' ? '' : v }, {})}
                     >
                         <SelectTrigger className="w-36">
                             <SelectValue placeholder="All severities" />
@@ -241,80 +358,187 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         </SelectContent>
                     </Select>
 
-                    <Select
-                        value={filters.wcag_category ?? 'all'}
-                        onValueChange={(v) => filter({ wcag_category: v === 'all' ? '' : v }, filters)}
-                    >
-                        <SelectTrigger className="w-48">
-                            <SelectValue placeholder="All WCAG principles" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All WCAG principles</SelectItem>
-                            <SelectItem value="perceivable">Perceivable</SelectItem>
-                            <SelectItem value="operable">Operable</SelectItem>
-                            <SelectItem value="understandable">Understandable</SelectItem>
-                            <SelectItem value="robust">Robust</SelectItem>
-                            <SelectItem value="best-practice">Best practice</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <Collapsible open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-2">
+                                <Filter className="h-3.5 w-3.5" />
+                                More filters
+                                {activeExtraFilterCount > 0 && (
+                                    <Badge className="h-4 min-w-4 px-1 text-[10px]">{activeExtraFilterCount}</Badge>
+                                )}
+                            </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="w-full">
+                            <div className="mt-3 flex flex-wrap gap-3">
+                                <Select
+                                    value={filters.wcag_category ?? 'all'}
+                                    onValueChange={(v) =>
+                                        filter({ ...filters, wcag_category: v === 'all' ? '' : v }, {})
+                                    }
+                                >
+                                    <SelectTrigger className="w-48">
+                                        <SelectValue placeholder="All WCAG principles" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All WCAG principles</SelectItem>
+                                        <SelectItem value="perceivable">Perceivable</SelectItem>
+                                        <SelectItem value="operable">Operable</SelectItem>
+                                        <SelectItem value="understandable">Understandable</SelectItem>
+                                        <SelectItem value="robust">Robust</SelectItem>
+                                        <SelectItem value="best-practice">Best practice</SelectItem>
+                                    </SelectContent>
+                                </Select>
 
-                    <Select
-                        value={filters.assigned_user_id ?? 'all'}
-                        onValueChange={(v) => filter({ assigned_user_id: v === 'all' ? '' : v }, filters)}
-                    >
-                        <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All assignees" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All assignees</SelectItem>
-                            {teamMembers.map((m) => (
-                                <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                <Select
+                                    value={filters.assigned_user_id ?? 'all'}
+                                    onValueChange={(v) =>
+                                        filter({ ...filters, assigned_user_id: v === 'all' ? '' : v }, {})
+                                    }
+                                >
+                                    <SelectTrigger className="w-44">
+                                        <SelectValue placeholder="All assignees" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All assignees</SelectItem>
+                                        {teamMembers.map((m) => (
+                                            <SelectItem key={m.id} value={String(m.id)}>
+                                                {m.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                    <Input
-                        type="date"
-                        className="w-40"
-                        value={filters.date_from ?? ''}
-                        onChange={(e) => filter({ date_from: e.target.value }, filters)}
-                        aria-label="Detected from"
-                    />
-                    <Input
-                        type="date"
-                        className="w-40"
-                        value={filters.date_to ?? ''}
-                        onChange={(e) => filter({ date_to: e.target.value }, filters)}
-                        aria-label="Detected to"
-                    />
+                                <div className="flex items-center gap-2">
+                                    <label className="text-sm text-muted-foreground">From</label>
+                                    <Input
+                                        type="date"
+                                        className="w-40"
+                                        value={filters.date_from ?? ''}
+                                        onChange={(e) => filter({ ...filters, date_from: e.target.value }, {})}
+                                        aria-label="Detected from"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <label className="text-sm text-muted-foreground">To</label>
+                                    <Input
+                                        type="date"
+                                        className="w-40"
+                                        value={filters.date_to ?? ''}
+                                        onChange={(e) => filter({ ...filters, date_to: e.target.value }, {})}
+                                        aria-label="Detected to"
+                                    />
+                                </div>
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
                 </div>
 
                 {/* Table */}
                 <div className="rounded-xl border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
-                            <tr className="text-xs text-muted-foreground">
+                            <tr>
                                 <th className="px-4 py-3 text-center font-medium">
-                                    <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
+                                    <Checkbox
+                                        checked={allSelected}
+                                        onCheckedChange={toggleAll}
+                                        aria-label="Select all"
+                                    />
                                 </th>
-                                <th className="px-4 py-3 text-center font-medium">Severity</th>
-                                <th className="px-4 py-3 text-center font-medium">Rule</th>
-                                <th className="px-4 py-3 text-center font-medium">WCAG</th>
-                                <th className="px-4 py-3 text-center font-medium">Occurrences</th>
-                                <th className="px-4 py-3 text-center font-medium">Risk weight</th>
-                                <th className="px-4 py-3 text-center font-medium">Last detected</th>
-                                <th className="px-4 py-3 text-center font-medium">Due</th>
-                                {!filters.property_id && <th className="px-4 py-3 text-center font-medium">Property</th>}
-                                <th className="px-4 py-3 text-center font-medium">Status</th>
-                                <th className="px-4 py-3 text-center font-medium">Assigned to</th>
-                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
+                                <SortableHeader
+                                    column="severity"
+                                    currentSort={currentSort}
+                                    currentDirection={currentDirection}
+                                    onSort={handleSort}
+                                    className="text-center"
+                                >
+                                    Severity
+                                </SortableHeader>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                                    Rule
+                                </th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
+                                    Status
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                                    WCAG
+                                </th>
+                                <SortableHeader
+                                    column="occurrence_count"
+                                    currentSort={currentSort}
+                                    currentDirection={currentDirection}
+                                    onSort={handleSort}
+                                    className="text-right"
+                                >
+                                    Occurrences
+                                </SortableHeader>
+                                <SortableHeader
+                                    column="last_detected_at"
+                                    currentSort={currentSort}
+                                    currentDirection={currentDirection}
+                                    onSort={handleSort}
+                                    className="text-center"
+                                >
+                                    Last detected
+                                </SortableHeader>
+                                <SortableHeader
+                                    column="due_date"
+                                    currentSort={currentSort}
+                                    currentDirection={currentDirection}
+                                    onSort={handleSort}
+                                    className="text-center"
+                                >
+                                    Due
+                                </SortableHeader>
+                                {!filters.property_id && (
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                                        Property
+                                    </th>
+                                )}
+                                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
+                                    Assigned to
+                                </th>
+                                <th className="px-4 py-3">
+                                    <span className="sr-only">Actions</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
                             {issues.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={filters.property_id ? 11 : 12} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                                        No issues found.
+                                    <td colSpan={columnCount} className="px-4 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                                            <ShieldCheck className="h-10 w-10 opacity-30" />
+                                            {Object.values(filters).some(
+                                                (v, i) =>
+                                                    !['sort', 'direction', 'per_page'].includes(
+                                                        Object.keys(filters)[i],
+                                                    ) && Boolean(v),
+                                            ) ? (
+                                                <>
+                                                    <p className="font-medium">No issues match your filters</p>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            filter(
+                                                                {
+                                                                    sort: currentSort,
+                                                                    direction: currentDirection,
+                                                                    per_page: filters.per_page,
+                                                                },
+                                                                {},
+                                                            )
+                                                        }
+                                                    >
+                                                        Clear filters
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <p className="font-medium">No issues have been detected yet</p>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
@@ -323,8 +547,15 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                         issue.due_date !== null &&
                                         !['resolved', 'ignored', 'false_positive'].includes(issue.status) &&
                                         new Date(issue.due_date) < new Date();
+
                                     return (
-                                        <tr key={issue.id} className={`transition-colors hover:bg-muted/30 ${selectedIds.includes(issue.id) ? 'bg-muted/20' : ''}`}>
+                                        <tr
+                                            key={issue.id}
+                                            className={cn(
+                                                'transition-colors hover:bg-muted/30',
+                                                selectedIds.includes(issue.id) && 'bg-muted/20',
+                                            )}
+                                        >
                                             <td className="px-4 py-3 text-center">
                                                 <Checkbox
                                                     checked={selectedIds.includes(issue.id)}
@@ -333,41 +564,74 @@ function filter(patch: Partial<Filters>, current: Filters) {
                                                 />
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
+                                                <Badge
+                                                    variant={severityVariant[issue.severity] ?? 'outline'}
+                                                    className="capitalize"
+                                                >
                                                     {issue.severity}
                                                 </Badge>
                                             </td>
-                                            <td className="px-4 py-3 text-center font-mono text-xs">{issue.rule_key}</td>
-                                            <td className="px-4 py-3 text-center text-muted-foreground capitalize">
-                                                {issue.wcag_criteria
-                                                    ? <span title={issue.wcag_category?.replace('-', ' ') ?? undefined}>{issue.wcag_criteria}</span>
-                                                    : (issue.wcag_category?.replace('-', ' ') ?? '—')}
+                                            <td className="px-4 py-3 font-mono text-xs">{issue.rule_key}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge
+                                                    variant={statusVariant[issue.status] ?? 'outline'}
+                                                    className="capitalize"
+                                                >
+                                                    {statusLabels[issue.status] ?? issue.status}
+                                                </Badge>
                                             </td>
-                                            <td className="px-4 py-3 text-center text-muted-foreground">{issue.occurrence_count}</td>
-                                            <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">{issue.risk_weight ?? '—'}</td>
+                                            <td className="px-4 py-3 text-muted-foreground capitalize">
+                                                {issue.wcag_criteria ? (
+                                                    <span
+                                                        title={issue.wcag_category?.replace('-', ' ') ?? undefined}
+                                                    >
+                                                        {issue.wcag_criteria}
+                                                    </span>
+                                                ) : (
+                                                    (issue.wcag_category?.replace('-', ' ') ?? '—')
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                {issue.occurrence_count}
+                                            </td>
                                             <td className="px-4 py-3 text-center text-muted-foreground">
                                                 {new Date(issue.last_detected_at).toLocaleDateString()}
                                             </td>
                                             <td className="px-4 py-3 text-center text-muted-foreground">
                                                 {issue.due_date ? (
-                                                    <span className={isOverdue ? 'text-destructive font-medium' : ''}>
-                                                        {isOverdue && '⚠ '}{new Date(issue.due_date).toLocaleDateString()}
+                                                    <span
+                                                        className={cn(
+                                                            isOverdue && 'font-medium text-destructive',
+                                                        )}
+                                                    >
+                                                        {isOverdue && '⚠ '}
+                                                        {new Date(issue.due_date).toLocaleDateString()}
                                                     </span>
-                                                ) : '—'}
+                                                ) : (
+                                                    '—'
+                                                )}
                                             </td>
-                                            {!filters.property_id && <td className="px-4 py-3 text-center text-muted-foreground">{issue.property?.name ?? '—'}</td>}
-                                            <td className="px-4 py-3 text-center text-muted-foreground">
-                                                {statusLabels[issue.status] ?? issue.status}
-                                            </td>
+                                            {!filters.property_id && (
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {issue.property?.name ?? '—'}
+                                                </td>
+                                            )}
                                             <td className="px-4 py-3 text-center text-muted-foreground">
                                                 {issue.assigned_user ? (
                                                     <button
-                                                        onClick={() => openUserModal(issue.assigned_user!.id, issue.assigned_user!.name)}
-                                                        className="text-primary hover:underline cursor-pointer"
+                                                        onClick={() =>
+                                                            openUserModal(
+                                                                issue.assigned_user!.id,
+                                                                issue.assigned_user!.name,
+                                                            )
+                                                        }
+                                                        className="cursor-pointer text-primary hover:underline"
                                                     >
                                                         {issue.assigned_user.name}
                                                     </button>
-                                                ) : '—'}
+                                                ) : (
+                                                    '—'
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <Link
@@ -386,15 +650,38 @@ function filter(patch: Partial<Filters>, current: Filters) {
                 </div>
 
                 {/* Pagination */}
-                {(issues.prev_page_url || issues.next_page_url) && (
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Page {issues.current_page} of {issues.last_page}</span>
+                {(issues.prev_page_url || issues.next_page_url || issues.total > 0) && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-3">
+                            <span>
+                                {issues.from !== null && issues.to !== null
+                                    ? `Showing ${issues.from}–${issues.to} of ${issues.total} issues`
+                                    : `${issues.total} issues`}
+                            </span>
+                            <Select
+                                value={String(filters.per_page ?? 25)}
+                                onValueChange={(v) => filter({ ...filters, per_page: Number(v) }, {})}
+                            >
+                                <SelectTrigger className="h-8 w-24">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="25">25 / page</SelectItem>
+                                    <SelectItem value="50">50 / page</SelectItem>
+                                    <SelectItem value="100">100 / page</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="flex gap-2">
                             {issues.prev_page_url && (
-                                <Link href={issues.prev_page_url} className="text-primary hover:underline">Previous</Link>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={issues.prev_page_url}>Previous</Link>
+                                </Button>
                             )}
                             {issues.next_page_url && (
-                                <Link href={issues.next_page_url} className="text-primary hover:underline">Next</Link>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={issues.next_page_url}>Next</Link>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -407,7 +694,6 @@ function filter(patch: Partial<Filters>, current: Filters) {
                     <span className="text-sm font-medium">{selectedIds.length} selected</span>
                     <div className="h-4 w-px bg-border" />
 
-                    {/* Action selector */}
                     <Select value={bulkAction} onValueChange={setBulkAction}>
                         <SelectTrigger className="w-40">
                             <SelectValue placeholder="Choose action…" />
@@ -415,7 +701,6 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         <SelectContent>
                             <SelectItem value="status_change">Change status</SelectItem>
                             <SelectItem value="assign">Assign to</SelectItem>
-                            <SelectItem value="ignore">Ignore</SelectItem>
                             <SelectItem value="set_due_date">Set due date</SelectItem>
                             <SelectItem value="delete">Archive</SelectItem>
                         </SelectContent>
@@ -444,7 +729,9 @@ function filter(patch: Partial<Filters>, current: Filters) {
                             <SelectContent>
                                 <SelectItem value="__unassigned">Unassigned</SelectItem>
                                 {teamMembers.map((m) => (
-                                    <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                                    <SelectItem key={m.id} value={String(m.id)}>
+                                        {m.name}
+                                    </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -472,18 +759,29 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         {bulkLoading ? <Spinner className="h-4 w-4" /> : 'Apply'}
                     </Button>
 
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                            setSelectedIds([]);
+                            setBulkAction('');
+                        }}
+                    >
                         Cancel
                     </Button>
                 </div>
             )}
 
-            <Dialog open={modal.open} onOpenChange={(open) => { if (!open) setModal({ open: false }); }}>
+            {/* Assigned user issues modal */}
+            <Dialog
+                open={modal.open}
+                onOpenChange={(open) => {
+                    if (!open) setModal({ open: false });
+                }}
+            >
                 <DialogContent className="max-w-5xl">
                     <DialogHeader>
-                        <DialogTitle>
-                            Issues assigned to {modal.open ? modal.userName : ''}
-                        </DialogTitle>
+                        <DialogTitle>Issues assigned to {modal.open ? modal.userName : ''}</DialogTitle>
                     </DialogHeader>
 
                     {modal.open && modal.loading && (
@@ -496,42 +794,46 @@ function filter(patch: Partial<Filters>, current: Filters) {
                         modal.issues.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">No issues assigned.</p>
                         ) : (
-                            <div className="rounded-lg border overflow-auto max-h-[60vh]">
+                            <div className="max-h-[60vh] overflow-auto rounded-lg border">
                                 <table className="w-full text-sm">
-                                    <thead className="border-b bg-muted/50 sticky top-0">
+                                    <thead className="border-b bg-muted/50">
                                         <tr className="text-xs text-muted-foreground">
-                                            <th className="px-4 py-3 text-left font-medium">Severity</th>
+                                            <th className="px-4 py-3 text-center font-medium">Severity</th>
                                             <th className="px-4 py-3 text-left font-medium">Rule</th>
-                                            <th className="px-4 py-3 text-left font-medium">Occurrences</th>
-                                            <th className="px-4 py-3 text-left font-medium">Last detected</th>
-                                            <th className="px-4 py-3 text-left font-medium">Status</th>
+                                            <th className="px-4 py-3 text-center font-medium">Status</th>
+                                            <th className="px-4 py-3 text-right font-medium">Occurrences</th>
+                                            <th className="px-4 py-3 text-center font-medium">Last detected</th>
                                             <th className="px-4 py-3 text-left font-medium">Property</th>
-                                            <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {modal.issues.map((issue) => (
-                                            <tr key={issue.id} className="hover:bg-muted/30">
-                                                <td className="px-4 py-3">
-                                                    <Badge variant={severityVariant[issue.severity] ?? 'outline'} className="capitalize">
-                                                        {issue.severity}
+                                        {modal.issues.map((i) => (
+                                            <tr key={i.id} className="hover:bg-muted/30">
+                                                <td className="px-4 py-3 text-center">
+                                                    <Badge
+                                                        variant={severityVariant[i.severity] ?? 'outline'}
+                                                        className="capitalize"
+                                                    >
+                                                        {i.severity}
                                                     </Badge>
                                                 </td>
-                                                <td className="px-4 py-3 font-mono text-xs">{issue.rule_key}</td>
-
-                                                <td className="px-4 py-3 text-muted-foreground">{issue.occurrence_count}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">
-                                                    {new Date(issue.last_detected_at).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-4 py-3 text-muted-foreground">{statusLabels[issue.status] ?? issue.status}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">{issue.property?.name ?? '—'}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <Link
-                                                        href={IssueController.show(issue.id).url}
-                                                        className="text-sm text-primary hover:underline"
+                                                <td className="px-4 py-3 font-mono text-xs">{i.rule_key}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <Badge
+                                                        variant={statusVariant[i.status] ?? 'outline'}
+                                                        className="capitalize"
                                                     >
-                                                        View
-                                                    </Link>
+                                                        {statusLabels[i.status] ?? i.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                    {i.occurrence_count}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-muted-foreground">
+                                                    {new Date(i.last_detected_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {i.property?.name ?? '—'}
                                                 </td>
                                             </tr>
                                         ))}
@@ -545,4 +847,3 @@ function filter(patch: Partial<Filters>, current: Filters) {
         </AppLayout>
     );
 }
-
