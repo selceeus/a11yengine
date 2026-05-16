@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Head, Link, router, useForm, usePoll } from '@inertiajs/react';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
+import * as PropertyController from '@/actions/App/Http/Controllers/PropertyController';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
+import { ExternalLink } from 'lucide-react';
 
 type Property = {
     id: number;
@@ -53,6 +56,13 @@ type OverviewState =
     | { open: true; scanId: number; scanName: string; loading: true }
     | { open: true; scanId: number; scanName: string; loading: false; severityBreakdown: SeverityRow[]; lighthouseAverages: LighthouseAverages | null };
 
+type PropertyGroup = {
+    propertyId: number | null;
+    propertyName: string;
+    propertyUrl: string | null;
+    scans: Scan[];
+};
+
 const SEVERITY_COLOURS: Record<SeverityRow['severity'], string> = {
     critical: 'bg-red-500',
     serious: 'bg-orange-500',
@@ -83,6 +93,35 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
     const [scanMode, setScanMode] = useState<'full' | 'single' | 'journey'>('full');
     const [journeys, setJourneys] = useState<ScanJourney[]>([]);
     const [overview, setOverview] = useState<OverviewState>({ open: false });
+
+    const propertyGroups = useMemo<PropertyGroup[]>(() => {
+        const map = new Map<number | null, PropertyGroup>();
+
+        for (const scan of scans) {
+            const key = scan.property?.id ?? null;
+            if (!map.has(key)) {
+                map.set(key, {
+                    propertyId: key,
+                    propertyName: scan.property?.name ?? 'Unknown Property',
+                    propertyUrl: scan.property?.base_url ?? null,
+                    scans: [],
+                });
+            }
+            map.get(key)!.scans.push(scan);
+        }
+
+        const groups = Array.from(map.values());
+
+        groups.sort((a, b) => {
+            if (a.propertyId === null) return 1;
+            if (b.propertyId === null) return -1;
+            return a.propertyName.localeCompare(b.propertyName);
+        });
+
+        return groups;
+    }, [scans]);
+
+    const firstGroupId = propertyGroups[0]?.propertyId;
 
     // Schedule scan dialog state
     const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -328,103 +367,118 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                 </div>
 
                 {/* Scan list */}
-                <div className="rounded-xl border">
-                    <table className="w-full text-sm">
-                        <thead className="border-b bg-muted/50">
-                            <tr className="text-xs text-muted-foreground">
-                                <th className="px-4 py-3 text-left font-medium">Property</th>
-                                <th className="px-4 py-3 text-left font-medium">Status</th>
-                                <th className="px-4 py-3 text-right font-medium">Pages</th>
-                                <th className="px-4 py-3 text-right font-medium">Violations</th>
-                                <th className="px-4 py-3 text-left font-medium">Started</th>
-                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {scans.length === 0 ? (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-4 py-10 text-center text-sm text-muted-foreground"
-                                    >
-                                        No scans yet. Run one above.
-                                    </td>
-                                </tr>
-                            ) : (
-                                scans.map((scan) => (
-                                    <tr key={scan.id} className="transition-colors hover:bg-muted/30">
-                                        <td className="px-4 py-3 font-medium">
-                                            <div className="flex items-center gap-2">
-                                                {scan.property?.name ?? '—'}
-                                                {scan.target_url && (
-                                                    <Badge variant="outline" className="text-xs">Single page</Badge>
-                                                )}
-                                                {scan.scan_journey_id && (
-                                                    <Badge variant="outline" className="text-xs">Journey</Badge>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Badge variant={statusVariant(scan.status)}>
-                                                {scan.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                            {(scan.status === 'running' || scan.status === 'pending') && scan.pages_discovered != null && scan.pages_scanned != null ? (
-                                                <div className="space-y-1">
-                                                    <div className="text-xs">
-                                                        {scan.pages_scanned}/{scan.pages_discovered}
-                                                        <span className="ml-1 font-medium text-primary">
-                                                            {Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                                                        <div
-                                                            className="h-full rounded-full bg-primary transition-all"
-                                                            style={{ width: `${Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                scan.pages_scanned ?? '—'
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                            {scan.total_violations ?? '—'}
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            {new Date(scan.created_at).toLocaleString()}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <div className="flex items-center justify-end gap-3">
-                                                <button
-                                                    onClick={() => openOverview(scan)}
-                                                    className="text-sm text-primary hover:underline"
-                                                >
-                                                    Overview
-                                                </button>
-                                                <Link
-                                                    href={ScanController.show(scan.id).url}
-                                                    className="text-sm text-primary hover:underline"
-                                                >
-                                                    View
-                                                </Link>
-                                                {scan.canDelete && scan.status !== 'pending' && scan.status !== 'running' && (
-                                                    <button
-                                                        onClick={() => deleteScan(scan)}
-                                                        className="text-sm text-destructive hover:underline"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                {scans.length === 0 ? (
+                    <div className="rounded-xl border px-4 py-10 text-center text-sm text-muted-foreground">
+                        No scans yet. Run one above.
+                    </div>
+                ) : (
+                    <Accordion type="multiple" defaultValue={firstGroupId !== undefined ? [String(firstGroupId)] : []} className="rounded-xl border divide-y">
+                        {propertyGroups.map((group) => (
+                            <AccordionItem key={String(group.propertyId)} value={String(group.propertyId)} className="border-none px-4">
+                                <AccordionTrigger className="hover:no-underline">
+                                    <div className="flex items-center gap-3 w-full">
+                                        <span className="font-medium">{group.propertyName}</span>
+                                        {group.propertyId !== null && (
+                                            <a
+                                                href={PropertyController.show(group.propertyId).url}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-muted-foreground hover:text-primary"
+                                                aria-label={`View ${group.propertyName} property`}
+                                            >
+                                                <ExternalLink className="h-3.5 w-3.5" />
+                                            </a>
+                                        )}
+                                        <Badge variant="secondary" className="ml-auto mr-2">
+                                            {group.scans.length} {group.scans.length === 1 ? 'scan' : 'scans'}
+                                        </Badge>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-0">
+                                    <table className="w-full text-sm">
+                                        <thead className="border-b bg-muted/50">
+                                            <tr className="text-xs text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">Status</th>
+                                                <th className="px-4 py-3 text-right font-medium">Pages</th>
+                                                <th className="px-4 py-3 text-right font-medium">Violations</th>
+                                                <th className="px-4 py-3 text-left font-medium">Started</th>
+                                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {group.scans.map((scan) => (
+                                                <tr key={scan.id} className="transition-colors hover:bg-muted/30">
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant={statusVariant(scan.status)}>
+                                                                {scan.status}
+                                                            </Badge>
+                                                            {scan.target_url && (
+                                                                <Badge variant="outline" className="text-xs">Single page</Badge>
+                                                            )}
+                                                            {scan.scan_journey_id && (
+                                                                <Badge variant="outline" className="text-xs">Journey</Badge>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                        {(scan.status === 'running' || scan.status === 'pending') && scan.pages_discovered != null && scan.pages_scanned != null ? (
+                                                            <div className="space-y-1">
+                                                                <div className="text-xs">
+                                                                    {scan.pages_scanned}/{scan.pages_discovered}
+                                                                    <span className="ml-1 font-medium text-primary">
+                                                                        {Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                                    <div
+                                                                        className="h-full rounded-full bg-primary transition-all"
+                                                                        style={{ width: `${Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            scan.pages_scanned ?? '—'
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                                        {scan.total_violations ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-muted-foreground">
+                                                        {new Date(scan.created_at).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <div className="flex items-center justify-end gap-3">
+                                                            <button
+                                                                onClick={() => openOverview(scan)}
+                                                                className="text-sm text-primary hover:underline"
+                                                            >
+                                                                Overview
+                                                            </button>
+                                                            <Link
+                                                                href={ScanController.show(scan.id).url}
+                                                                className="text-sm text-primary hover:underline"
+                                                            >
+                                                                View
+                                                            </Link>
+                                                            {scan.canDelete && scan.status !== 'pending' && scan.status !== 'running' && (
+                                                                <button
+                                                                    onClick={() => deleteScan(scan)}
+                                                                    className="text-sm text-destructive hover:underline"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                )}
             </div>
 
             {/* Overview Dialog */}
