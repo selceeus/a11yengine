@@ -201,18 +201,38 @@ export default function Show({
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <StatCard label="Pages scanned" value={scan.pages_scanned ?? '—'} />
-                    <StatCard label="Total violations" value={scan.total_violations ?? '—'} />
-                    <StatCard
-                        label="Started"
-                        value={scan.started_at ? new Date(scan.started_at).toLocaleTimeString() : '—'}
-                    />
-                    <StatCard
-                        label="Completed"
-                        value={scan.completed_at ? new Date(scan.completed_at).toLocaleTimeString() : '—'}
-                    />
-                </div>
+                {(() => {
+                    const pdfViolations = pdfDocuments
+                        .filter((d) => d.status === 'completed')
+                        .reduce((sum, d) => sum + d.violation_count, 0);
+                    const srViolations = screenReaderResults.reduce((sum, r) => sum + r.count, 0);
+                    return (
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                            <StatCard label="Pages scanned" value={scan.pages_scanned ?? '—'} />
+                            <StatCard label="Total violations" value={scan.total_violations ?? '—'} />
+                            <StatCard
+                                label="Started"
+                                value={scan.started_at ? new Date(scan.started_at).toLocaleTimeString() : '—'}
+                            />
+                            <StatCard
+                                label="Completed"
+                                value={scan.completed_at ? new Date(scan.completed_at).toLocaleTimeString() : '—'}
+                            />
+                            <StatCard
+                                label="PDFs found"
+                                value={scan.status === 'completed' ? pdfDocuments.length : '—'}
+                            />
+                            <StatCard
+                                label="PDF violations"
+                                value={scan.status === 'completed' ? pdfViolations : '—'}
+                            />
+                            <StatCard
+                                label="Screen reader violations"
+                                value={scan.status === 'completed' ? srViolations : '—'}
+                            />
+                        </div>
+                    );
+                })()}
 
                 {/* Delta bar — changes since last scan */}
                 {delta && scan.status === 'completed' && (
