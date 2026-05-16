@@ -28,8 +28,12 @@ class IssueController extends Controller
     {
         $this->authorize('viewAny', Issue::class);
 
-        $issues = Issue::query()
-            ->with(['property:id,name', 'organization:id,name', 'assignedUser:id,name'])
+        $allowedSorts = ['severity', 'last_detected_at', 'due_date', 'occurrence_count'];
+        $sort = in_array(request('sort'), $allowedSorts) ? request('sort') : 'severity';
+        $direction = request('direction') === 'asc' ? 'asc' : 'desc';
+        $perPage = in_array((int) request('per_page'), [25, 50, 100]) ? (int) request('per_page') : 25;
+
+        $baseQuery = Issue::query()
             ->when(request('status'), fn ($q, $status) => $q->where('status', $status))
             ->when(request('severity'), fn ($q, $severity) => $q->where('severity', $severity))
             ->when(request('property_id'), fn ($q, $propertyId) => $q->where('property_id', $propertyId))
@@ -42,9 +46,27 @@ class IssueController extends Controller
                 ->orWhere('rule_key', 'like', '%'.$s.'%')
                 ->orWhere('wcag_criteria', 'like', '%'.$s.'%')
                 ->orWhere('page_url', 'like', '%'.$s.'%')
-            ))
-            ->latest('last_detected_at')
-            ->paginate(50)
+            ));
+
+        // Summary counts scoped only to property_id (not other filters)
+        $summary = Issue::query()
+            ->when(request('property_id'), fn ($q, $propertyId) => $q->where('property_id', $propertyId))
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN severity = 'critical' AND status NOT IN ('resolved', 'ignored', 'false_positive') THEN 1 ELSE 0 END) as critical,
+                SUM(CASE WHEN due_date IS NOT NULL AND due_date < NOW() AND status NOT IN ('resolved', 'ignored', 'false_positive') THEN 1 ELSE 0 END) as overdue,
+                SUM(CASE WHEN assigned_user_id IS NULL AND status NOT IN ('resolved', 'ignored', 'false_positive') THEN 1 ELSE 0 END) as unassigned
+            ")
+            ->first();
+
+        $issues = (clone $baseQuery)
+            ->with(['property:id,name', 'organization:id,name', 'assignedUser:id,name'])
+            ->when(
+                $sort === 'severity',
+                fn ($q) => $q->orderByRaw("CASE severity WHEN 'low' THEN 1 WHEN 'medium' THEN 2 WHEN 'high' THEN 3 WHEN 'critical' THEN 4 ELSE 0 END ".strtoupper($direction)),
+                fn ($q) => $q->orderBy($sort, $direction),
+            )
+            ->paginate($perPage)
             ->withQueryString();
 
         $properties = $this->agency->properties()
@@ -59,7 +81,16 @@ class IssueController extends Controller
 
         return Inertia::render('issues/index', [
             'issues' => $issues,
-            'filters' => request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to', 'assigned_user_id', 'search']),
+            'summary' => [
+                'total' => (int) $summary->total,
+                'critical' => (int) $summary->critical,
+                'overdue' => (int) $summary->overdue,
+                'unassigned' => (int) $summary->unassigned,
+            ],
+            'filters' => array_merge(
+                request()->only(['status', 'severity', 'property_id', 'wcag_category', 'date_from', 'date_to', 'assigned_user_id', 'search']),
+                ['sort' => $sort, 'direction' => $direction, 'per_page' => $perPage],
+            ),
             'statuses' => IssueStatus::cases(),
             'properties' => $properties,
             'teamMembers' => $teamMembers,
