@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Finding;
 use App\Models\LighthouseResult;
+use App\Models\PdfDocument;
 use App\Models\Scan;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -50,9 +51,24 @@ class ScanOverviewController extends Controller
             ]
             : null;
 
+        $pdfStats = PdfDocument::query()
+            ->where('scan_id', $scan->id)
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN status = ? THEN violation_count ELSE 0 END) as violations', ['completed'])
+            ->first();
+
+        $screenReaderViolations = Finding::query()
+            ->where('scan_id', $scan->id)
+            ->where('rule_key', 'like', 'sr-%')
+            ->count();
+
         return response()->json([
             'severityBreakdown' => $severityBreakdown,
             'lighthouseAverages' => $lighthouseAverages,
+            'pdfStats' => [
+                'total' => (int) $pdfStats->total,
+                'violations' => (int) $pdfStats->violations,
+            ],
+            'screenReaderViolations' => $screenReaderViolations,
         ]);
     }
 }
