@@ -100,3 +100,103 @@ it('redirects unauthenticated users to login', function (): void {
     $this->get(route('issues.show', $this->issue))
         ->assertRedirect(route('login'));
 });
+
+// ── index ──────────────────────────────────────────────────────────────────────
+
+it('renders the issues index page for an authenticated user', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('issues/index')
+            ->has('issues')
+            ->has('summary')
+            ->has('filters')
+            ->has('properties')
+            ->has('teamMembers')
+        );
+});
+
+it('returns summary counts on the index page', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('summary.total')
+            ->has('summary.critical')
+            ->has('summary.overdue')
+            ->has('summary.unassigned')
+        );
+});
+
+it('returns sort and direction in filters', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.sort', 'severity')
+            ->where('filters.direction', 'desc')
+        );
+});
+
+it('accepts a valid sort param', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index', ['sort' => 'occurrence_count', 'direction' => 'asc']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.sort', 'occurrence_count')
+            ->where('filters.direction', 'asc')
+        );
+});
+
+it('falls back to severity sort for invalid sort param', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index', ['sort' => 'invalid_column']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.sort', 'severity')
+        );
+});
+
+it('returns the correct per_page in filters', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index', ['per_page' => 50]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.per_page', 50)
+        );
+});
+
+it('falls back to 25 per page for invalid per_page param', function (): void {
+    $this->actingAs($this->actor)
+        ->get(route('issues.index', ['per_page' => 999]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.per_page', 25)
+        );
+});
+
+it('scopes summary counts to the selected property', function (): void {
+    $otherProperty = Property::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+    ]);
+
+    Issue::factory()->create([
+        'agency_id' => $this->agency->id,
+        'organization_id' => $this->organization->id,
+        'property_id' => $otherProperty->id,
+        'severity' => 'critical',
+        'status' => 'open',
+    ]);
+
+    // Scoped to the original property — should not include the other property's critical issue
+    $this->actingAs($this->actor)
+        ->get(route('issues.index', ['property_id' => $this->property->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('summary.critical', 0)
+        );
+});
+
+it('redirects unauthenticated users to login on index', function (): void {
+    $this->get(route('issues.index'))
+        ->assertRedirect(route('login'));
+});
