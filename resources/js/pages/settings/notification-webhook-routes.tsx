@@ -175,6 +175,7 @@ function CategoryCard({
             {category.routes.length === 0 ? (
                 <p className="text-muted-foreground px-5 py-4 text-sm">No webhooks configured.</p>
             ) : (
+                <div className="rounded-xl border">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b">
@@ -205,6 +206,7 @@ function CategoryCard({
                         ))}
                     </tbody>
                 </table>
+                </div>
             )}
         </div>
     );

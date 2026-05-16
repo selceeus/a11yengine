@@ -397,7 +397,8 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                         </Badge>
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="pb-0">
+                                <AccordionContent className="px-4 pb-4">
+                                    <div className="rounded-xl border">
                                     <table className="w-full text-sm">
                                         <thead className="border-b bg-muted/50">
                                             <tr className="text-xs text-muted-foreground">
@@ -478,6 +479,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                             ))}
                                         </tbody>
                                     </table>
+                                    </div>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
