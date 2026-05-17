@@ -55,7 +55,7 @@ export default function AuditsDashboard({ audits, properties }: { audits: Pagina
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold">Audit Dashboard</h1>
+                        <h1 className="text-2xl font-semibold">Audit Dashboard</h1>
                         <p className="text-sm text-muted-foreground">Score trends and history for all completed audits.</p>
                     </div>
                     <Link href="/audits">
@@ -88,7 +88,7 @@ export default function AuditsDashboard({ audits, properties }: { audits: Pagina
 
                 {/* Score trend chart — uses first audit's property as default */}
                 {audits.data.length > 0 && audits.data[0].property && (
-                    <div className="rounded-xl border bg-card p-6">
+                    <div className="rounded border bg-card p-6">
                         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                             Score Trend — {audits.data[0].property.name}
                         </h2>
@@ -98,7 +98,7 @@ export default function AuditsDashboard({ audits, properties }: { audits: Pagina
 
                 {/* Audit cards */}
                 {audits.data.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 rounded-xl border py-16 text-center">
+                    <div className="flex flex-col items-center gap-3 rounded border py-16 text-center">
                         <p className="text-muted-foreground">No completed audits found.</p>
                         <Link href="/audits">
                             <Button size="sm">Run an audit</Button>
@@ -110,7 +110,7 @@ export default function AuditsDashboard({ audits, properties }: { audits: Pagina
                             <Link
                                 key={audit.id}
                                 href={`/audits/${audit.id}`}
-                                className="block rounded-xl border bg-card p-5 transition-colors hover:bg-muted/30"
+                                className="block rounded border bg-card p-5 transition-colors hover:bg-muted/30"
                             >
                                 <div className="mb-3 flex items-start justify-between gap-2">
                                     <div className="min-w-0">

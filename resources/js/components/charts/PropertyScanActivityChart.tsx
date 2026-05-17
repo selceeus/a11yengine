@@ -47,7 +47,7 @@ export function PropertyScanActivityChart({ propertyId }: { propertyId: number }
         return () => controller.abort();
     }, [propertyId]);
 
-    if (loading) return <Skeleton className="h-48 w-full rounded-xl" />;
+    if (loading) return <Skeleton className="h-48 w-full rounded" />;
     if (error) return <p className="text-sm text-destructive">{error}</p>;
 
     const days = data?.days ?? [];

@@ -81,14 +81,14 @@ export default function Index({ properties }: PageProps) {
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Content Audit</h1>
+                    <h1 className="text-2xl font-semibold">Content Audit</h1>
                     <p className="text-sm text-muted-foreground">
                         Detect content-level accessibility issues that automated scanners miss — vague links, missing alt
                         text, unlabelled forms, and poor heading structure.
                     </p>
                 </div>
 
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">
@@ -201,7 +201,7 @@ export default function Index({ properties }: PageProps) {
                 </div>
 
                 {expandedProperty && (
-                    <div className="rounded-xl border p-5">
+                    <div className="rounded border p-5">
                         <h2 className="mb-4 text-sm font-semibold">
                             Content Issues &mdash; {expandedProperty.name}
                         </h2>

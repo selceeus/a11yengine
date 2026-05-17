@@ -34,7 +34,7 @@ function ClusterLegend({ clusters }: { clusters: IssueClusterItem[] }) {
     if (clusters.length === 0) return null;
 
     return (
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 rounded-lg border bg-card p-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 rounded border bg-card p-3">
             {clusters.map((cluster, idx) => (
                 <div key={cluster.id} className="flex items-center gap-1.5">
                     <span
@@ -138,7 +138,7 @@ function IssueClusterMapScene({ items, colorMap, hoveredItem, onHover, rows }: S
                     center
                     style={{ pointerEvents: 'none' }}
                 >
-                    <div className="min-w-[160px] rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+                    <div className="min-w-[160px] rounded border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
                         <p className="truncate font-semibold">{hoveredItem.url}</p>
                         <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5">
                             {hoveredItem.clusterName !== null && (
@@ -208,7 +208,7 @@ export function IssueClusterMap({ pages, clusters, issuePageMap }: IssueClusterM
     return (
         <div className="space-y-3">
             <ClusterLegend clusters={clusters} />
-            <div className="min-h-[400px] w-full overflow-hidden rounded-xl" style={{ background: 'oklch(0.18 0.02 250)' }}>
+            <div className="min-h-[400px] w-full overflow-hidden rounded" style={{ background: 'oklch(0.18 0.02 250)' }}>
                 <Canvas camera={{ position: [9, 20, camZ], fov: 48 }} style={{ height: '400px', width: '100%' }}>
                     <IssueClusterMapScene
                         items={placedPages}

@@ -65,7 +65,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                     aria-label="Search properties"
                 />
 
-                <div className="rounded-md border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/100">
                             <tr className="text-sm text-muted-foreground">

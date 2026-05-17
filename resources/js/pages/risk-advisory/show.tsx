@@ -63,7 +63,7 @@ export default function Show({ advisory }: PageProps) {
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-semibold">Risk Advisory — {propertyName}</h1>
+                            <h1 className="text-2xl font-semibold">Risk Advisory — {propertyName}</h1>
                             <p className="text-sm text-muted-foreground">
                                 {advisory.property?.base_url}
                                 {advisory.generated_at && (
@@ -103,7 +103,7 @@ export default function Show({ advisory }: PageProps) {
 
                 {/* Status */}
                 {advisory.status === 'failed' && (
-                    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                    <div className="rounded border border-destructive/40 bg-destructive/5 p-4">
                         <p className="text-sm font-medium text-destructive">Advisory generation failed.</p>
                         {advisory.error_message && (
                             <p className="mt-1 text-xs text-muted-foreground">{advisory.error_message}</p>
@@ -113,15 +113,15 @@ export default function Show({ advisory }: PageProps) {
 
                 {/* Summary stats */}
                 <div className="grid gap-4 sm:grid-cols-3 print:grid-cols-3">
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recommendations</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{advisory.total_recommendations ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Issues Analyzed</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{advisory.issues_analyzed ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Priorities</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{advisory.priorities.length}</p>
                     </div>
@@ -129,7 +129,7 @@ export default function Show({ advisory }: PageProps) {
 
                 {/* Priorities table */}
                 {advisory.priorities.length > 0 && (
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <div className="border-b bg-muted/30 px-4 py-3">
                             <h2 className="text-sm font-semibold">Prioritized Recommendations</h2>
                         </div>
@@ -165,7 +165,7 @@ export default function Show({ advisory }: PageProps) {
                 )}
 
                 {advisory.priorities.length === 0 && advisory.status === 'completed' && (
-                    <div className="rounded-xl border p-8 text-center">
+                    <div className="rounded border p-8 text-center">
                         <p className="text-sm text-muted-foreground">No priorities generated for this advisory.</p>
                     </div>
                 )}

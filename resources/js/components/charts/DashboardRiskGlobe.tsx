@@ -57,7 +57,7 @@ function RiskTooltip({ marker }: RiskTooltipProps) {
     return (
         <div
             role="tooltip"
-            className="pointer-events-none min-w-43 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
+            className="pointer-events-none min-w-43 rounded border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
         >
             <p className="truncate font-semibold" title={marker.url}>
                 {marker.url}
@@ -268,12 +268,12 @@ export function DashboardRiskGlobe({ siteId }: DashboardRiskGlobeProps) {
 
     return (
         <div className="space-y-3">
-            {loading && <Skeleton className="h-150 w-full rounded-xl" />}
+            {loading && <Skeleton className="h-150 w-full rounded" />}
             {error && <p className="text-sm text-destructive">{error}</p>}
             {noData && <p className="text-sm text-muted-foreground">No page risk data available for this property.</p>}
             {!loading && !error && markers && markers.length > 0 && (
                 <div
-                    className="w-full overflow-hidden rounded-xl"
+                    className="w-full overflow-hidden rounded"
                     style={{ background: 'oklch(0.18 0.02 250)', height: '600px' }}
                 >
                     <Canvas camera={{ position: [0, 0, 18], fov: 48 }} style={{ height: '600px', width: '100%' }}>

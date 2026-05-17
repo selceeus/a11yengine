@@ -72,7 +72,7 @@ export function IssueSeverityChart({ agencyId, organizationId }: IssueSeverityCh
         return () => controller.abort();
     }, [agencyId, organizationId]);
 
-    if (loading) return <Skeleton className="h-30 w-full rounded-xl" />;
+    if (loading) return <Skeleton className="h-30 w-full rounded" />;
     if (error) return <p className="text-sm text-destructive">{error}</p>;
     if (!data || data.total === 0) return <p className="text-sm text-muted-foreground">No active issues found.</p>;
 

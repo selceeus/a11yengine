@@ -237,7 +237,7 @@ export default function Show({ report }: PageProps) {
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-semibold">Governance Report — {scopeLabel}</h1>
+                            <h1 className="text-2xl font-semibold">Governance Report — {scopeLabel}</h1>
                             <p className="text-sm text-muted-foreground">
                                 Period: {report.period_from} &rarr; {report.period_to}
                                 {report.is_scheduled && (
@@ -290,14 +290,14 @@ export default function Show({ report }: PageProps) {
 
                 {/* Status */}
                 {isPending && (
-                    <div className="flex items-center gap-2 rounded-xl border bg-muted/30 p-4">
+                    <div className="flex items-center gap-2 rounded border bg-muted/30 p-4">
                         <Spinner className="h-5 w-5" />
                         <p className="text-sm">Generating report… this may take up to a minute.</p>
                     </div>
                 )}
 
                 {report.status === 'failed' && (
-                    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                    <div className="rounded border border-destructive/40 bg-destructive/5 p-4">
                         <p className="text-sm font-medium text-destructive">Report generation failed.</p>
                         {report.error_message && (
                             <p className="mt-1 text-xs text-muted-foreground">{report.error_message}</p>
@@ -311,7 +311,7 @@ export default function Show({ report }: PageProps) {
                         {report.summary_cards.length > 0 && (
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
                                 {report.summary_cards.map((card, i) => (
-                                    <div key={i} className="rounded-xl border bg-card p-4">
+                                    <div key={i} className="rounded border bg-card p-4">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{card.title}</p>
                                         <p className="mt-1 text-2xl font-bold tabular-nums">
                                             {card.value}
@@ -330,7 +330,7 @@ export default function Show({ report }: PageProps) {
 
                         {/* Executive narrative */}
                         {report.executive_narrative && (
-                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                            <div className="rounded border bg-card p-6 print:border-0 print:p-0">
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
                                 <div className="space-y-3 text-sm leading-relaxed whitespace-pre-line">
                                     {report.executive_narrative}
@@ -340,7 +340,7 @@ export default function Show({ report }: PageProps) {
 
                         {/* Risk trend chart */}
                         {report.risk_trend.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                            <div className="rounded border bg-card p-6 print:border-0 print:p-0">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Score Trend</h2>
                                 <RiskTrendMiniChart data={report.risk_trend} />
                             </div>
@@ -348,7 +348,7 @@ export default function Show({ report }: PageProps) {
 
                         {/* WCAG compliance grid */}
                         {Object.keys(report.compliance_status ?? {}).length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
                                 <div className="grid gap-4 sm:grid-cols-3">
                                     {wcagLevels.map((level) => {
@@ -359,7 +359,7 @@ export default function Show({ report }: PageProps) {
                                         const total = pass + fail + partial;
                                         const pct = total > 0 ? Math.round((pass / total) * 100) : 0;
                                         return (
-                                            <div key={level} className="rounded-lg border p-4 text-center">
+                                            <div key={level} className="rounded border p-4 text-center">
                                                 <p className="text-sm font-semibold">{wcagLabels[level] ?? level}</p>
                                                 <p className="mt-1 text-3xl font-bold tabular-nums">{pct}<span className="text-base font-normal text-muted-foreground">%</span></p>
                                                 <p className="mt-1 text-xs text-muted-foreground">pass rate</p>
@@ -377,10 +377,10 @@ export default function Show({ report }: PageProps) {
 
                         {/* Legal risk rating */}
                         {report.legal_risk_rating && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Legal Risk Assessment</h2>
                                 <div className="flex items-center gap-4">
-                                    <div className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold capitalize ${legalRiskColor(report.legal_risk_rating)}`}>
+                                    <div className={`inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-semibold capitalize ${legalRiskColor(report.legal_risk_rating)}`}>
                                         <Scale className="h-4 w-4" />
                                         {report.legal_risk_rating} Risk
                                     </div>
@@ -402,7 +402,7 @@ export default function Show({ report }: PageProps) {
                         {report.summary_cards.length > 0 && (
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
                                 {report.summary_cards.map((card, i) => (
-                                    <div key={i} className="rounded-xl border bg-card p-4">
+                                    <div key={i} className="rounded border bg-card p-4">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{card.title}</p>
                                         <p className="mt-1 text-2xl font-bold tabular-nums">
                                             {card.value}
@@ -421,7 +421,7 @@ export default function Show({ report }: PageProps) {
 
                         {/* Executive narrative */}
                         {report.executive_narrative && (
-                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                            <div className="rounded border bg-card p-6 print:border-0 print:p-0">
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
                                 <div className="space-y-3 text-sm leading-relaxed whitespace-pre-line">
                                     {report.executive_narrative}
@@ -433,7 +433,7 @@ export default function Show({ report }: PageProps) {
                         <div className="grid gap-4 lg:grid-cols-2 print:grid-cols-2">
                             {/* Severity breakdown */}
                             {severities.length > 0 && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Severity Breakdown</h2>
                                     <div className="space-y-3">
                                         {severities.map((sev) => {
@@ -474,7 +474,7 @@ export default function Show({ report }: PageProps) {
 
                             {/* Remediation progress */}
                             {Object.keys(report.remediation_progress ?? {}).length > 0 && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Remediation Progress</h2>
                                     <div className="space-y-3">
                                         {Object.entries(report.remediation_progress).map(([sev, data]) => {
@@ -504,7 +504,7 @@ export default function Show({ report }: PageProps) {
 
                         {/* WCAG compliance grid */}
                         {Object.keys(report.compliance_status ?? {}).length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
                                 <div className="grid gap-4 sm:grid-cols-3">
                                     {wcagLevels.map((level) => {
@@ -515,7 +515,7 @@ export default function Show({ report }: PageProps) {
                                         const total = pass + fail + partial;
                                         const pct = total > 0 ? Math.round((pass / total) * 100) : 0;
                                         return (
-                                            <div key={level} className="rounded-lg border p-4 text-center">
+                                            <div key={level} className="rounded border p-4 text-center">
                                                 <p className="text-sm font-semibold">{wcagLabels[level] ?? level}</p>
                                                 <p className="mt-1 text-3xl font-bold tabular-nums">{pct}<span className="text-base font-normal text-muted-foreground">%</span></p>
                                                 <p className="mt-1 text-xs text-muted-foreground">pass rate</p>
@@ -533,10 +533,10 @@ export default function Show({ report }: PageProps) {
 
                         {/* Legal risk + precedents */}
                         {report.legal_risk_rating && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <div className="mb-4 flex items-center justify-between">
                                     <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Legal Risk Assessment</h2>
-                                    <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold capitalize ${legalRiskColor(report.legal_risk_rating)}`}>
+                                    <div className={`inline-flex items-center gap-2 rounded px-3 py-1.5 text-sm font-semibold capitalize ${legalRiskColor(report.legal_risk_rating)}`}>
                                         <Scale className="h-4 w-4" />
                                         {report.legal_risk_rating} Risk
                                     </div>
@@ -546,7 +546,7 @@ export default function Show({ report }: PageProps) {
                                     <div className="space-y-3">
                                         <p className="text-xs font-medium text-muted-foreground">Relevant Legal Precedents ({report.legal_precedents.length})</p>
                                         {report.legal_precedents.map((prec, i) => (
-                                            <div key={i} className="rounded-lg border p-4">
+                                            <div key={i} className="rounded border p-4">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-medium">{prec.case_name}</p>
@@ -568,13 +568,13 @@ export default function Show({ report }: PageProps) {
 
                         {/* Recommendations */}
                         {report.recommendations.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6 print:border-0 print:p-0">
+                            <div className="rounded border bg-card p-6 print:border-0 print:p-0">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recommendations</h2>
                                 <div className="space-y-3">
                                     {report.recommendations.map((rec, i) => {
                                         const isExpanded = expandedRec === i;
                                         return (
-                                            <div key={i} className="rounded-lg border">
+                                            <div key={i} className="rounded border">
                                                 <button
                                                     className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
                                                     onClick={() => setExpandedRec(isExpanded ? null : i)}

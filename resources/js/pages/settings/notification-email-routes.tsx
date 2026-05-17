@@ -44,7 +44,7 @@ export default function NotificationEmailRoutes({ routes, categories }: Props) {
 
             <div className="space-y-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Notification Emails</h1>
+                    <h1 className="text-2xl font-semibold">Notification Emails</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
                         Route notifications to team inboxes or client addresses — independent of personal notification preferences.
                     </p>
@@ -83,7 +83,7 @@ function CategoryCard({ category }: { category: { value: string; label: string; 
     }
 
     return (
-        <div className="rounded-lg border">
+        <div className="rounded border">
             <div className="flex items-start justify-between border-b px-5 py-4">
                 <div>
                     <h2 className="text-sm font-semibold">{category.label}</h2>

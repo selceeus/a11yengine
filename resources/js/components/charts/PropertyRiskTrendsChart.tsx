@@ -126,7 +126,7 @@ export function PropertyRiskTrendsChart({ propertyId }: { propertyId: number }) 
                 </ToggleGroup>
             </div>
 
-            {loading && <Skeleton className="h-48 w-full rounded-xl" />}
+            {loading && <Skeleton className="h-48 w-full rounded" />}
             {error && <p className="text-sm text-destructive">{error}</p>}
             {noData && <p className="text-sm text-muted-foreground">No risk trend data yet.</p>}
 

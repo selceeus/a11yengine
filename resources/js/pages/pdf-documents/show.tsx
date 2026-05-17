@@ -53,7 +53,7 @@ export default function Show({ document }: { document: PdfDocument }) {
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div className="flex-1 min-w-0">
-                        <h1 className="truncate text-xl font-semibold">
+                        <h1 className="truncate text-2xl font-semibold">
                             {document.filename ?? 'PDF Document'}
                         </h1>
                         <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -73,17 +73,17 @@ export default function Show({ document }: { document: PdfDocument }) {
 
                 {/* Stat cards */}
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs text-muted-foreground">Property</p>
                         <p className="mt-1 truncate text-sm font-medium">{document.property.name}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs text-muted-foreground">Violations found</p>
-                        <p className="mt-1 text-xl font-semibold tabular-nums">
+                        <p className="mt-1 text-2xl font-semibold tabular-nums">
                             {document.status === 'completed' ? document.violation_count : '—'}
                         </p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs text-muted-foreground">Scanned at</p>
                         <p className="mt-1 text-sm font-medium">
                             {document.scanned_at ? new Date(document.scanned_at).toLocaleString() : '—'}
@@ -93,7 +93,7 @@ export default function Show({ document }: { document: PdfDocument }) {
 
                 {/* Error banner */}
                 {document.status === 'failed' && document.error_message && (
-                    <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
+                    <div className="rounded border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
                         <span className="font-semibold mr-2">Scan failed:</span>
                         {document.error_message}
                     </div>
@@ -101,7 +101,7 @@ export default function Show({ document }: { document: PdfDocument }) {
 
                 {/* Pending / scanning state */}
                 {(document.status === 'pending' || document.status === 'scanning') && (
-                    <div className="rounded-xl border bg-muted/40 px-6 py-5 text-sm text-muted-foreground">
+                    <div className="rounded border bg-muted/40 px-6 py-5 text-sm text-muted-foreground">
                         <span className="inline-block size-2 animate-pulse rounded-full bg-primary mr-2 align-middle" />
                         PDF accessibility scan in progress…
                     </div>
@@ -112,7 +112,7 @@ export default function Show({ document }: { document: PdfDocument }) {
                     document.violations.length > 0 ? (
                         <div>
                             <h2 className="mb-3 text-sm font-semibold">Accessibility Violations</h2>
-                            <div className="rounded-xl border">
+                            <div className="rounded border">
                                 <table className="w-full text-sm">
                                     <caption className="px-4 py-3 text-left text-sm font-medium">
                                         {document.violation_count} violation{document.violation_count !== 1 ? 's' : ''} found
@@ -156,7 +156,7 @@ export default function Show({ document }: { document: PdfDocument }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                        <div className="rounded border px-6 py-10 text-center text-sm text-muted-foreground">
                             No accessibility violations were found in this PDF.
                         </div>
                     )

@@ -59,7 +59,7 @@ export function AuditScoreTrendChart({ propertyId, window: initialWindow = 30 }:
         return () => controller.abort();
     }, [propertyId, days]);
 
-    if (loading) return <Skeleton className="h-48 w-full rounded-xl" />;
+    if (loading) return <Skeleton className="h-48 w-full rounded" />;
     if (error) return <p className="text-sm text-destructive">{error}</p>;
 
     const parsed = (data?.history ?? [])

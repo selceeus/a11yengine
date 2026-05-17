@@ -27,7 +27,7 @@ export default function Create({ availableRoles }: { availableRoles: Role[] }) {
             <div className="flex flex-col gap-8 p-6">
                 <Heading title="Add team member" description="Create a new user and add them directly to your team." />
 
-                <div className="max-w-md rounded-xl border bg-card p-6">
+                <div className="max-w-md rounded border bg-card p-6">
                     <Form
                         {...TeamController.store.form()}
                         className="flex flex-col gap-5"

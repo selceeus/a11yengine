@@ -175,18 +175,18 @@ export default function ScheduledScansIndex({
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold">Scheduled Scans</h1>
+                        <h1 className="text-2xl font-semibold">Scheduled Scans</h1>
                         <p className="text-sm text-muted-foreground">View and manage all automated scan schedules across your agency.</p>
                     </div>
                     <Button size="sm" onClick={openScheduleDialog}>Schedule Scan</Button>
                 </div>
 
                     {scans.length === 0 ? (
-                        <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                        <div className="rounded border px-6 py-10 text-center text-sm text-muted-foreground">
                             No scheduled scans configured. Open any property to create one.
                         </div>
                     ) : (
-                        <div className="rounded-xl border">
+                        <div className="rounded border">
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-muted/50">
                                     <tr className="text-xs text-muted-foreground">
@@ -356,7 +356,7 @@ export default function ScheduledScansIndex({
                                 )}
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="s-time">Time</Label>
-                                    <input id="s-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                                    <input id="s-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} required className="flex h-9 w-full rounded border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                                 </div>
                             </div>
                         )}
@@ -364,7 +364,7 @@ export default function ScheduledScansIndex({
                         {scheduleType === 'once' && (
                             <div className="flex flex-col gap-1.5">
                                 <Label htmlFor="s-at">Date &amp; time</Label>
-                                <input id="s-at" type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                                <input id="s-at" type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} required className="flex h-9 w-full rounded border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                             </div>
                         )}
 

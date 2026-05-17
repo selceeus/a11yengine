@@ -277,7 +277,7 @@ export function TopAtRiskProperties({ agencyId }: TopAtRiskPropertiesProps) {
 
     return (
         <div className="space-y-3">
-            {loading && <Skeleton className="h-72 w-full rounded-xl" />}
+            {loading && <Skeleton className="h-72 w-full rounded" />}
             {error && <p className="text-sm text-destructive">{error}</p>}
             {noData && <p className="text-sm text-muted-foreground">No property risk data yet.</p>}
 
@@ -285,7 +285,7 @@ export function TopAtRiskProperties({ agencyId }: TopAtRiskPropertiesProps) {
                 <>
                     <div
                         ref={containerRef}
-                        className="relative h-72 w-full overflow-hidden rounded-xl"
+                        className="relative h-72 w-full overflow-hidden rounded"
                         style={{ background: 'oklch(0.18 0.02 250)' }}
                     >
                         <Canvas
@@ -306,7 +306,7 @@ export function TopAtRiskProperties({ agencyId }: TopAtRiskPropertiesProps) {
                         {hover && (
                             <div
                                 role="tooltip"
-                                className="pointer-events-none absolute z-10 min-w-[172px] rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
+                                className="pointer-events-none absolute z-10 min-w-[172px] rounded border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
                                 style={{ left: hover.x + 14, top: Math.max(8, hover.y - 80) }}
                             >
                                 <p className="truncate font-semibold">{hover.property.name}</p>
@@ -333,7 +333,7 @@ export function TopAtRiskProperties({ agencyId }: TopAtRiskPropertiesProps) {
                         )}
 
                         {/* Severity legend */}
-                        <div className="absolute bottom-2 right-2 flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-black/40 px-2 py-1 backdrop-blur-sm">
+                        <div className="absolute bottom-2 right-2 flex flex-wrap gap-x-3 gap-y-1 rounded bg-black/40 px-2 py-1 backdrop-blur-sm">
                             {(Object.entries(SEVERITY_COLORS) as [Severity, string][]).map(([severity, color]) => (
                                 <div key={severity} className="flex items-center gap-1 text-xs">
                                     <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
@@ -350,7 +350,7 @@ export function TopAtRiskProperties({ agencyId }: TopAtRiskPropertiesProps) {
                                 key={p.id}
                                 type="button"
                                 onClick={() => handleClick(p)}
-                                className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors hover:bg-muted"
+                                className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs transition-colors hover:bg-muted"
                             >
                                 <span
                                     className="inline-block h-2 w-2 shrink-0 rounded-sm"

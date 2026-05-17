@@ -274,7 +274,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
             <div className="flex flex-col gap-6 p-6">
                 {/* Page header */}
                 <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold">Scans</h1>
+                    <h1 className="text-2xl font-semibold">Scans</h1>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" asChild>
                             <Link href="/journeys">Manage Journeys</Link>
@@ -284,7 +284,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                 </div>
 
                 {/* Trigger form */}
-                <div className="rounded-xl border bg-card p-6">
+                <div className="rounded border bg-card p-6">
                     <h2 className="mb-4 text-base font-semibold">Run a new scan</h2>
 
                     <form onSubmit={submit} className="flex flex-wrap items-end gap-4">
@@ -372,11 +372,11 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
 
                 {/* Scan list */}
                 {scans.length === 0 ? (
-                    <div className="rounded-xl border px-4 py-10 text-center text-sm text-muted-foreground">
+                    <div className="rounded border px-4 py-10 text-center text-sm text-muted-foreground">
                         No scans yet. Run one above.
                     </div>
                 ) : (
-                    <Accordion type="multiple" defaultValue={firstGroupId !== undefined ? [String(firstGroupId)] : []} className="rounded-xl border divide-y">
+                    <Accordion type="multiple" defaultValue={firstGroupId !== undefined ? [String(firstGroupId)] : []} className="rounded border divide-y">
                         {propertyGroups.map((group) => (
                             <AccordionItem key={String(group.propertyId)} value={String(group.propertyId)} className="border-none px-4">
                                 <AccordionTrigger className="hover:no-underline">
@@ -398,7 +398,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
-                                    <div className="rounded-xl border">
+                                    <div className="rounded border">
                                     <table className="w-full text-sm">
                                         <thead className="border-b bg-muted/50">
                                             <tr className="text-xs text-muted-foreground">
@@ -554,17 +554,17 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                             <div>
                                 <h3 className="mb-3 text-sm font-semibold">Additional checks</h3>
                                 <div className="grid grid-cols-3 gap-3">
-                                    <div className="rounded-xl border bg-card p-4">
+                                    <div className="rounded border bg-card p-4">
                                         <p className="text-xs text-muted-foreground">PDFs found</p>
-                                        <p className="mt-1 text-xl font-semibold tabular-nums">{overview.pdfStats.total}</p>
+                                        <p className="mt-1 text-2xl font-semibold tabular-nums">{overview.pdfStats.total}</p>
                                     </div>
-                                    <div className="rounded-xl border bg-card p-4">
+                                    <div className="rounded border bg-card p-4">
                                         <p className="text-xs text-muted-foreground">PDF violations</p>
-                                        <p className="mt-1 text-xl font-semibold tabular-nums">{overview.pdfStats.violations}</p>
+                                        <p className="mt-1 text-2xl font-semibold tabular-nums">{overview.pdfStats.violations}</p>
                                     </div>
-                                    <div className="rounded-xl border bg-card p-4">
+                                    <div className="rounded border bg-card p-4">
                                         <p className="text-xs text-muted-foreground">Screen reader violations</p>
-                                        <p className="mt-1 text-xl font-semibold tabular-nums">{overview.screenReaderViolations}</p>
+                                        <p className="mt-1 text-2xl font-semibold tabular-nums">{overview.screenReaderViolations}</p>
                                     </div>
                                 </div>
                             </div>
@@ -661,7 +661,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                     )}
                                     <div className="flex flex-col gap-1.5">
                                         <Label htmlFor="s-time">Time</Label>
-                                        <input id="s-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                                        <input id="s-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} required className="flex h-9 w-full rounded border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                                     </div>
                                 </div>
                             )}
@@ -669,7 +669,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                             {scheduleType === 'once' && (
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="s-at">Date &amp; time</Label>
-                                    <input id="s-at" type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                                    <input id="s-at" type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} required className="flex h-9 w-full rounded border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                                 </div>
                             )}
 
@@ -705,7 +705,7 @@ function OverviewBarCard({ label, score }: { label: string; score: number | null
         'text-red-600';
 
     return (
-        <div className="rounded-xl border bg-card p-4 flex flex-col gap-2">
+        <div className="rounded border bg-card p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
                 {score ?? '—'}

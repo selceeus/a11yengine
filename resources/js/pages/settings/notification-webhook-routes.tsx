@@ -52,7 +52,7 @@ export default function NotificationWebhookRoutes({ routes, categories, platform
 
             <div className="space-y-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Notification Webhooks</h1>
+                    <h1 className="text-2xl font-semibold">Notification Webhooks</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
                         Send notifications to Slack, Microsoft Teams, or Discord channels when accessibility events occur.
                     </p>
@@ -98,7 +98,7 @@ function CategoryCard({
     }
 
     return (
-        <div className="rounded-lg border">
+        <div className="rounded border">
             <div className="flex items-start justify-between border-b px-5 py-4">
                 <div>
                     <h2 className="text-sm font-semibold">{category.label}</h2>
@@ -175,7 +175,7 @@ function CategoryCard({
             {category.routes.length === 0 ? (
                 <p className="text-muted-foreground px-5 py-4 text-sm">No webhooks configured.</p>
             ) : (
-                <div className="rounded-xl border">
+                <div className="rounded border">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b">

@@ -56,7 +56,7 @@ export function ScanActivityChart({ agencyId, organizationId }: ScanActivityChar
         return () => controller.abort();
     }, [agencyId, organizationId]);
 
-    if (loading) return <Skeleton className="h-48 w-full rounded-xl" />;
+    if (loading) return <Skeleton className="h-48 w-full rounded" />;
     if (error) return <p className="text-sm text-destructive">{error}</p>;
 
     const days = data?.days ?? [];

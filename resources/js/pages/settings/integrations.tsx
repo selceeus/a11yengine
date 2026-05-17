@@ -120,7 +120,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
 
             <div className="space-y-8 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Integrations</h1>
+                    <h1 className="text-2xl font-semibold">Integrations</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Connect accessibility issues to your project management tools</p>
                 </div>
 
@@ -128,7 +128,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                     {integrations.length > 0 && (
                         <div className="space-y-3">
                             <h2 className="text-sm font-semibold">Connected</h2>
-                            <div className="rounded-lg border">
+                            <div className="rounded border">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b">
@@ -206,7 +206,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                             {implementedProviders.map((provider) => (
                                 <div
                                     key={provider.value}
-                                    className="rounded-lg border p-4"
+                                    className="rounded border p-4"
                                 >
                                     <p className="font-medium">{provider.label}</p>
                                     {provider.supports_webhooks && (
@@ -233,7 +233,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                                 {comingSoonProviders.map((provider) => (
                                     <div
                                         key={provider.value}
-                                        className="rounded-lg border border-dashed p-4 opacity-50"
+                                        className="rounded border border-dashed p-4 opacity-50"
                                     >
                                         <p className="font-medium">{provider.label}</p>
                                         <p className="text-muted-foreground mt-0.5 text-xs">Coming soon</p>

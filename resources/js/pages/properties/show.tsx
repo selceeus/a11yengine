@@ -342,7 +342,7 @@ export default function Show({
                 <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <StatCard label="Organization" value={property.organization?.name ?? '—'} />
                     <StatCard label="Status" value={property.status} capitalize />                    {property.industry_label && (
-                        <div className="rounded-xl border p-4">
+                        <div className="rounded border p-4">
                             <dt className="text-xs text-muted-foreground">Industry</dt>
                             <dd className="mt-1 flex items-center gap-2">
                                 <span className="font-medium">{property.industry_label}</span>
@@ -366,7 +366,7 @@ export default function Show({
 
                 {/* Experience Score */}
                 {latestExperienceScore !== null && (
-                    <div className="rounded-xl border bg-card p-5">
+                    <div className="rounded border bg-card p-5">
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-sm font-semibold">Experience Score</h2>
                             {experienceScoreDelta !== null && (
@@ -407,7 +407,7 @@ export default function Show({
                 {/* Violations by severity & top rules */}
                 {severityBreakdown.length > 0 && (
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="rounded-xl border p-4">
+                        <div className="rounded border p-4">
                             <h2 className="mb-3 text-sm font-semibold">Violations by Severity (Avg)</h2>
                             <div className="space-y-2">
                                 {severityBreakdown.map((row) => {
@@ -432,7 +432,7 @@ export default function Show({
                                 })}
                             </div>
                         </div>
-                        <div className="rounded-xl border p-4">
+                        <div className="rounded border p-4">
                             <h2 className="mb-3 text-sm font-semibold">Top Violated Rules (Avg)</h2>
                             <ol className="space-y-1.5">
                                 {Object.entries(topRules).map(([rule, count], i) => (
@@ -500,7 +500,7 @@ export default function Show({
                 </Card>
 
                 {/* Recent scans */}
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <div className="flex items-center justify-between border-b px-4 py-3">
                         <h2 className="text-sm font-semibold">Recent scans</h2>
                         <div className="flex items-center gap-3">
@@ -807,7 +807,7 @@ export default function Show({
                                         value={scheduleTime}
                                         onChange={(e) => setScheduleTime(e.target.value)}
                                         required
-                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                     />
                                 </div>
                             </div>
@@ -823,7 +823,7 @@ export default function Show({
                                     value={scheduleAt}
                                     onChange={(e) => setScheduleAt(e.target.value)}
                                     required
-                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    className="flex h-9 w-full rounded border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 />
                             </div>
                         )}
@@ -896,7 +896,7 @@ function StatCard({
     capitalize?: boolean;
 }) {
     return (
-        <div className="rounded-xl border bg-card p-4">
+        <div className="rounded border bg-card p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className={`mt-1 text-base font-semibold ${capitalize ? 'capitalize' : ''}`}>
                 {value}
@@ -921,7 +921,7 @@ function GaugeCard({ label, score }: { label: string; score: number | null }) {
         'text-red-600';
 
     return (
-        <div className="flex flex-col gap-2 rounded-xl border bg-card p-4">
+        <div className="flex flex-col gap-2 rounded border bg-card p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
                 {score ?? '—'}

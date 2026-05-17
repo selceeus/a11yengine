@@ -84,7 +84,7 @@ export default function Show({ audit }: PageProps) {
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-semibold">Content Audit — {propertyName}</h1>
+                            <h1 className="text-2xl font-semibold">Content Audit — {propertyName}</h1>
                             <p className="text-sm text-muted-foreground">
                                 {audit.property?.base_url}
                                 {audit.generated_at && (
@@ -124,7 +124,7 @@ export default function Show({ audit }: PageProps) {
 
                 {/* Status */}
                 {audit.status === 'failed' && (
-                    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                    <div className="rounded border border-destructive/40 bg-destructive/5 p-4">
                         <p className="text-sm font-medium text-destructive">Content audit generation failed.</p>
                         {audit.error_message && (
                             <p className="mt-1 text-xs text-muted-foreground">{audit.error_message}</p>
@@ -134,23 +134,23 @@ export default function Show({ audit }: PageProps) {
 
                 {/* Summary stats */}
                 <div className="grid gap-4 sm:grid-cols-3 print:grid-cols-3">
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Issues</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{audit.total_issues ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pages Analyzed</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{audit.pages_analyzed ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Content Issues</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{audit.content_issues.length}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Reading Level</p>
                         <p className="mt-1 text-2xl font-bold">{audit.avg_reading_level ?? '—'}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Reading Time</p>
                         <p className="mt-1 text-2xl font-bold">
                             {audit.avg_reading_time_seconds != null ? formatReadingTime(audit.avg_reading_time_seconds) : '—'}
@@ -160,7 +160,7 @@ export default function Show({ audit }: PageProps) {
 
                 {/* Content issues table */}
                 {audit.content_issues.length > 0 && (
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <div className="border-b bg-muted/30 px-4 py-3">
                             <h2 className="text-sm font-semibold">Content Issues</h2>
                         </div>
@@ -210,14 +210,14 @@ export default function Show({ audit }: PageProps) {
                 )}
 
                 {audit.content_issues.length === 0 && audit.status === 'completed' && (
-                    <div className="rounded-xl border p-8 text-center">
+                    <div className="rounded border p-8 text-center">
                         <p className="text-sm text-muted-foreground">No content issues found in this audit.</p>
                     </div>
                 )}
 
                 {/* Per-page reading metrics */}
                 {audit.reading_metrics.length > 0 && (
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <div className="border-b bg-muted/30 px-4 py-3">
                             <h2 className="text-sm font-semibold">Reading Metrics by Page</h2>
                         </div>

@@ -119,7 +119,7 @@ export default function AvatarUploader() {
                         <DialogTitle>Crop your photo</DialogTitle>
                     </DialogHeader>
 
-                    <div className="relative h-72 w-full overflow-hidden rounded-lg bg-neutral-900">
+                    <div className="relative h-72 w-full overflow-hidden rounded bg-neutral-900">
                         {rawSrc && (
                             <Cropper
                                 image={rawSrc}

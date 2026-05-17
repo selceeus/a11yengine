@@ -79,7 +79,7 @@ export default function Edit({ journey, properties }: { journey: Journey; proper
             <Head title={`Edit: ${journey.name}`} />
 
             <div className="flex flex-col gap-6 p-6">
-                <h1 className="text-xl font-semibold">Edit Journey</h1>
+                <h1 className="text-2xl font-semibold">Edit Journey</h1>
 
                 <form onSubmit={submit} className="max-w-2xl space-y-5">
                     <div className="grid gap-2">
@@ -131,7 +131,7 @@ export default function Edit({ journey, properties }: { journey: Journey; proper
                         <InputError message={errors.steps} />
 
                         {data.steps.map((step, i) => (
-                            <div key={i} className="flex items-start gap-2 rounded-lg border bg-card p-3">
+                            <div key={i} className="flex items-start gap-2 rounded border bg-card p-3">
                                 <span className="mt-2.5 min-w-[1.5rem] text-center text-sm font-medium text-muted-foreground">
                                     {i + 1}
                                 </span>

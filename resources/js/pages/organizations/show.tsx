@@ -40,7 +40,7 @@ type Organization = {
 
 function StatCard({ label, value, capitalize }: { label: string; value: string; capitalize?: boolean }) {
     return (
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded border bg-card p-4">
             <dt className="text-xs text-muted-foreground">{label}</dt>
             <dd className={`mt-1 font-medium${capitalize ? ' capitalize' : ''}`}>{value}</dd>
         </div>
@@ -69,7 +69,7 @@ export default function Show({ organization, stats, recentScans }: { organizatio
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-xl font-semibold">{organization.name}</h1>
+                        <h1 className="text-2xl font-semibold">{organization.name}</h1>
                         {organization.domain && (
                             <p className="text-sm text-muted-foreground">{organization.domain}</p>
                         )}
@@ -131,7 +131,7 @@ export default function Show({ organization, stats, recentScans }: { organizatio
                 {recentScans.length > 0 && (
                     <div>
                         <h2 className="mb-3 font-medium">Recent Scans</h2>
-                        <div className="rounded-xl border">
+                        <div className="rounded border">
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-muted/50">
                                     <tr className="text-xs text-muted-foreground">
@@ -167,7 +167,7 @@ export default function Show({ organization, stats, recentScans }: { organizatio
                         </Button>
                     </div>
 
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50">
                                 <tr className="text-xs text-muted-foreground">

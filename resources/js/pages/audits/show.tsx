@@ -126,7 +126,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-semibold">{audit.title}</h1>
+                            <h1 className="text-2xl font-semibold">{audit.title}</h1>
                             {audit.property && (
                                 <p className="text-sm text-muted-foreground">{audit.property.name}</p>
                             )}
@@ -178,7 +178,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                 {/* Pending / Processing */}
                 {isPending && (
-                    <div className="flex flex-col items-center gap-4 rounded-xl border bg-card py-16">
+                    <div className="flex flex-col items-center gap-4 rounded border bg-card py-16">
                         <Spinner className="h-8 w-8 text-primary" />
                         <p className="font-medium">
                             {audit.status === 'processing' ? 'Analysing your site…' : 'Waiting to start…'}
@@ -189,7 +189,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                 {/* Failed */}
                 {audit.status === 'failed' && (
-                    <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+                    <div className="rounded border border-destructive/30 bg-destructive/5 p-6">
                         <h2 className="mb-2 font-semibold text-destructive">Audit failed</h2>
                         <p className="text-sm text-muted-foreground">{audit.error_message ?? 'An unknown error occurred.'}</p>
                     </div>
@@ -200,7 +200,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                     <>
                         {/* Score + delta */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr]">
-                            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card p-6">
+                            <div className="flex flex-col items-center justify-center gap-3 rounded border bg-card p-6">
                                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Overall Score</span>
                                 <span className={`rounded-full px-5 py-2 text-3xl font-bold ${scoreColor(audit.overall_score)}`}>
                                     {audit.overall_score ?? '—'}
@@ -221,7 +221,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                     </div>
                                 )}
                             </div>
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
                                 <div className="space-y-2 text-sm leading-relaxed">
                                     {(audit.executive_summary ?? '').split(/\n{2,}/).map((para, i) => (
@@ -233,7 +233,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Statistics */}
                         {audit.summary_statistics && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Summary Statistics</h2>
                                 <div className="grid grid-cols-5 gap-3 text-center">
                                     {(
@@ -245,7 +245,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                             { key: 'minor', label: 'Minor' },
                                         ] as { key: keyof SummaryStatistics; label: string }[]
                                     ).map(({ key, label }) => (
-                                        <div key={key} className="rounded-lg border p-3">
+                                        <div key={key} className="rounded border p-3">
                                             <div className="text-2xl font-bold">{audit.summary_statistics![key] ?? 0}</div>
                                             <div className="text-xs text-muted-foreground">{label}</div>
                                         </div>
@@ -256,7 +256,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* WCAG Compliance */}
                         {audit.compliance_status && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
                                 <div className="grid grid-cols-3 gap-4">
                                     {(
@@ -268,7 +268,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                     ).map(({ key, label }) => {
                                         const item = audit.compliance_status![key];
                                         return (
-                                            <div key={key} className="rounded-lg border p-4">
+                                            <div key={key} className="rounded border p-4">
                                                 <div className="mb-1 font-semibold">{label}</div>
                                                 <div className={`text-sm font-medium capitalize ${complianceColor(item?.status)}`}>
                                                     {item?.status ?? '—'}
@@ -283,7 +283,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Top 5 Critical Risks */}
                         {audit.top_risks && audit.top_risks.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Top 5 Critical Issues</h2>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
@@ -316,7 +316,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Score Trend Chart */}
                         {audit.property && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Score Trend</h2>
                                 <AuditScoreTrendChart propertyId={audit.property.id} />
                             </div>
@@ -329,14 +329,14 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                     <>
                         {/* Score + Summary */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr]">
-                            <div className="flex flex-col items-center justify-center rounded-xl border bg-card p-6 gap-2">
+                            <div className="flex flex-col items-center justify-center rounded border bg-card p-6 gap-2">
                                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Overall Score</span>
                                 <span className={`rounded-full px-5 py-2 text-3xl font-bold ${scoreColor(audit.overall_score)}`}>
                                     {audit.overall_score ?? '—'}
                                 </span>
                                 <span className="text-xs text-muted-foreground">out of 100</span>
                             </div>
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Executive Summary</h2>
                                 <div className="space-y-2 text-sm leading-relaxed">
                                     {(audit.executive_summary ?? '').split(/\n{2,}/).map((para, i) => (
@@ -348,7 +348,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Statistics */}
                         {audit.summary_statistics && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Summary Statistics</h2>
                                 <div className="grid grid-cols-5 gap-3 text-center">
                                     {(
@@ -360,7 +360,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                             { key: 'minor', label: 'Minor' },
                                         ] as { key: keyof SummaryStatistics; label: string }[]
                                     ).map(({ key, label }) => (
-                                        <div key={key} className="rounded-lg border p-3">
+                                        <div key={key} className="rounded border p-3">
                                             <div className="text-2xl font-bold">{audit.summary_statistics![key] ?? 0}</div>
                                             <div className="text-xs text-muted-foreground">{label}</div>
                                         </div>
@@ -371,7 +371,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Compliance Status */}
                         {audit.compliance_status && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">WCAG Compliance</h2>
                                 <div className="grid grid-cols-3 gap-4">
                                     {(
@@ -383,7 +383,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                     ).map(({ key, label }) => {
                                         const item = audit.compliance_status![key];
                                         return (
-                                            <div key={key} className="rounded-lg border p-4">
+                                            <div key={key} className="rounded border p-4">
                                                 <div className="mb-1 font-semibold">{label}</div>
                                                 <div className={`text-sm font-medium capitalize ${complianceColor(item?.status)}`}>
                                                     {item?.status ?? '—'}
@@ -398,7 +398,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Top Risks */}
                         {audit.top_risks && audit.top_risks.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Top Risks</h2>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
@@ -433,7 +433,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Issue Details */}
                         {audit.issue_details && audit.issue_details.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Issue Details</h2>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
@@ -468,11 +468,11 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Remediations */}
                         {audit.remediations && audit.remediations.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Remediations</h2>
                                 <div className="flex flex-col gap-4">
                                     {audit.remediations.map((rem, i) => (
-                                        <div key={i} className="rounded-lg border p-4">
+                                        <div key={i} className="rounded border p-4">
                                             <div className="mb-2 flex items-center gap-2">
                                                 <Badge variant={priorityVariant(rem.priority)}>{rem.priority} priority</Badge>
                                                 <span className="font-medium">{rem.title}</span>
@@ -486,7 +486,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                                                 </ol>
                                             )}
                                             {rem.code_example && (
-                                                <pre className="overflow-x-auto rounded-md bg-muted px-4 py-3 text-xs">
+                                                <pre className="overflow-x-auto rounded bg-muted px-4 py-3 text-xs">
                                                     <code>{rem.code_example}</code>
                                                 </pre>
                                             )}
@@ -498,14 +498,14 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
 
                         {/* Legal Precedents */}
                         {audit.legal_precedents && audit.legal_precedents.length > 0 && (
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <div className="mb-4 flex items-center gap-2">
                                     <Scale className="h-4 w-4 text-muted-foreground" />
                                     <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Legal Precedents</h2>
                                 </div>
                                 <div className="space-y-3">
                                     {audit.legal_precedents.map((prec, i) => (
-                                        <div key={i} className="rounded-lg border p-4">
+                                        <div key={i} className="rounded border p-4">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-medium">{prec.case_name}</p>

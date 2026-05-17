@@ -32,7 +32,7 @@ export default function Create({ organizations, industries }: { organizations: O
             <div className="flex flex-col gap-6 p-6">
                 <h1 className="text-2xl font-semibold">Add property</h1>
 
-                <div className="max-w-lg rounded-xl border bg-card p-6">
+                <div className="max-w-lg rounded border bg-card p-6">
                     <Form
                         {...PropertyController.store.form()}
                         className="space-y-5"

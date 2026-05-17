@@ -75,7 +75,7 @@ export default function Notifications({
                                                         return (
                                                             <div
                                                                 key={prefKey}
-                                                                className="flex items-center justify-between rounded-lg border p-3"
+                                                                className="flex items-center justify-between rounded border p-3"
                                                             >
                                                                 <Label
                                                                     htmlFor={prefKey}

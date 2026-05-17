@@ -93,7 +93,7 @@ export default function ActivityLogIndex({ logs, categories, filters }: Props) {
             <div className="space-y-6 p-6">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-xl font-semibold">Activity Log</h1>
+                        <h1 className="text-2xl font-semibold">Activity Log</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
                             Audit trail of all activity in your account over the past year.
                         </p>
@@ -104,7 +104,7 @@ export default function ActivityLogIndex({ logs, categories, filters }: Props) {
                 </div>
 
                 {/* Filters */}
-                <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
+                <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-4 rounded border p-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="category-filter">Category</Label>
                         <Select value={category} onValueChange={setCategory}>
@@ -168,7 +168,7 @@ export default function ActivityLogIndex({ logs, categories, filters }: Props) {
                     <p className="text-muted-foreground text-sm">No activity log entries found.</p>
                 ) : (
                     <>
-                        <div className="rounded-lg border">
+                        <div className="rounded border">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">

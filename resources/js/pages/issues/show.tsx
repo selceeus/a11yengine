@@ -110,7 +110,7 @@ const statusLabels: Record<string, string> = {
 
 function StatCard({ label, value, capitalize }: { label: string; value: string; capitalize?: boolean }) {
     return (
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded border bg-card p-4">
             <dt className="text-xs text-muted-foreground">{label}</dt>
             <dd className={`mt-1 font-medium${capitalize ? ' capitalize' : ''}`}>{value}</dd>
         </div>
@@ -244,7 +244,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                     {issue.resolved_at && (
                         <StatCard label="Resolved" value={new Date(issue.resolved_at).toLocaleDateString()} />
                     )}
-                    <div className="rounded-lg border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <dt className="text-xs text-muted-foreground">Due date</dt>
                         <dd className="mt-1 font-medium">
                             {isEditingDueDate ? (
@@ -284,7 +284,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                 {/* Findings */}
                 <div>
                     <h2 className="mb-3 font-medium">Recent findings</h2>
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50">
                                 <tr className="text-xs text-muted-foreground">
@@ -348,7 +348,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                     {/* Not yet generated */}
                     {!issue.ai_remediation_status && (
-                        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed bg-muted/30 p-10 text-center">
+                        <div className="flex flex-col items-center gap-4 rounded border border-dashed bg-muted/30 p-10 text-center">
                             <Bot className="h-8 w-8 text-muted-foreground" />
                             <div>
                                 <p className="font-medium">No remediation guide yet</p>
@@ -365,7 +365,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                     {/* Pending / Processing */}
                     {isProcessing && (
-                        <div className="flex flex-col items-center gap-4 rounded-xl border bg-card py-12 text-center">
+                        <div className="flex flex-col items-center gap-4 rounded border bg-card py-12 text-center">
                             <Spinner className="h-7 w-7 text-primary" />
                             <p className="font-medium">Generating remediation guide…</p>
                             <p className="text-sm text-muted-foreground">This may take up to a minute.</p>
@@ -374,7 +374,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                     {/* Failed */}
                     {issue.ai_remediation_status === 'failed' && (
-                        <div className="flex items-start gap-4 rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+                        <div className="flex items-start gap-4 rounded border border-destructive/30 bg-destructive/5 p-6">
                             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                             <div className="flex-1">
                                 <p className="font-medium text-destructive">Generation failed</p>
@@ -393,7 +393,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                     {issue.ai_remediation_status === 'completed' && issue.ai_suggestions && (
                         <div className="flex flex-col gap-4">
                             {/* Explanation + WCAG */}
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <div className="mb-4 flex items-center gap-2">
                                     <Badge variant="outline" className="font-mono text-xs">
                                         WCAG {issue.ai_suggestions.wcag_reference}
@@ -430,7 +430,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                                 </h3>
                                 <p className="text-sm leading-relaxed">{issue.ai_suggestions.explanation}</p>
                                 {issue.ai_suggestions.wcag_grounding && (
-                                    <blockquote className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3">
+                                    <blockquote className="mt-4 flex items-start gap-2 rounded bg-muted/50 px-4 py-3">
                                         <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                         <p className="text-xs leading-relaxed text-muted-foreground italic">
                                             {issue.ai_suggestions.wcag_grounding}
@@ -440,7 +440,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                             </div>
 
                             {/* User Impact */}
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">User Impact</h3>
                                 <p className="text-sm leading-relaxed">{issue.ai_suggestions.user_impact}</p>
                                 <div className="mt-3 flex items-center gap-2">
@@ -462,11 +462,11 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                             {/* Code fix */}
                             {issue.ai_suggestions.code_fix && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                         Suggested Code Fix
                                     </h3>
-                                    <pre className="overflow-x-auto rounded-lg bg-muted px-4 py-3 text-xs leading-relaxed">
+                                    <pre className="overflow-x-auto rounded bg-muted px-4 py-3 text-xs leading-relaxed">
                                         <code>{issue.ai_suggestions.code_fix}</code>
                                     </pre>
                                 </div>
@@ -474,9 +474,9 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                             {/* ARIA fix */}
                             {issue.ai_suggestions.aria_fix && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ARIA Fix</h3>
-                                    <pre className="overflow-x-auto rounded-lg bg-muted px-4 py-3 text-xs leading-relaxed">
+                                    <pre className="overflow-x-auto rounded bg-muted px-4 py-3 text-xs leading-relaxed">
                                         <code>{issue.ai_suggestions.aria_fix}</code>
                                     </pre>
                                 </div>
@@ -484,7 +484,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                             {/* Remediation Steps */}
                             {issue.ai_suggestions.remediation_steps.length > 0 && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                         Remediation Steps
                                     </h3>
@@ -497,7 +497,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                             )}
 
                             {/* Testing Guidance */}
-                            <div className="rounded-xl border bg-card p-6">
+                            <div className="rounded border bg-card p-6">
                                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                     Testing Guidance
                                 </h3>
@@ -506,7 +506,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                             {/* Legal Precedents */}
                             {issue.ai_suggestions.legal_precedents.length > 0 && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <div className="mb-4 flex items-center gap-2">
                                         <Scale className="h-4 w-4 text-muted-foreground" />
                                         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -515,7 +515,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
                                     </div>
                                     <div className="space-y-4">
                                         {issue.ai_suggestions.legal_precedents.map((precedent, i) => (
-                                            <div key={i} className="rounded-lg border bg-muted/30 p-4">
+                                            <div key={i} className="rounded border bg-muted/30 p-4">
                                                 <div className="mb-1 flex flex-wrap items-center gap-2">
                                                     <span className="text-sm font-medium">{precedent.case_name}</span>
                                                     {precedent.year && (
@@ -544,7 +544,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                             {/* Similar Resolutions */}
                             {issue.ai_suggestions.similar_resolutions.length > 0 && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <div className="mb-3 flex items-center gap-2">
                                         <History className="h-4 w-4 text-muted-foreground" />
                                         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -571,7 +571,7 @@ export default function Show({ issue, assignableUsers, teamMembers }: { issue: I
 
                             {/* Resources */}
                             {issue.ai_suggestions.resources.length > 0 && (
-                                <div className="rounded-xl border bg-card p-6">
+                                <div className="rounded border bg-card p-6">
                                     <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                         Further Reading
                                     </h3>

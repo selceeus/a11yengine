@@ -84,13 +84,13 @@ export default function MentionTextarea({ value, onChange, teamMembers, placehol
                 placeholder={placeholder}
                 rows={rows}
                 className={cn(
-                    'w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none',
+                    'w-full rounded border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none',
                     className,
                 )}
             />
 
             {mentionQuery !== null && filteredMembers.length > 0 && (
-                <ul className="absolute left-0 z-50 mt-1 w-56 rounded-md border bg-popover py-1 shadow-md">
+                <ul className="absolute left-0 z-50 mt-1 w-56 rounded border bg-popover py-1 shadow-md">
                     {filteredMembers.map((member) => (
                         <li key={member.id}>
                             <button

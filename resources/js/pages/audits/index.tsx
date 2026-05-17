@@ -73,7 +73,7 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-semibold">Accessibility Audits</h1>
+                        <h1 className="text-2xl font-semibold">Accessibility Audits</h1>
                         <p className="text-sm text-muted-foreground">Automated accessibility analysis for your properties.</p>
                     </div>
                     <Button onClick={() => setDialogOpen(true)}>
@@ -82,7 +82,7 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
                     </Button>
                 </div>
 
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">

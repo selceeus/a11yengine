@@ -47,7 +47,7 @@ export default function Index({
 
             <div className="flex flex-col gap-8 p-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-semibold">Team</h1>
+                    <h1 className="text-2xl font-semibold">Team</h1>
                     {canManageTeam && (
                         <Button asChild size="sm">
                             <Link href={TeamController.create().url}>Add member</Link>
@@ -66,7 +66,7 @@ export default function Index({
                     <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
                         Members ({members.length})
                     </h2>
-                    <div className="rounded-xl border bg-card">
+                    <div className="rounded border bg-card">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b text-xs text-muted-foreground">
@@ -117,7 +117,7 @@ export default function Index({
                         <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
                             Pending Invitations ({invitations.length})
                         </h2>
-                        <div className="rounded-xl border bg-card">
+                        <div className="rounded border bg-card">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b text-xs text-muted-foreground">
@@ -147,7 +147,7 @@ export default function Index({
                     <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
                         Invite a team member
                     </h2>
-                    <div className="max-w-md rounded-xl border bg-card p-6">
+                    <div className="max-w-md rounded border bg-card p-6">
                         <Form
                             {...SendInvitationController.form()}
                             className="flex flex-col gap-4"

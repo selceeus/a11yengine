@@ -62,7 +62,7 @@ export default function Edit({
                 {/* Profile section */}
                 <section className="max-w-md">
                     <Heading variant="small" title="Profile" description="Update name and email address." />
-                    <div className="rounded-xl border bg-card p-6 mt-4">
+                    <div className="rounded border bg-card p-6 mt-4">
                         <Form
                             {...TeamController.update.form({ user: member.id })}
                             options={{ preserveScroll: true }}
@@ -98,7 +98,7 @@ export default function Edit({
                         title="Reset password"
                         description="Set a new temporary password. The user will be required to change it on next login."
                     />
-                    <div className="rounded-xl border bg-card p-6 mt-4">
+                    <div className="rounded border bg-card p-6 mt-4">
                         <Form
                             {...TeamController.updatePassword.form({ user: member.id })}
                             options={{ preserveScroll: true }}
@@ -141,7 +141,7 @@ export default function Edit({
                 {/* Role section */}
                 <section className="max-w-md">
                     <Heading variant="small" title="Agency role" description="Assign an agency-level role to this user." />
-                    <div className="rounded-xl border bg-card p-6 mt-4">
+                    <div className="rounded border bg-card p-6 mt-4">
                         <Form
                             {...TeamController.updateRole.form({ user: member.id })}
                             options={{ preserveScroll: true }}

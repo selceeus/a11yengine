@@ -260,7 +260,7 @@ export default function Index({
             <div className="flex flex-col gap-6 p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-semibold">Issues</h1>
+                    <h1 className="text-2xl font-semibold">Issues</h1>
                     {someSelected && (
                         <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
                     )}
@@ -270,7 +270,7 @@ export default function Index({
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <button
                         onClick={() => filter({ property_id: filters.property_id, severity: undefined, status: undefined }, {})}
-                        className="rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+                        className="rounded border bg-card p-4 text-left transition-colors hover:bg-muted/50"
                     >
                         <p className="text-2xl font-semibold tabular-nums">{summary.total}</p>
                         <p className="text-sm text-muted-foreground">Total issues</p>
@@ -278,18 +278,18 @@ export default function Index({
 
                     <button
                         onClick={() => filter({ ...filters, severity: 'critical' }, {})}
-                        className="rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+                        className="rounded border bg-card p-4 text-left transition-colors hover:bg-muted/50"
                     >
                         <p className="text-2xl font-semibold tabular-nums text-destructive">{summary.critical}</p>
                         <p className="text-sm text-muted-foreground">Critical</p>
                     </button>
 
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-2xl font-semibold tabular-nums">{summary.overdue}</p>
                         <p className="text-sm text-muted-foreground">Overdue</p>
                     </div>
 
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-2xl font-semibold tabular-nums">{summary.unassigned}</p>
                         <p className="text-sm text-muted-foreground">Unassigned</p>
                     </div>
@@ -435,7 +435,7 @@ export default function Index({
                 </div>
 
                 {/* Table */}
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr>
@@ -690,7 +690,7 @@ export default function Index({
 
             {/* Bulk action toolbar */}
             {someSelected && (
-                <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border bg-background px-5 py-3 shadow-xl">
+                <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded border bg-background px-5 py-3 shadow-xl">
                     <span className="text-sm font-medium">{selectedIds.length} selected</span>
                     <div className="h-4 w-px bg-border" />
 
@@ -794,7 +794,7 @@ export default function Index({
                         modal.issues.length === 0 ? (
                             <p className="py-8 text-center text-sm text-muted-foreground">No issues assigned.</p>
                         ) : (
-                            <div className="max-h-[60vh] overflow-auto rounded-lg border">
+                            <div className="max-h-[60vh] overflow-auto rounded border">
                                 <table className="w-full text-sm">
                                     <thead className="border-b bg-muted/50">
                                         <tr className="text-xs text-muted-foreground">

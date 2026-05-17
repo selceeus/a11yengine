@@ -66,7 +66,7 @@ export function AccessibilityRiskLandscapeBarChart({ siteId }: AccessibilityRisk
     }, [siteId]);
 
     if (!siteId) return <p className="text-sm text-muted-foreground">No property selected.</p>;
-    if (loading) return <Skeleton className="h-64 w-full rounded-xl" />;
+    if (loading) return <Skeleton className="h-64 w-full rounded" />;
     if (error) return <p className="text-sm text-destructive">{error}</p>;
     if (!data || data.length === 0) return <p className="text-sm text-muted-foreground">No page risk data available for this property.</p>;
 

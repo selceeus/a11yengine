@@ -73,13 +73,13 @@ export default function Index({ properties }: { properties: PropertyRow[] }) {
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Issue Clusters</h1>
+                    <h1 className="text-2xl font-semibold">Issue Clusters</h1>
                     <p className="text-sm text-muted-foreground">
                         Grouped accessibility issues by root cause and component, per property.
                     </p>
                 </div>
 
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">

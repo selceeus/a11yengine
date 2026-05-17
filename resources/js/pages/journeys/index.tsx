@@ -36,18 +36,18 @@ export default function Index({ journeys }: { journeys: Journey[] }) {
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold">User Journeys</h1>
+                    <h1 className="text-2xl font-semibold">User Journeys</h1>
                     <Button asChild size="sm">
                         <Link href="/journeys/create">New Journey</Link>
                     </Button>
                 </div>
 
                 {journeys.length === 0 ? (
-                    <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+                    <div className="rounded border bg-card p-8 text-center text-sm text-muted-foreground">
                         No journeys yet. Create one to scan a sequence of pages.
                     </div>
                 ) : (
-                    <div className="rounded-xl border bg-card">
+                    <div className="rounded border bg-card">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b text-left text-muted-foreground">

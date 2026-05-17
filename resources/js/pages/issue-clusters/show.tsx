@@ -77,7 +77,7 @@ export default function Show({ cluster }: PageProps) {
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-semibold">Issue Clusters — {propertyName}</h1>
+                            <h1 className="text-2xl font-semibold">Issue Clusters — {propertyName}</h1>
                             <p className="text-sm text-muted-foreground">
                                 {cluster.property?.base_url}
                                 {cluster.generated_at && (
@@ -90,7 +90,7 @@ export default function Show({ cluster }: PageProps) {
 
                 {/* Error state */}
                 {cluster.status === 'failed' && (
-                    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                    <div className="rounded border border-destructive/40 bg-destructive/5 p-4">
                         <p className="text-sm font-medium text-destructive">Cluster generation failed.</p>
                         {cluster.error_message && (
                             <p className="mt-1 text-xs text-muted-foreground">{cluster.error_message}</p>
@@ -100,15 +100,15 @@ export default function Show({ cluster }: PageProps) {
 
                 {/* Summary stats */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Clusters</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{cluster.total_clusters ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Issues Analysed</p>
                         <p className="mt-1 text-2xl font-bold tabular-nums">{cluster.open_issues_analyzed ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</p>
                         <p className="mt-1 text-2xl font-bold capitalize">{cluster.status}</p>
                     </div>
@@ -116,7 +116,7 @@ export default function Show({ cluster }: PageProps) {
 
                 {/* Clusters table */}
                 {cluster.clusters.length > 0 && (
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <div className="border-b bg-muted/30 px-4 py-3">
                             <h2 className="text-sm font-semibold">Identified Clusters</h2>
                         </div>
@@ -182,7 +182,7 @@ export default function Show({ cluster }: PageProps) {
                 )}
 
                 {cluster.clusters.length === 0 && cluster.status === 'completed' && (
-                    <div className="rounded-xl border p-8 text-center">
+                    <div className="rounded border p-8 text-center">
                         <p className="text-sm text-muted-foreground">No clusters were identified for this analysis.</p>
                     </div>
                 )}

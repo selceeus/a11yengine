@@ -96,7 +96,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
             <div className="space-y-6 p-6">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-xl font-semibold">API Keys</h1>
+                        <h1 className="text-2xl font-semibold">API Keys</h1>
                         <p className="text-muted-foreground mt-1 text-sm">Manage API keys for CI/CD pipelines, MCP clients, and WordPress integrations</p>
                     </div>
                     <Dialog open={open} onOpenChange={setOpen}>
@@ -173,7 +173,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                     </div>
 
                     {tokenVisible && (
-                        <div className="bg-success/10 border-success/30 rounded-lg border p-4">
+                        <div className="bg-success/10 border-success/30 rounded border p-4">
                             <p className="text-success mb-1 text-sm font-semibold">API key created — copy it now, it won&#39;t be shown again.</p>
                             <div className="flex items-center gap-2">
                                 <code className="bg-background grow rounded border px-3 py-1.5 font-mono text-sm break-all">
@@ -196,7 +196,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                     )}
 
                     {(expiringKeys.length > 0 || expiredActiveKeys.length > 0) && (
-                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+                        <div className="rounded border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
                                 {expiredActiveKeys.length > 0 && (
                                     <span>
@@ -215,7 +215,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                     {apiKeys.length === 0 ? (
                         <p className="text-muted-foreground text-sm">No API keys yet. Create one to get started.</p>
                     ) : (
-                        <div className="rounded-lg border">
+                        <div className="rounded border">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">
@@ -290,7 +290,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                     )}
 
                     {/* WordPress Plugin Integration Guide */}
-                    <div className="rounded-lg border">
+                    <div className="rounded border">
                         <div className="border-b bg-muted/30 px-4 py-3">
                             <h2 className="text-sm font-semibold">WordPress Plugin Integration</h2>
                             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -305,7 +305,7 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                                 {`Authorization: Bearer <your-api-key>`}
                             </pre>
 
-                            <div className="divide-y rounded-lg border text-sm">
+                            <div className="divide-y rounded border text-sm">
                                 <div className="grid grid-cols-[auto_1fr] gap-x-4 px-4 py-3">
                                     <span className="shrink-0 rounded bg-blue-100 px-2 py-0.5 font-mono text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-300">GET</span>
                                     <div>

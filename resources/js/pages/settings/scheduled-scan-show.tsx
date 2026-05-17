@@ -144,7 +144,7 @@ export default function ScheduledScanShow({
 
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-semibold">
+                                <h1 className="text-2xl font-semibold">
                                     {scheduledScan.property?.name ?? `Scheduled Scan #${scheduledScan.id}`}
                                 </h1>
                                 <Badge variant={scheduledScan.is_active ? 'default' : 'secondary'}>
@@ -259,11 +259,11 @@ export default function ScheduledScanShow({
                     <h2 className="mb-3 text-base font-semibold">Recent Scans</h2>
 
                     {recentScans.length === 0 ? (
-                        <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                        <div className="rounded border px-6 py-10 text-center text-sm text-muted-foreground">
                             No scans have been run for this property yet.
                         </div>
                     ) : (
-                        <div className="rounded-xl border">
+                        <div className="rounded border">
                             <table className="w-full text-sm">
                                 <thead className="border-b bg-muted/50">
                                     <tr className="text-xs text-muted-foreground">

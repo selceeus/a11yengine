@@ -28,7 +28,7 @@ export default function Index({ organizations, filters = {} }: { organizations: 
 
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-semibold">Organizations</h1>
+                    <h1 className="text-2xl font-semibold">Organizations</h1>
                     <Button asChild>
                         <Link href={OrganizationController.create().url}>Add organization</Link>
                     </Button>
@@ -43,7 +43,7 @@ export default function Index({ organizations, filters = {} }: { organizations: 
                     aria-label="Search organizations"
                 />
 
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">

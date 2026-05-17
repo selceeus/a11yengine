@@ -71,7 +71,7 @@ export function TopAtRiskPropertiesBarChart({ agencyId, organizationId }: TopAtR
 
     const noData = !loading && !error && (!data || data.properties.length === 0);
 
-    if (loading) return <Skeleton className="h-64 w-full rounded-xl" />;
+    if (loading) return <Skeleton className="h-64 w-full rounded" />;
     if (error) return <p className="text-sm text-destructive">{error}</p>;
     if (noData) return <p className="text-sm text-muted-foreground">No at-risk properties found.</p>;
 

@@ -43,14 +43,14 @@ const SEVERITY_COLOURS: Record<FindingRow['severity'], string> = {
 function FindingsTable({ findings, emptyMessage }: { findings: FindingRow[]; emptyMessage: string }) {
     if (findings.length === 0) {
         return (
-            <div className="rounded-xl border px-6 py-8 text-center text-sm text-muted-foreground">
+            <div className="rounded border px-6 py-8 text-center text-sm text-muted-foreground">
                 {emptyMessage}
             </div>
         );
     }
 
     return (
-        <div className="rounded-xl border">
+        <div className="rounded border">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead className="border-b bg-muted/50">
@@ -136,7 +136,7 @@ export default function Diff({
 
                 {/* Scan pair summary */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border bg-card p-4">
+                    <div className="rounded border bg-card p-4">
                         <p className="text-xs text-muted-foreground mb-1">Current scan</p>
                         <p className="font-semibold">#{scan.id}</p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -144,7 +144,7 @@ export default function Diff({
                         </p>
                     </div>
                     {comparableScan ? (
-                        <div className="rounded-xl border bg-card p-4">
+                        <div className="rounded border bg-card p-4">
                             <p className="text-xs text-muted-foreground mb-1">Previous scan</p>
                             <p className="font-semibold">
                                 <Link
@@ -159,7 +159,7 @@ export default function Diff({
                             </p>
                         </div>
                     ) : (
-                        <div className="rounded-xl border bg-muted/30 p-4 flex items-center justify-center">
+                        <div className="rounded border bg-muted/30 p-4 flex items-center justify-center">
                             <p className="text-sm text-muted-foreground">No previous completed scan found</p>
                         </div>
                     )}
@@ -168,17 +168,17 @@ export default function Diff({
                 {comparableScan ? (
                     <>
                         {/* Summary bar */}
-                        <div className="flex flex-wrap items-center gap-6 rounded-xl border bg-muted/20 px-5 py-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-6 rounded border bg-muted/20 px-5 py-3 text-sm">
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-bold text-red-600">+{newFindings.length}</span>
+                                <span className="text-2xl font-bold text-red-600">+{newFindings.length}</span>
                                 <span className="text-muted-foreground">new findings</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-bold text-green-600">−{resolvedFindings.length}</span>
+                                <span className="text-2xl font-bold text-green-600">−{resolvedFindings.length}</span>
                                 <span className="text-muted-foreground">resolved</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-bold text-muted-foreground">{unchangedCount}</span>
+                                <span className="text-2xl font-bold text-muted-foreground">{unchangedCount}</span>
                                 <span className="text-muted-foreground">unchanged</span>
                             </div>
                         </div>
@@ -208,7 +208,7 @@ export default function Diff({
                         </div>
                     </>
                 ) : (
-                    <div className="rounded-xl border px-6 py-12 text-center text-sm text-muted-foreground">
+                    <div className="rounded border px-6 py-12 text-center text-sm text-muted-foreground">
                         A comparison requires at least two completed scans for this property.
                     </div>
                 )}

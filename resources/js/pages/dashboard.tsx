@@ -110,7 +110,7 @@ export default function Dashboard() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded p-4">
                 {!ragIndexed && !ragDismissed && (
                     <Alert variant="destructive" className="flex items-start justify-between gap-4">
                         <div>
@@ -162,7 +162,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader>
                                     <CardTitle>Organisation Risk Trends</CardTitle>
@@ -176,7 +176,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader>
                                     <CardTitle>Top At-Risk Properties</CardTitle>
@@ -190,7 +190,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader>
                                     <CardTitle>Accessibility Risk Landscape</CardTitle>
@@ -200,7 +200,7 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded-xl md:min-h-min">
+                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
                             <Card className="col-span-full">
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Latest Audit Scores</CardTitle>
@@ -214,7 +214,7 @@ export default function Dashboard() {
                                         fallback={
                                             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                                 {[0, 1, 2].map((i) => (
-                                                    <div key={i} className="h-24 animate-pulse rounded-xl border bg-muted" />
+                                                    <div key={i} className="h-24 animate-pulse rounded border bg-muted" />
                                                 ))}
                                             </div>
                                         }
@@ -242,7 +242,7 @@ export default function Dashboard() {
                                     fallback={
                                         <div className="flex flex-col gap-3 py-2">
                                             {[0, 1, 2, 3, 4].map((i) => (
-                                                <div key={i} className="h-10 animate-pulse rounded-md bg-muted" />
+                                                <div key={i} className="h-10 animate-pulse rounded bg-muted" />
                                             ))}
                                         </div>
                                     }

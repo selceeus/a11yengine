@@ -131,7 +131,7 @@ function PriorityRiskMapScene({ items, hoveredItem, onHover, priorityPageUrls, p
                     center
                     style={{ pointerEvents: 'none' }}
                 >
-                    <div className="min-w-[180px] rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+                    <div className="min-w-[180px] rounded border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
                         <p className="truncate font-semibold">{hoveredItem.url}</p>
                         {priorityPageUrls.has(hoveredItem.url) && (
                             <p className="mt-0.5 font-medium text-amber-500">
@@ -244,12 +244,12 @@ export function PriorityRiskMap({ siteId, priorityItems }: PriorityRiskMapProps)
 
     return (
         <div className="space-y-3">
-            {loading && <Skeleton className="h-96 w-full rounded-xl" />}
+            {loading && <Skeleton className="h-96 w-full rounded" />}
             {error && <p className="text-sm text-destructive">{error}</p>}
             {noData && <p className="text-sm text-muted-foreground">No page risk data available for this property.</p>}
             {!loading && !error && data && data.length > 0 && (
                 <>
-                    <div className="min-h-[400px] w-full overflow-hidden rounded-xl" style={{ background: 'oklch(0.18 0.02 250)' }}>
+                    <div className="min-h-[400px] w-full overflow-hidden rounded" style={{ background: 'oklch(0.18 0.02 250)' }}>
                         <Canvas camera={{ position: [9, 20, camZ], fov: 48 }} style={{ height: '400px', width: '100%' }}>
                             <PriorityRiskMapScene
                                 items={data}

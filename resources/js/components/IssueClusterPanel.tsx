@@ -192,7 +192,7 @@ export function IssueClusterPanel({ propertyId }: IssueClusterPanelProps) {
             {isInProgress && (
                 <div className="space-y-3">
                     {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                        <Skeleton key={i} className="h-24 w-full rounded" />
                     ))}
                     <p className="animate-pulse text-xs text-muted-foreground">Analysing your open issues&hellip;</p>
                 </div>
@@ -209,7 +209,7 @@ export function IssueClusterPanel({ propertyId }: IssueClusterPanelProps) {
                     {report.clusters.map((cluster, idx) => (
                         <div
                             key={cluster.id}
-                            className={`rounded-lg border border-l-4 bg-card p-4 shadow-sm ${CLUSTER_HUES[idx % CLUSTER_HUES.length]}`}
+                            className={`rounded border border-l-4 bg-card p-4 shadow-sm ${CLUSTER_HUES[idx % CLUSTER_HUES.length]}`}
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">

@@ -90,13 +90,13 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
 
             <div className="flex flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Risk Advisory</h1>
+                    <h1 className="text-2xl font-semibold">Risk Advisory</h1>
                     <p className="text-sm text-muted-foreground">
                         Ranked accessibility fixes ordered by risk-reduction potential and user impact, per property.
                     </p>
                 </div>
 
-                <div className="rounded-xl border">
+                <div className="rounded border">
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">
@@ -210,7 +210,7 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
 
                 {expandedProperty && (
                     <div className="grid gap-6 lg:grid-cols-2">
-                        <div className="rounded-xl border p-5">
+                        <div className="rounded border p-5">
                             <h2 className="mb-4 text-sm font-semibold">
                                 Risk Priorities &mdash; {expandedProperty.name}
                             </h2>
@@ -218,7 +218,7 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
                                 propertyId={expandedProperty.id}
                             />
                         </div>
-                        <div className="rounded-xl border p-5">
+                        <div className="rounded border p-5">
                             <h2 className="mb-4 text-sm font-semibold">Priority Risk Map</h2>
                             <PriorityRiskMap
                                 siteId={expandedProperty.id}

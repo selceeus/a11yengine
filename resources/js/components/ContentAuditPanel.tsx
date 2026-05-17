@@ -228,7 +228,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
             {isInProgress && (
                 <div className="space-y-3">
                     {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} className="h-16 w-full animate-pulse rounded-lg" />
+                        <Skeleton key={i} className="h-16 w-full animate-pulse rounded" />
                     ))}
                     <p className="text-center text-xs text-muted-foreground">Analysing page content&hellip;</p>
                 </div>
@@ -300,7 +300,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                             return (
                                                 <div
                                                     key={idx}
-                                                    className="rounded-lg border bg-card transition-colors"
+                                                    className="rounded border bg-card transition-colors"
                                                 >
                                                     {/* Issue header — click to expand */}
                                                     <button
@@ -365,7 +365,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                                                 : 'Copy'}
                                                                         </button>
                                                                     </div>
-                                                                    <pre className="overflow-x-auto rounded-md bg-muted px-3 py-2 text-xs">
+                                                                    <pre className="overflow-x-auto rounded bg-muted px-3 py-2 text-xs">
                                                                         <code>{issue.element_html}</code>
                                                                     </pre>
                                                                 </div>
@@ -400,7 +400,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                                             {copiedIndex === globalIdx + 10000 ? 'Copied!' : 'Copy'}
                                                                         </button>
                                                                     </div>
-                                                                    <pre className="overflow-x-auto rounded-md bg-muted px-3 py-2 text-xs">
+                                                                    <pre className="overflow-x-auto rounded bg-muted px-3 py-2 text-xs">
                                                                         <code>
                                                                             {issue.suggested_alt_text === ''
                                                                                 ? '(empty — decorative image)'
@@ -413,7 +413,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                             {/* Writer / Developer notes */}
                                                             <div className="grid gap-3 sm:grid-cols-2">
                                                                 {issue.writer_note && (
-                                                                    <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900 dark:bg-blue-950/30">
+                                                                    <div className="rounded border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900 dark:bg-blue-950/30">
                                                                         <p className="mb-1 text-xs font-semibold text-blue-700 dark:text-blue-400">
                                                                             ✍ For writers
                                                                         </p>
@@ -423,7 +423,7 @@ export function ContentAuditPanel({ propertyId }: ContentAuditPanelProps) {
                                                                     </div>
                                                                 )}
                                                                 {issue.developer_note && (
-                                                                    <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-900 dark:bg-violet-950/30">
+                                                                    <div className="rounded border border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-900 dark:bg-violet-950/30">
                                                                         <p className="mb-1 text-xs font-semibold text-violet-700 dark:text-violet-400">
                                                                             {'</>'} For developers
                                                                         </p>

@@ -95,7 +95,7 @@ export default function Index({ reports, properties }: PageProps) {
 
     function ReportTable({ rows }: { rows: ReportSummary[] }) {
         return (
-            <div className="rounded-xl border">
+            <div className="rounded border">
                 <table className="w-full text-sm">
                     <thead className="border-b bg-muted/50">
                         <tr className="text-xs text-muted-foreground">
@@ -183,7 +183,7 @@ export default function Index({ reports, properties }: PageProps) {
                 {/* Page header */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold">Governance Reports</h1>
+                        <h1 className="text-2xl font-semibold">Governance Reports</h1>
                         <p className="text-sm text-muted-foreground">
                             Executive-ready accessibility governance reports with generated narratives, risk trends,
                             and traceable recommendations.

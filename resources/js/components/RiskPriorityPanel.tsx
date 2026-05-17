@@ -259,7 +259,7 @@ export function RiskPriorityPanel({ propertyId }: RiskPriorityPanelProps) {
             {isInProgress && (
                 <div className="space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                        <Skeleton key={i} className="h-12 w-full rounded" />
                     ))}
                     <p className="animate-pulse text-xs text-muted-foreground">Analysing and ranking your open issues&hellip;</p>
                 </div>
@@ -279,7 +279,7 @@ export function RiskPriorityPanel({ propertyId }: RiskPriorityPanelProps) {
             )}
 
             {hasResult && report.priorities.length > 0 && (
-                <div className="overflow-x-auto rounded-xl border">
+                <div className="overflow-x-auto rounded border">
                     <table className="w-full text-xs">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">

@@ -81,7 +81,7 @@ export default function IntegrationShow({ integration }: { integration: Integrat
 
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-semibold">{integration.name}</h1>
+                                <h1 className="text-2xl font-semibold">{integration.name}</h1>
                                 <Badge
                                     variant={statusVariant(integration.status)}
                                     className={integration.status === 'active' ? 'bg-green-600' : ''}

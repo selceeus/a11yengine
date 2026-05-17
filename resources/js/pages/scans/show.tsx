@@ -236,7 +236,7 @@ export default function Show({
 
                 {/* Delta bar — changes since last scan */}
                 {delta && scan.status === 'completed' && (
-                    <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-muted/30 px-5 py-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-4 rounded border bg-muted/30 px-5 py-3 text-sm">
                         <span className="font-medium text-foreground">Changes vs. previous scan</span>
                         <div className="flex items-center gap-1.5">
                             <span className="text-red-600 font-medium">+{delta.new_count}</span>
@@ -281,7 +281,7 @@ export default function Show({
 
                 {/* Pending / running state */}
                 {isActive && (
-                    <div className="rounded-xl border bg-muted/40 px-6 py-5 space-y-3">
+                    <div className="rounded border bg-muted/40 px-6 py-5 space-y-3">
                         <div className="flex items-center justify-between text-sm">
                             <span className="flex items-center gap-2 font-medium">
                                 <span className="inline-block size-2 animate-pulse rounded-full bg-primary" />
@@ -309,7 +309,7 @@ export default function Show({
 
                 {/* Failed state error message */}
                 {scan.status === 'failed' && scan.error_message && (
-                    <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-4 text-sm text-destructive">
+                    <div className="rounded border border-destructive/30 bg-destructive/5 px-6 py-4 text-sm text-destructive">
                         <span className="font-semibold mr-2">Scan failed:</span>
                         {scan.error_message}
                     </div>
@@ -356,7 +356,7 @@ export default function Show({
                 {scan.status === 'completed' && experiencePillars !== null && (
                     <div>
                         <h3 className="mb-3 text-sm font-semibold">Experience Score</h3>
-                        <div className="rounded-xl border bg-card p-5">
+                        <div className="rounded border bg-card p-5">
                             <div className="mb-4">
                                 <GaugeCard label="Composite score (0–100)" score={Math.round(experiencePillars.experience_score)} />
                             </div>
@@ -376,7 +376,7 @@ export default function Show({
                         <h3 className="mb-3 text-sm font-semibold">WCAG Results</h3>
                         <div className="grid gap-4 sm:grid-cols-2">
                             {/* Severity breakdown */}
-                            <div className="rounded-xl border p-4">
+                            <div className="rounded border p-4">
                                 <h3 className="mb-3 text-sm font-semibold">Violations by severity</h3>
                                 <div className="space-y-2">
                                     {severityBreakdown.map((row) => {
@@ -403,7 +403,7 @@ export default function Show({
                             </div>
 
                             {/* Top rules */}
-                            <div className="rounded-xl border p-4">
+                            <div className="rounded border p-4">
                                 <h2 className="mb-3 text-sm font-semibold">Top violated rules</h2>
                                 <ol className="space-y-1.5">
                                     {Object.entries(topRules).map(([rule, count], i) => (
@@ -458,7 +458,7 @@ export default function Show({
                         {/* WCAG tab */}
                         {tab === 'wcag' && (
                             scan.scan_pages.length > 0 ? (
-                                <div className="rounded-xl border">
+                                <div className="rounded border">
                                     <table className="w-full text-sm">
                                         <caption className="px-4 py-3">WCAG Scoring Results</caption>
                                         <thead className="border-b bg-muted/50">
@@ -495,7 +495,7 @@ export default function Show({
                                     </table>
                                 </div>
                             ) : (
-                                <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                                <div className="rounded border px-6 py-10 text-center text-sm text-muted-foreground">
                                     No pages were recorded for this scan.
                                 </div>
                             )
@@ -504,7 +504,7 @@ export default function Show({
                         {/* Screen Reader tab */}
                         {tab === 'screen-reader' && (
                             screenReaderResults.length > 0 ? (
-                                <div className="rounded-xl border">
+                                <div className="rounded border">
                                     <table className="w-full text-sm">
                                         <caption className="px-4 py-3">Screen Reader Audit Results</caption>
                                         <thead className="border-b bg-muted/50">
@@ -528,7 +528,7 @@ export default function Show({
                                     </table>
                                 </div>
                             ) : (
-                                <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                                <div className="rounded border px-6 py-10 text-center text-sm text-muted-foreground">
                                     No screen reader violations were detected for this scan.
                                 </div>
                             )
@@ -540,7 +540,7 @@ export default function Show({
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setLighthouseFormFactor('mobile')}
-                                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                                             lighthouseFormFactor === 'mobile'
                                                 ? 'bg-primary text-primary-foreground'
                                                 : 'bg-muted text-muted-foreground hover:text-foreground'
@@ -550,7 +550,7 @@ export default function Show({
                                     </button>
                                     <button
                                         onClick={() => setLighthouseFormFactor('desktop')}
-                                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                                             lighthouseFormFactor === 'desktop'
                                                 ? 'bg-primary text-primary-foreground'
                                                 : 'bg-muted text-muted-foreground hover:text-foreground'
@@ -559,7 +559,7 @@ export default function Show({
                                         Desktop
                                     </button>
                                 </div>
-                                <div className="rounded-xl border">
+                                <div className="rounded border">
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <caption className="px-4 py-3">
@@ -625,12 +625,12 @@ export default function Show({
                         {tab === 'pdfs' && (
                             <>
                             {!pdfScannerAvailable && (
-                                <div className="mb-4 rounded-xl border border-yellow-400/40 bg-yellow-50/50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-950/30 dark:text-yellow-300">
+                                <div className="mb-4 rounded border border-yellow-400/40 bg-yellow-50/50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-950/30 dark:text-yellow-300">
                                     The PDF scanner service is currently unavailable. PDF accessibility scanning is disabled.
                                 </div>
                             )}
                             {pdfDocuments.length > 0 ? (
-                                <div className="rounded-xl border">
+                                <div className="rounded border">
                                     <table className="w-full text-sm">
                                         <caption className="px-4 py-3">PDF Documents</caption>
                                         <thead className="border-b bg-muted/50">
@@ -672,7 +672,7 @@ export default function Show({
                                     </table>
                                 </div>
                             ) : (
-                                <div className="rounded-xl border px-6 py-10 text-center text-sm text-muted-foreground">
+                                <div className="rounded border px-6 py-10 text-center text-sm text-muted-foreground">
                                     No PDF documents were discovered during this scan.
                                 </div>
                             )}
@@ -683,7 +683,7 @@ export default function Show({
 
                 {/* In-progress pages list (shown during active scan) */}
                 {isActive && scan.scan_pages.length > 0 && (
-                    <div className="rounded-xl border">
+                    <div className="rounded border">
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50">
                                 <tr className="text-xs text-muted-foreground">
@@ -787,7 +787,7 @@ function GenerateReports({ scan }: { scan: Scan }) {
     }
 
     return (
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded border bg-card p-5">
             <h3 className="mb-1 text-sm font-semibold">Generate reports</h3>
             <p className="mb-4 text-xs text-muted-foreground">
                 Run AI-powered analysis on this scan to produce remediation plans and insights.
@@ -834,9 +834,9 @@ function ScoreChip({ score }: { score: number | null }) {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
     return (
-        <div className="rounded-xl border bg-card p-4">
+        <div className="rounded border bg-card p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
         </div>
     );
 }
@@ -857,7 +857,7 @@ function GaugeCard({ label, score }: { label: string; score: number | null }) {
         'text-red-600';
 
     return (
-        <div className="rounded-xl border bg-card p-4 flex flex-col gap-2">
+        <div className="rounded border bg-card p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
                 {score ?? '—'}
@@ -888,12 +888,12 @@ function PillarCard({ label, weight, score }: { label: string; weight: string; s
         'text-red-600';
 
     return (
-        <div className="flex flex-col gap-1.5 rounded-xl border bg-muted/30 p-3">
+        <div className="flex flex-col gap-1.5 rounded border bg-muted/30 p-3">
             <div className="flex items-center justify-between">
                 <p className="text-xs font-medium">{label}</p>
                 <span className="text-xs text-muted-foreground">{weight}</span>
             </div>
-            <p className={`text-xl font-bold tabular-nums leading-none ${textColour}`}>
+            <p className={`text-2xl font-bold tabular-nums leading-none ${textColour}`}>
                 {score !== null ? Math.round(score) : '—'}
             </p>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
