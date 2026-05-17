@@ -24,12 +24,18 @@ class LighthouseRunner
      */
     public function run(string $url, int $timeout, string $formFactor = 'mobile'): array
     {
+        // Give each Lighthouse process its own temp directory so concurrent
+        // mobile + desktop runs do not clash on Windows (EPERM on shared temp paths).
+        $tempDir = storage_path('app/lighthouse-tmp/'.uniqid('lh-', true));
+        mkdir($tempDir, 0755, true);
+
         $command = [
             config('lighthouse.binary'),
             $url,
             '--output=json',
             '--output-path=stdout',
             '--quiet',
+            '--temp-path='.$tempDir,
             '--chrome-flags=--headless --no-sandbox --disable-gpu',
         ];
 
@@ -42,6 +48,8 @@ class LighthouseRunner
         }
 
         $result = Process::timeout($timeout)->run($command);
+
+        $this->removeTempDir($tempDir);
 
         if ($result->failed()) {
             throw new ScanProcessException(
@@ -62,6 +70,27 @@ class LighthouseRunner
         }
 
         return $this->normalize($url, $report);
+    }
+
+    /**
+     * Recursively delete a temporary directory created for a Lighthouse run.
+     * Failures are silenced — a leftover temp dir is not worth crashing over.
+     */
+    private function removeTempDir(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+
+        foreach (scandir($dir) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+            $path = $dir.DIRECTORY_SEPARATOR.$entry;
+            is_dir($path) ? $this->removeTempDir($path) : @unlink($path);
+        }
+
+        @rmdir($dir);
     }
 
     /**
