@@ -154,8 +154,11 @@ function parseRgb(color) {
 // =============================================================================
 
 /**
- * Tab through all focusable elements on the page (up to maxSteps), recording
- * which element is active after each Tab press.
+ * Tab through all focusable elements on the page (up to maxSteps) in a
+ * single traversal, simultaneously collecting:
+ *  - tab-order data (used by checkUnreachableInteractive / checkFocusTrap /
+ *    checkFocusOrderWrong)
+ *  - focus-indicator violations (previously a second, separate traversal)
  *
  * Guards against side effects:
  *  - Dialogs are dismissed immediately.
@@ -164,9 +167,12 @@ function parseRgb(color) {
  *
  * @param {import('playwright').Page} page
  * @param {number} maxSteps
- * @returns {Promise<Array<{html: string, target: string, rect: {top: number, left: number}, domIndex: number}>>}
+ * @returns {Promise<{
+ *   tabOrder: Array<{html: string, target: string, rect: {top: number, left: number}, domIndex: number}>,
+ *   focusIndicatorViolation: object|null
+ * }>}
  */
-async function collectTabOrder(page, maxSteps) {
+async function collectTabOrderAndFocusInfo(page, maxSteps) {
     let navigatedAway = false;
 
     const onNavigation = () => {
@@ -188,6 +194,8 @@ async function collectTabOrder(page, maxSteps) {
     });
 
     const tabOrder = [];
+    const missingFocusNodes = [];
+    const seenFocusMissing = new Set();
 
     try {
         // Move focus to the top of the document before starting.
@@ -209,7 +217,7 @@ async function collectTabOrder(page, maxSteps) {
                 break;
             }
 
-            const focusInfo = await page.evaluate(() => {
+            const info = await page.evaluate(() => {
                 const el = document.activeElement;
 
                 if (!el || el === document.body || el === document.documentElement) {
@@ -219,131 +227,45 @@ async function collectTabOrder(page, maxSteps) {
                 const rect = el.getBoundingClientRect();
                 const all = [...document.querySelectorAll('*')];
                 const domIndex = all.indexOf(el);
+                const html = el.outerHTML.length > 200 ? el.outerHTML.slice(0, 200) + '...' : el.outerHTML;
+                const target = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
 
-                return {
-                    html: el.outerHTML.length > 200 ? el.outerHTML.slice(0, 200) + '...' : el.outerHTML,
-                    target: el.tagName.toLowerCase() + (el.id ? '#' + el.id : ''),
-                    rect: { top: rect.top, left: rect.left },
-                    domIndex,
-                };
-            });
-
-            if (!focusInfo) {
-                continue;
-            }
-
-            tabOrder.push(focusInfo);
-
-            // Stop when we've cycled back to the first element.
-            if (tabOrder.length > 1 && focusInfo.target === tabOrder[0].target) {
-                break;
-            }
-        }
-    } finally {
-        page.off('framenavigated', onNavigation);
-        page.off('dialog', dialogHandler);
-        await page.unrouteAll().catch(() => {});
-
-        // Remove the temporary tabindex we added to body.
-        await page.evaluate(() => {
-            document.body?.removeAttribute('tabindex');
-        }).catch(() => {});
-    }
-
-    return tabOrder;
-}
-
-/**
- * Check for missing focus indicators.
- * After each Tab press, inspect whether the focused element has a visible
- * focus ring (outline, box-shadow, or border that differs from unfocused state).
- *
- * @param {import('playwright').Page} page
- * @param {number} maxSteps
- * @returns {Promise<object|null>}
- */
-async function checkFocusIndicatorMissing(page, maxSteps) {
-    let navigatedAway = false;
-
-    const onNavigation = () => {
-        navigatedAway = true;
-    };
-
-    page.on('framenavigated', onNavigation);
-
-    const dialogHandler = (dialog) => dialog.dismiss().catch(() => {});
-    page.on('dialog', dialogHandler);
-
-    await page.route('**/*', (route) => {
-        if (route.request().method().toUpperCase() !== 'GET') {
-            route.abort().catch(() => {});
-        } else {
-            route.continue().catch(() => {});
-        }
-    });
-
-    const nodes = [];
-
-    try {
-        await page.evaluate(() => {
-            if (document.body) {
-                document.body.setAttribute('tabindex', '-1');
-                document.body.focus();
-            }
-        });
-
-        const seen = new Set();
-
-        for (let i = 0; i < maxSteps; i++) {
-            if (navigatedAway) {
-                break;
-            }
-
-            await page.keyboard.press('Tab');
-
-            if (navigatedAway) {
-                break;
-            }
-
-            const result = await page.evaluate(() => {
-                const el = document.activeElement;
-
-                if (!el || el === document.body || el === document.documentElement) {
-                    return null;
-                }
-
+                // Focus indicator check — collected in the same pass to avoid a second traversal.
                 const style = window.getComputedStyle(el);
                 const outline = style.outline || '';
                 const outlineWidth = parseFloat(style.outlineWidth) || 0;
                 const boxShadow = style.boxShadow || '';
                 const borderWidth = parseFloat(style.borderWidth) || 0;
-
-                // Consider focus visible if outline width > 0, box-shadow is set, or border > 0 and not "none"
                 const hasOutline = outlineWidth > 0 && !outline.includes('none');
                 const hasBoxShadow = boxShadow !== 'none' && boxShadow !== '';
                 const hasBorder = borderWidth > 0 && style.borderStyle !== 'none';
 
-                if (hasOutline || hasBoxShadow || hasBorder) {
-                    return null;
-                }
-
-                const html = el.outerHTML.length > 200 ? el.outerHTML.slice(0, 200) + '...' : el.outerHTML;
-                const target = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
-
                 return {
                     html,
                     target,
-                    failureSummary: 'Add a visible focus indicator using CSS outline, box-shadow, or border that activates on :focus or :focus-visible.',
+                    rect: { top: rect.top, left: rect.left },
+                    domIndex,
+                    hasFocusIndicator: hasOutline || hasBoxShadow || hasBorder,
                 };
             });
 
-            if (result && !seen.has(result.target)) {
-                seen.add(result.target);
-                nodes.push({ ...result, target: [result.target] });
+            if (!info) {
+                continue;
             }
 
-            // Stop cycling when focus wraps around.
-            if (nodes.length >= 20) {
+            tabOrder.push({ html: info.html, target: info.target, rect: info.rect, domIndex: info.domIndex });
+
+            if (!info.hasFocusIndicator && !seenFocusMissing.has(info.target) && missingFocusNodes.length < 20) {
+                seenFocusMissing.add(info.target);
+                missingFocusNodes.push({
+                    html: info.html,
+                    target: [info.target],
+                    failureSummary: 'Add a visible focus indicator using CSS outline, box-shadow, or border that activates on :focus or :focus-visible.',
+                });
+            }
+
+            // Stop when we've cycled back to the first element.
+            if (tabOrder.length > 1 && info.target === tabOrder[0].target) {
                 break;
             }
         }
@@ -351,10 +273,16 @@ async function checkFocusIndicatorMissing(page, maxSteps) {
         page.off('framenavigated', onNavigation);
         page.off('dialog', dialogHandler);
         await page.unrouteAll().catch(() => {});
-        await page.evaluate(() => { document.body?.removeAttribute('tabindex'); }).catch(() => {});
+
+        await page.evaluate(() => {
+            document.body?.removeAttribute('tabindex');
+        }).catch(() => {});
     }
 
-    return buildViolation('int-focus-indicator-missing', nodes);
+    return {
+        tabOrder,
+        focusIndicatorViolation: buildViolation('int-focus-indicator-missing', missingFocusNodes),
+    };
 }
 
 /**
@@ -706,13 +634,12 @@ async function runInteractive(page, config = {}) {
     const originalViewport = config.originalViewport ?? { width: 1280, height: 720 };
     const violations = [];
 
-    // Phase 1 — Tab Navigation
+    // Phase 1 — Tab Navigation (single pass collects tab order + focus indicators)
     let tabOrder = [];
 
     try {
-        tabOrder = await collectTabOrder(page, maxTabSteps);
-
-        const focusIndicatorViolation = await checkFocusIndicatorMissing(page, maxTabSteps);
+        const { tabOrder: order, focusIndicatorViolation } = await collectTabOrderAndFocusInfo(page, maxTabSteps);
+        tabOrder = order;
 
         if (focusIndicatorViolation) {
             violations.push(focusIndicatorViolation);

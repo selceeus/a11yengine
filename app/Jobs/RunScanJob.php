@@ -20,9 +20,10 @@ class RunScanJob implements ShouldQueue
 
     /**
      * Maximum seconds this job may run before being killed by the queue worker.
-     * Set high enough to allow large sites to complete crawling.
+     * Set slightly above CRAWLER_TIMEOUT so the crawler process exception is
+     * always thrown and handled before the queue worker kills the job.
      */
-    public int $timeout = 600;
+    public int $timeout = 660;
 
     /**
      * Number of times the job may be attempted before it is marked as failed.

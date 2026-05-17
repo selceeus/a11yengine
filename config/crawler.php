@@ -25,6 +25,6 @@ return [
     |
     */
 
-    'timeout' => (int) env('CRAWLER_TIMEOUT', 300),
+    'timeout' => (int) env('CRAWLER_TIMEOUT', 600),
 
 ];

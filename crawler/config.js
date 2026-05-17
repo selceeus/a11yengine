@@ -49,7 +49,9 @@ module.exports = {
         // Includes tab navigation, interaction contrast, reflow, reduced motion, and touch targets.
         enabled: true,
         // Maximum number of Tab key presses during the tab navigation phase.
-        maxTabSteps: 100,
+        // Keep this low — the traversal now also collects focus-indicator data in the
+        // same pass, so this value is no longer doubled per page.
+        maxTabSteps: 20,
         // Viewport dimensions to restore after the reflow phase.
         originalViewport: { width: 1280, height: 720 },
     },
