@@ -57,7 +57,6 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "@php artisan wayfinder:generate",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --queue=default,pdf --tries=1 --timeout=660\" \"npm run dev\" --names='server,queue,vite'"
         ],
         "dev:ssr": [
