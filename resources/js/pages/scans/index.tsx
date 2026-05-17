@@ -279,7 +279,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                         <Button variant="outline" size="sm" asChild>
                             <Link href="/journeys">Manage Journeys</Link>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={openScheduleDialog}>Schedule Scan</Button>
+                        <Button className="cursor-pointer" variant="outline" size="sm" onClick={openScheduleDialog}>Schedule Scan</Button>
                     </div>
                 </div>
 
@@ -291,12 +291,12 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="property_id">Property</Label>
                             <Select value={data.property_id} onValueChange={onPropertyChange}>
-                                <SelectTrigger id="property_id" className="w-64">
+                                <SelectTrigger id="property_id" className="w-64 cursor-pointer">
                                     <SelectValue placeholder="Select a property…" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {properties.map((p) => (
-                                        <SelectItem key={p.id} value={String(p.id)}>
+                                        <SelectItem key={p.id} value={String(p.id)} className='cursor-pointer'>
                                             {p.name}
                                         </SelectItem>
                                     ))}
@@ -318,7 +318,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                             value={mode}
                                             checked={scanMode === mode}
                                             onChange={() => onScanModeChange(mode)}
-                                            className="accent-primary"
+                                            className="accent-primary cursor-pointer"
                                         />
                                         {mode === 'full' ? 'Full site' : mode === 'single' ? 'Single page' : 'User journey'}
                                     </label>
@@ -347,12 +347,12 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                             <div className="flex flex-col gap-1.5">
                                 <Label htmlFor="scan_journey_id">Journey</Label>
                                 <Select value={data.scan_journey_id} onValueChange={(v) => setData('scan_journey_id', v)}>
-                                    <SelectTrigger id="scan_journey_id" className="w-64">
+                                    <SelectTrigger id="scan_journey_id" className="w-64 cursor-pointer">
                                         <SelectValue placeholder={journeys.length === 0 ? 'No journeys for this property' : 'Select a journey…'} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {journeys.map((j) => (
-                                            <SelectItem key={j.id} value={String(j.id)}>
+                                            <SelectItem key={j.id} value={String(j.id)} className="cursor-pointer">
                                                 {j.name} <span className="text-muted-foreground">({j.steps_count} steps)</span>
                                             </SelectItem>
                                         ))}
@@ -364,7 +364,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                             </div>
                         )}
 
-                        <Button type="submit" disabled={processing || !data.property_id || (scanMode === 'single' && !data.target_url) || (scanMode === 'journey' && !data.scan_journey_id)}>
+                        <Button type="submit" className='cursor-pointer' disabled={processing || !data.property_id || (scanMode === 'single' && !data.target_url) || (scanMode === 'journey' && !data.scan_journey_id)}>
                             {processing ? 'Starting…' : 'Start scan'}
                         </Button>
                     </form>
@@ -378,8 +378,8 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                 ) : (
                     <Accordion type="multiple" defaultValue={firstGroupId !== undefined ? [String(firstGroupId)] : []} className="rounded border divide-y">
                         {propertyGroups.map((group) => (
-                            <AccordionItem key={String(group.propertyId)} value={String(group.propertyId)} className="border-none px-4">
-                                <AccordionTrigger className="hover:no-underline">
+                            <AccordionItem key={String(group.propertyId)} value={String(group.propertyId)} className="py-2 px-4">
+                                <AccordionTrigger className="hover:no-underline cursor-pointer">
                                     <div className="flex items-center gap-3 w-full">
                                         <span className="font-medium">{group.propertyName}</span>
                                         {group.propertyId !== null && (
@@ -455,20 +455,20 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                                         <div className="flex items-center justify-end gap-3">
                                                             <button
                                                                 onClick={() => openOverview(scan)}
-                                                                className="text-sm text-primary hover:underline"
+                                                                className="text-sm text-primary hover:underline cursor-pointer"
                                                             >
                                                                 Overview
                                                             </button>
                                                             <Link
                                                                 href={ScanController.show(scan.id).url}
-                                                                className="text-sm text-primary hover:underline"
+                                                                className="text-sm text-primary hover:underline cursor-pointer"
                                                             >
                                                                 View
                                                             </Link>
                                                             {scan.canDelete && scan.status !== 'pending' && scan.status !== 'running' && (
                                                                 <button
                                                                     onClick={() => deleteScan(scan)}
-                                                                    className="text-sm text-destructive hover:underline"
+                                                                    className="text-sm text-destructive hover:underline cursor-pointer"
                                                                 >
                                                                     Delete
                                                                 </button>
@@ -584,7 +584,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                         <div className="flex flex-col gap-4 pt-1">
                             <p className="text-sm text-green-600">Schedule saved successfully.</p>
                             <div className="flex justify-end">
-                                <Button variant="outline" onClick={() => setScheduleOpen(false)}>Close</Button>
+                                <Button variant="outline" className="cursor-pointer" onClick={() => setScheduleOpen(false)}>Close</Button>
                             </div>
                         </div>
                     ) : (
