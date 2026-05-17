@@ -82,6 +82,28 @@ function parseArgs() {
 }
 
 /**
+ * Race a promise against a hard timeout.
+ * Rejects with a descriptive error if the promise does not settle in time.
+ * This is the primary guard against Playwright operations hanging indefinitely
+ * on Windows, where killing child processes (Chromium) via PHP's Process
+ * facade is unreliable.
+ *
+ * @param {Promise<T>} promise
+ * @param {number} ms
+ * @param {string} label
+ * @returns {Promise<T>}
+ * @template T
+ */
+function withTimeout(promise, ms, label = 'operation') {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+        ),
+    ]);
+}
+
+/**
  * Returns true if the URL should be crawled given the include/exclude pattern lists.
  * - If includePatterns is non-empty, the URL must match at least one.
  * - If excludePatterns is non-empty, the URL must not match any.
@@ -167,7 +189,11 @@ async function scanUrlList({ urlList, wcagVersion: _wcagVersion, axeConfig, brow
             let keyboardViolations = [];
             if (config.keyboard.enabled) {
                 try {
-                    const kbResult = await runKeyboard(page, config.keyboard);
+                    const kbResult = await withTimeout(
+                        runKeyboard(page, config.keyboard),
+                        config.keyboard.timeoutMs ?? 10000,
+                        'keyboard check',
+                    );
                     keyboardViolations = kbResult.violations;
                 } catch (kbError) {
                     log('warn', `Keyboard check failed for ${normalisedUrl}: ${kbError.message}`);
@@ -177,7 +203,11 @@ async function scanUrlList({ urlList, wcagVersion: _wcagVersion, axeConfig, brow
             let interactiveViolations = [];
             if (config.interactive.enabled) {
                 try {
-                    const intResult = await runInteractive(page, config.interactive);
+                    const intResult = await withTimeout(
+                        runInteractive(page, config.interactive),
+                        config.interactive.timeoutMs ?? 25000,
+                        'interactive check',
+                    );
                     interactiveViolations = intResult.violations;
                 } catch (intError) {
                     log('warn', `Interactive check failed for ${normalisedUrl}: ${intError.message}`);
@@ -203,6 +233,18 @@ async function scan() {
     const { baseUrl, maxDepth, maxPages, wcagVersion, includePatterns, excludePatterns, urlList } = parseArgs();
 
     log('info', `Starting scan: ${baseUrl} (maxDepth=${maxDepth}, maxPages=${maxPages}, wcag=${wcagVersion})`);
+
+    // Self-termination guard for Windows: the PHP Process facade cannot reliably
+    // kill Chromium child processes via SIGKILL.  We set our own timer at 85 % of
+    // the configured PHP-side timeout so Node exits cleanly and outputs whatever
+    // partial results it has before PHP gives up.
+    let abortScan = false;
+    const selfExitTimer = setTimeout(() => {
+        process.stderr.write(`[WARN] Scan reached time budget (${config.scanTimeoutMs}ms) — stopping with partial results\n`);
+        abortScan = true;
+    }, config.scanTimeoutMs);
+    // unref so the timer never prevents Node from exiting on its own.
+    selfExitTimer.unref();
 
     // Build axe config, extending the base tag list for WCAG 2.2 if requested.
     const axeConfig = { ...config.axe };
@@ -242,7 +284,7 @@ async function scan() {
     const discoveredPdfs = new Set();
 
     try {
-        while (queue.length > 0 && visited.size < maxPages) {
+        while (queue.length > 0 && visited.size < maxPages && !abortScan) {
             const { url, depth } = queue.shift();
             const normalisedUrl = normaliseUrl(url);
 
@@ -301,7 +343,11 @@ async function scan() {
                 let keyboardViolations = [];
                 if (config.keyboard.enabled) {
                     try {
-                        const kbResult = await runKeyboard(page, config.keyboard);
+                        const kbResult = await withTimeout(
+                            runKeyboard(page, config.keyboard),
+                            config.keyboard.timeoutMs ?? 10000,
+                            'keyboard check',
+                        );
                         keyboardViolations = kbResult.violations;
                     } catch (kbError) {
                         log('warn', `Keyboard check failed for ${normalisedUrl}: ${kbError.message}`);
@@ -311,7 +357,11 @@ async function scan() {
                 let interactiveViolations = [];
                 if (config.interactive.enabled) {
                     try {
-                        const intResult = await runInteractive(page, config.interactive);
+                        const intResult = await withTimeout(
+                            runInteractive(page, config.interactive),
+                            config.interactive.timeoutMs ?? 25000,
+                            'interactive check',
+                        );
                         interactiveViolations = intResult.violations;
                     } catch (intError) {
                         log('warn', `Interactive check failed for ${normalisedUrl}: ${intError.message}`);
@@ -348,10 +398,9 @@ async function scan() {
             }
         }
     } finally {
+        clearTimeout(selfExitTimer);
         await browser.close();
     }
-
-    process.stdout.write(JSON.stringify({ pages: results, pdfs: [...discoveredPdfs] }));
     process.exit(0);
 }
 

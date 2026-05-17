@@ -6,6 +6,11 @@ module.exports = {
     requestDelayMs: parseInt(process.env.CRAWLER_REQUEST_DELAY_MS, 10) || 500,
     logLevel: process.env.CRAWLER_LOG_LEVEL || 'error', // silent | error | warn | info
 
+    // Self-termination budget: Node exits cleanly at 85 % of the PHP-side
+    // CRAWLER_TIMEOUT, outputting partial results rather than being hard-killed
+    // by PHP (which cannot reliably terminate Chromium child processes on Windows).
+    scanTimeoutMs: Math.floor((parseInt(process.env.CRAWLER_TIMEOUT, 10) || 600) * 1000 * 0.85),
+
     axe: {
         runOnly: {
             type: 'tag',
@@ -42,6 +47,9 @@ module.exports = {
     keyboard: {
         // Set to false to disable the DOM-based keyboard navigation checks entirely.
         enabled: true,
+        // Maximum milliseconds to spend on keyboard checks per page before
+        // withTimeout cancels and moves on.
+        timeoutMs: 10000,
     },
 
     interactive: {
@@ -52,6 +60,9 @@ module.exports = {
         // Keep this low — the traversal now also collects focus-indicator data in the
         // same pass, so this value is no longer doubled per page.
         maxTabSteps: 20,
+        // Maximum milliseconds to spend on the full interactive phase per page
+        // before withTimeout cancels and moves on.
+        timeoutMs: 25000,
         // Viewport dimensions to restore after the reflow phase.
         originalViewport: { width: 1280, height: 720 },
     },
