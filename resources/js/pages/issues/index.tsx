@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, ChevronsUpDown, Filter, ShieldCheck } from 'lucide-react';
+import { AlignJustify, ChevronDown, ChevronUp, ChevronsUpDown, Filter, List, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import * as IssueController from '@/actions/App/Http/Controllers/IssueController';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
@@ -121,15 +122,20 @@ function SortableHeader({
     const isActive = currentSort === column;
     const nextDirection = isActive && currentDirection === 'desc' ? 'asc' : 'desc';
     const Icon = isActive ? (currentDirection === 'desc' ? ChevronDown : ChevronUp) : ChevronsUpDown;
+    const label = typeof children === 'string' ? children : column;
+    const ariaLabel = isActive
+        ? `Sort by ${label}, currently ${currentDirection === 'asc' ? 'ascending' : 'descending'}, click to sort ${nextDirection === 'asc' ? 'ascending' : 'descending'}`
+        : `Sort by ${label}`;
 
     return (
         <th className={cn('px-4 py-3 font-medium', className)}>
             <button
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => onSort(column, nextDirection)}
+                aria-label={ariaLabel}
             >
                 {children}
-                <Icon className="h-3 w-3" />
+                <Icon className="h-3 w-3" aria-hidden="true" />
             </button>
         </th>
     );
@@ -160,6 +166,7 @@ export default function Index({
     const [moreFiltersOpen, setMoreFiltersOpen] = useState(
         !!(filters.wcag_category || filters.assigned_user_id || filters.date_from || filters.date_to),
     );
+    const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
     const allPageIds = issues.data.map((i) => i.id);
     const allSelected = allPageIds.length > 0 && allPageIds.every((id) => selectedIds.includes(id));
@@ -261,9 +268,24 @@ export default function Index({
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-semibold">Issues</h1>
-                    {someSelected && (
-                        <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {someSelected && (
+                            <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
+                        )}
+                        <ToggleGroup
+                            type="single"
+                            value={density}
+                            onValueChange={(v) => v && setDensity(v as 'comfortable' | 'compact')}
+                            aria-label="Table density"
+                        >
+                            <ToggleGroupItem value="comfortable" aria-label="Comfortable density">
+                                <AlignJustify className="h-4 w-4" />
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="compact" aria-label="Compact density">
+                                <List className="h-4 w-4" />
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
                 </div>
 
                 {/* Summary stats */}
@@ -436,7 +458,7 @@ export default function Index({
 
                 {/* Table */}
                 <div className="rounded border">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm" data-density={density}>
                         <thead className="border-b bg-muted/50">
                             <tr>
                                 <th className="px-4 py-3 text-center font-medium">
