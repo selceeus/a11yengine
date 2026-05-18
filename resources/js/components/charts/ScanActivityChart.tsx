@@ -84,7 +84,7 @@ export function ScanActivityChart({ agencyId, organizationId }: ScanActivityChar
 
     const options: ChartOptions<'line'> = {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
@@ -108,12 +108,14 @@ export function ScanActivityChart({ agencyId, organizationId }: ScanActivityChar
 
     return (
         <div className="w-full">
-            <Line
-                data={chartData}
-                options={options}
-                aria-label="Scan activity over time – line chart"
-                role="img"
-            />
+            <div className="h-[180px]">
+                <Line
+                    data={chartData}
+                    options={options}
+                    aria-label="Scan activity over time – line chart"
+                    role="img"
+                />
+            </div>
             <p className="mt-1 text-right text-xs text-muted-foreground">
                 {totalScans} completed scan{totalScans !== 1 ? 's' : ''} in the last 30 days
             </p>

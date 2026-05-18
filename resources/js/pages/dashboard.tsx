@@ -162,8 +162,8 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
-                            <Card className="col-span-full">
+                        <div className="grid auto-rows-min gap-4 md:grid-cols-2">
+                            <Card>
                                 <CardHeader>
                                     <CardTitle>Organisation Risk Trends</CardTitle>
                                 </CardHeader>
@@ -175,9 +175,7 @@ export default function Dashboard() {
                                     )}
                                 </CardContent>
                             </Card>
-                        </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
-                            <Card className="col-span-full">
+                            <Card>
                                 <CardHeader>
                                     <CardTitle>Top At-Risk Properties</CardTitle>
                                 </CardHeader>
@@ -190,8 +188,8 @@ export default function Dashboard() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
-                            <Card className="col-span-full">
+                        <div className="grid auto-rows-min gap-4 md:grid-cols-2">
+                            <Card>
                                 <CardHeader>
                                     <CardTitle>Accessibility Risk Landscape</CardTitle>
                                 </CardHeader>
@@ -199,9 +197,7 @@ export default function Dashboard() {
                                     <AccessibilityRiskLandscapeBarChart siteId={defaultPropertyId} />
                                 </CardContent>
                             </Card>
-                        </div>
-                        <div className="relative min-h-screen flex-1 overflow-hidden rounded md:min-h-min">
-                            <Card className="col-span-full">
+                            <Card>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Latest Audit Scores</CardTitle>
                                     <Link href="/audits/dashboard" className="text-sm text-primary hover:underline">

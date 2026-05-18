@@ -98,7 +98,7 @@ export function OrgRiskTrendsChart({ agencyId, organizationId }: OrgRiskTrendsCh
 
     const options: ChartOptions<'line'> = {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: true, position: 'bottom' },
             tooltip: {
@@ -146,12 +146,14 @@ export function OrgRiskTrendsChart({ agencyId, organizationId }: OrgRiskTrendsCh
             {noData && <p className="text-sm text-muted-foreground">No organisation risk data yet.</p>}
 
             {!loading && !error && data && data.organizations.length > 0 && (
-                <Line
-                    data={chartData}
-                    options={options}
-                    aria-label="Organisation risk trends – line chart"
-                    role="img"
-                />
+                <div className="h-55">
+                    <Line
+                        data={chartData}
+                        options={options}
+                        aria-label="Organisation risk trends – line chart"
+                        role="img"
+                    />
+                </div>
             )}
         </div>
     );

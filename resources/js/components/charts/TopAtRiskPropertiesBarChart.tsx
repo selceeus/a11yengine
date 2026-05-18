@@ -76,7 +76,7 @@ export function TopAtRiskPropertiesBarChart({ agencyId, organizationId }: TopAtR
     if (noData) return <p className="text-sm text-muted-foreground">No at-risk properties found.</p>;
 
     const items = [...(data?.properties ?? [])].sort((a, b) => b.risk_score - a.risk_score);
-    const chartHeight = Math.max(200, items.length * 40);
+    const chartHeight = Math.min(280, Math.max(200, items.length * 40));
 
     const chartData = {
         labels: items.map((p) => (p.name.length > 22 ? p.name.slice(0, 20) + '\u2026' : p.name)),

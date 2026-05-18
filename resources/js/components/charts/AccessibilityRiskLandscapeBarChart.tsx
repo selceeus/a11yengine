@@ -71,7 +71,7 @@ export function AccessibilityRiskLandscapeBarChart({ siteId }: AccessibilityRisk
     if (!data || data.length === 0) return <p className="text-sm text-muted-foreground">No page risk data available for this property.</p>;
 
     const items = [...data].sort((a, b) => b.riskScore - a.riskScore).slice(0, MAX_PAGES);
-    const chartHeight = Math.max(200, items.length * 34);
+    const chartHeight = Math.min(280, Math.max(200, items.length * 34));
 
     const chartData = {
         labels: items.map((p) => trimUrl(p.url)),
