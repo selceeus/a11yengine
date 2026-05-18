@@ -91,7 +91,7 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
                                 <th className="px-4 py-3 text-right font-medium">Score</th>
                                 <th className="px-4 py-3 text-left font-medium">Generated</th>
-                                <th className="px-4 py-3"></th>
+                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -122,7 +122,7 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
                                                 </Link>
                                                 <button
                                                     onClick={() => deleteAudit(audit)}
-                                                    className="text-muted-foreground hover:text-destructive"
+                                                    className="text-muted-foreground hover:text-destructive cursor-pointer"
                                                     aria-label="Delete audit"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -165,12 +165,12 @@ export default function Index({ audits, properties }: { audits: PaginatedAudits;
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="property_id">Property <span className="text-destructive">*</span></Label>
                             <Select value={data.property_id} onValueChange={(v) => setData('property_id', v)}>
-                                <SelectTrigger id="property_id">
+                                <SelectTrigger id="property_id cursor-pointer">
                                     <SelectValue placeholder="Select a property…" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {properties.map((p) => (
-                                        <SelectItem key={p.id} value={String(p.id)}>
+                                        <SelectItem className="cursor-pointer" key={p.id} value={String(p.id)}>
                                             {p.name}
                                         </SelectItem>
                                     ))}

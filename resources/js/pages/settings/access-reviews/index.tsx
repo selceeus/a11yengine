@@ -53,12 +53,12 @@ export default function AccessReviewsIndex({ reviews }: { reviews: Review[] }) {
                                             {review.status}
                                         </Badge>
                                         {review.status === 'pending' && (
-                                            <Button asChild size="sm">
+                                            <Button className="cursor-pointer" asChild size="sm">
                                                 <Link href={`/settings/access-reviews/${review.id}`}>Start Review</Link>
                                             </Button>
                                         )}
                                         {review.status === 'completed' && (
-                                            <Button asChild size="sm" variant="outline">
+                                            <Button className="cursor-pointer" asChild size="sm" variant="outline">
                                                 <Link href={`/settings/access-reviews/${review.id}`}>View</Link>
                                             </Button>
                                         )}

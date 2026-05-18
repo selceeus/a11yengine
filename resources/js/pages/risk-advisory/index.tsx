@@ -105,7 +105,7 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
                                 <th className="px-4 py-3 text-right font-medium">Recommendations</th>
                                 <th className="px-4 py-3 text-right font-medium">Issues Analysed</th>
                                 <th className="px-4 py-3 text-left font-medium">Generated</th>
-                                <th className="px-4 py-3"></th>
+                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">

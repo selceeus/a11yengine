@@ -75,7 +75,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                                 <th className="px-4 py-3 text-left font-semibold">Industry</th>
                                 <th className="px-4 py-3 text-left font-semibold">Legal Risk</th>
                                 <th className="px-4 py-3 text-left font-semibold">Status</th>
-                                <th className="px-4 py-3"></th>
+                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">

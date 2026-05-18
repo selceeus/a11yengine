@@ -51,7 +51,7 @@ export default function Index({ organizations, filters = {} }: { organizations: 
                                 <th className="px-4 py-3 text-left font-medium">Domain</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
                                 <th className="px-4 py-3 text-left font-medium">Properties</th>
-                                <th className="px-4 py-3"></th>
+                                <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">

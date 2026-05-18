@@ -326,12 +326,13 @@ export default function Show({
 
                     <div className="flex items-center gap-2">
                         <Button variant="outline" asChild>
-                            <Link href={PropertyController.edit(property.id).url}>Edit</Link>
+                            <Link className="cursor-pointer" href={PropertyController.edit(property.id).url}>Edit</Link>
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={handleDelete}
                             disabled={processing}
+                            className="cursor-pointer"
                         >
                             Delete
                         </Button>

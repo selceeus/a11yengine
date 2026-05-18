@@ -90,8 +90,8 @@ export default function Index({ reports, properties }: PageProps) {
         });
     }
 
-    const propertyReports = reports.filter((r) => r.report_scope === 'property');
     const agencyReports = reports.filter((r) => r.report_scope === 'agency');
+    const propertyReports = reports.filter((r) => r.report_scope === 'property');
 
     function ReportTable({ rows }: { rows: ReportSummary[] }) {
         return (
@@ -103,7 +103,7 @@ export default function Index({ reports, properties }: PageProps) {
                             <th className="px-4 py-3 text-left font-medium">Period</th>
                             <th className="px-4 py-3 text-left font-medium">Status</th>
                             <th className="px-4 py-3 text-left font-medium">Generated</th>
-                            <th className="px-4 py-3"></th>
+                            <th className="px-4 py-3"><span className="sr-only">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -287,20 +287,21 @@ export default function Index({ reports, properties }: PageProps) {
                     </Dialog>
                 </div>
 
+                {/* Agency reports */}
+
+                <section>
+                    <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Agency-Wide Reports
+                    </h2>
+                    <ReportTable rows={agencyReports} />
+                </section>
+
                 {/* Property reports */}
                 <section>
                     <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Property Reports
                     </h2>
                     <ReportTable rows={propertyReports} />
-                </section>
-
-                {/* Agency reports */}
-                <section>
-                    <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                        Agency-Wide Reports
-                    </h2>
-                    <ReportTable rows={agencyReports} />
                 </section>
             </div>
         </AppLayout>

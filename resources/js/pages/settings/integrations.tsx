@@ -202,7 +202,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                     {/* Available providers */}
                     <div className="space-y-3">
                         <h2 className="text-sm font-semibold">Available</h2>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <div className="grid grid-cols-4 gap-4 sm:grid-cols-4">
                             {implementedProviders.map((provider) => (
                                 <div
                                     key={provider.value}
@@ -215,7 +215,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="mt-3 w-full"
+                                        className="mt-3 w-full cursor-pointer"
                                         onClick={() => openConnect(provider)}
                                     >
                                         Connect

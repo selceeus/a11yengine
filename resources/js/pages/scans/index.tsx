@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Trash2 } from 'lucide-react';
 
 type Property = {
     id: number;
@@ -468,9 +468,10 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                                             {scan.canDelete && scan.status !== 'pending' && scan.status !== 'running' && (
                                                                 <button
                                                                     onClick={() => deleteScan(scan)}
-                                                                    className="text-sm text-destructive hover:underline cursor-pointer"
+                                                                    className="text-muted-foreground hover:text-destructive cursor-pointer"
+                                                                    aria-label="Delete Scan"
                                                                 >
-                                                                    Delete
+                                                                    <Trash2 className="h-4 w-4" />
                                                                 </button>
                                                             )}
                                                         </div>
