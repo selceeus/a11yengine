@@ -176,7 +176,7 @@ function CategoryCard({
                 <p className="text-muted-foreground px-5 py-4 text-sm">No webhooks configured.</p>
             ) : (
                 <div className="rounded border">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm data-table">
                     <thead>
                         <tr className="border-b">
                             <th className="px-5 py-2 text-left text-xs font-medium">Platform</th>

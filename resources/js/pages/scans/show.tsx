@@ -459,7 +459,7 @@ export default function Show({
                         {tab === 'wcag' && (
                             scan.scan_pages.length > 0 ? (
                                 <div className="rounded border">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <caption className="px-4 py-3">WCAG Scoring Results</caption>
                                         <thead className="border-b bg-muted/50">
                                             <tr className="text-xs text-muted-foreground">
@@ -505,7 +505,7 @@ export default function Show({
                         {tab === 'screen-reader' && (
                             screenReaderResults.length > 0 ? (
                                 <div className="rounded border">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <caption className="px-4 py-3">Screen Reader Audit Results</caption>
                                         <thead className="border-b bg-muted/50">
                                             <tr className="text-xs text-muted-foreground">
@@ -561,7 +561,7 @@ export default function Show({
                                 </div>
                                 <div className="rounded border">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
+                                        <table className="w-full text-sm data-table">
                                             <caption className="px-4 py-3">
                                                 Lighthouse Scoring Results — {lighthouseFormFactor === 'mobile' ? 'Mobile' : 'Desktop'}
                                             </caption>
@@ -631,7 +631,7 @@ export default function Show({
                             )}
                             {pdfDocuments.length > 0 ? (
                                 <div className="rounded border">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <caption className="px-4 py-3">PDF Documents</caption>
                                         <thead className="border-b bg-muted/50">
                                             <tr className="text-xs text-muted-foreground">
@@ -684,7 +684,7 @@ export default function Show({
                 {/* In-progress pages list (shown during active scan) */}
                 {isActive && scan.scan_pages.length > 0 && (
                     <div className="rounded border">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm data-table">
                             <thead className="border-b bg-muted/50">
                                 <tr className="text-xs text-muted-foreground">
                                     <th className="px-4 py-3 text-left font-medium">Page URL</th>

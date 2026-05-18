@@ -286,7 +286,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                             <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Top 5 Critical Issues</h2>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <thead className="border-b text-xs text-muted-foreground">
                                             <tr>
                                                 <th className="pb-2 pr-4 text-left font-medium">#</th>
@@ -401,7 +401,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                             <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Top Risks</h2>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <thead className="border-b text-xs text-muted-foreground">
                                             <tr>
                                                 <th className="pb-2 pr-4 text-left font-medium">#</th>
@@ -436,7 +436,7 @@ export default function Show({ audit, trend }: { audit: Audit; trend: Trend | nu
                             <div className="rounded border bg-card p-6">
                                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Issue Details</h2>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <thead className="border-b text-xs text-muted-foreground">
                                             <tr>
                                                 <th className="pb-2 pr-4 text-left font-medium">Rule</th>

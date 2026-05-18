@@ -48,9 +48,9 @@ export default function Index({ journeys }: { journeys: Journey[] }) {
                     </div>
                 ) : (
                     <div className="rounded border bg-card">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm data-table">
                             <thead>
-                                <tr className="border-b text-left text-muted-foreground">
+                                <tr className="text-muted-foreground">
                                     <th className="px-4 py-3 font-medium">Name</th>
                                     <th className="px-4 py-3 font-medium">Property</th>
                                     <th className="px-4 py-3 font-medium">Steps</th>
@@ -59,7 +59,7 @@ export default function Index({ journeys }: { journeys: Journey[] }) {
                             </thead>
                             <tbody>
                                 {journeys.map((journey) => (
-                                    <tr key={journey.id} className="border-b last:border-0">
+                                    <tr key={journey.id} className="transition-colors hover:bg-muted/30">
                                         <td className="px-4 py-3 font-medium">
                                             {journey.name}
                                             {journey.description && (

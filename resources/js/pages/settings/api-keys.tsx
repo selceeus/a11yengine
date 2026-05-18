@@ -216,9 +216,9 @@ export default function ApiKeysIndex({ apiKeys, availableScopes, newToken }: Pro
                         <p className="text-muted-foreground text-sm">No API keys yet. Create one to get started.</p>
                     ) : (
                         <div className="rounded border">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-sm data-table">
                                 <thead>
-                                    <tr className="border-b">
+                                    <tr>
                                         <th className="px-4 py-3 text-left font-medium">Name</th>
                                         <th className="px-4 py-3 text-left font-medium">Prefix</th>
                                         <th className="px-4 py-3 text-left font-medium">Scopes</th>

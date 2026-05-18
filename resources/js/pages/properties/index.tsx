@@ -66,7 +66,7 @@ export default function Index({ properties, filters = {} }: { properties: Proper
                 />
 
                 <div className="rounded border">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm data-table">
                         <thead className="border-b bg-muted/100">
                             <tr className="text-sm text-muted-foreground">
                                 <th className="px-4 py-3 text-left font-semibold">Name</th>

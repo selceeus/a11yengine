@@ -169,9 +169,9 @@ export default function ActivityLogIndex({ logs, categories, filters }: Props) {
                 ) : (
                     <>
                         <div className="rounded border">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-sm data-table">
                                 <thead>
-                                    <tr className="border-b">
+                                    <tr>
                                         <th className="px-4 py-3 text-left font-medium">Date &amp; Time</th>
                                         <th className="px-4 py-3 text-left font-medium">Event</th>
                                         <th className="px-4 py-3 text-left font-medium">Actor</th>

@@ -138,7 +138,7 @@ function CategoryCard({ category }: { category: { value: string; label: string; 
             {category.routes.length === 0 ? (
                 <p className="text-muted-foreground px-5 py-4 text-sm">No email addresses configured.</p>
             ) : (
-                <table className="w-full text-sm">
+                <table className="w-full text-sm data-table">
                     <tbody className="divide-y">
                         {category.routes.map((route) => (
                             <tr key={route.id} className="group">

@@ -399,7 +399,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                     <div className="rounded border">
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm data-table">
                                         <thead className="border-b bg-muted/50">
                                             <tr className="text-xs text-muted-foreground">
                                                 <th className="px-4 py-3 text-left font-medium">Status</th>

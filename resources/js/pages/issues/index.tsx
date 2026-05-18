@@ -458,7 +458,7 @@ export default function Index({
 
                 {/* Table */}
                 <div className="rounded border">
-                    <table className="w-full text-sm" data-density={density}>
+                    <table className="w-full text-sm data-table" data-density={density}>
                         <thead className="border-b bg-muted/50">
                             <tr>
                                 <th className="px-4 py-3 text-center font-medium">
@@ -817,7 +817,7 @@ export default function Index({
                             <p className="py-8 text-center text-sm text-muted-foreground">No issues assigned.</p>
                         ) : (
                             <div className="max-h-[60vh] overflow-auto rounded border">
-                                <table className="w-full text-sm">
+                                <table className="w-full text-sm data-table">
                                     <thead className="border-b bg-muted/50">
                                         <tr className="text-xs text-muted-foreground">
                                             <th className="px-4 py-3 text-center font-medium">Severity</th>

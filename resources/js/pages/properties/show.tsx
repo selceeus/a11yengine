@@ -551,7 +551,7 @@ export default function Show({
                             </Button>
                         </div>
                     </div>
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm data-table">
                         <thead className="border-b bg-muted/50">
                             <tr className="text-xs text-muted-foreground">
                                 <th className="px-4 py-3 text-left font-medium">Status</th>

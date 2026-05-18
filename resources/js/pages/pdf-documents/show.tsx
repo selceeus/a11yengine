@@ -113,7 +113,7 @@ export default function Show({ document }: { document: PdfDocument }) {
                         <div>
                             <h2 className="mb-3 text-sm font-semibold">Accessibility Violations</h2>
                             <div className="rounded border">
-                                <table className="w-full text-sm">
+                                <table className="w-full text-sm data-table">
                                     <caption className="px-4 py-3 text-left text-sm font-medium">
                                         {document.violation_count} violation{document.violation_count !== 1 ? 's' : ''} found
                                     </caption>

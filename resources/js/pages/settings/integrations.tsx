@@ -129,7 +129,7 @@ export default function IntegrationsIndex({ integrations, providers }: Props) {
                         <div className="space-y-3">
                             <h2 className="text-sm font-semibold">Connected</h2>
                             <div className="rounded border">
-                                <table className="w-full text-sm">
+                                <table className="w-full text-sm data-table">
                                     <thead>
                                         <tr className="border-b">
                                             <th className="px-4 py-3 text-left font-medium">Name</th>

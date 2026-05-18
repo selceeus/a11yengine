@@ -67,16 +67,16 @@ export default function Index({
                         Members ({members.length})
                     </h2>
                     <div className="rounded border bg-card">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm data-table">
                             <thead>
-                                <tr className="border-b text-xs text-muted-foreground">
+                                <tr className="text-muted-foreground">
                                     <th className="px-4 py-2 text-left font-medium">Name</th>
                                     <th className="px-4 py-2 text-left font-medium">Email</th>
                                     <th className="px-4 py-2 text-left font-medium">Joined</th>
                                     <th className="px-4 py-2" />
                                 </tr>
                             </thead>
-                            <tbody className="divide-y px-4">
+                            <tbody className="divide-y">
                                 {members.map((member) => (
                                     <tr key={member.id}>
                                         <td className="px-4 py-3 font-medium">{member.name}</td>
@@ -118,9 +118,9 @@ export default function Index({
                             Pending Invitations ({invitations.length})
                         </h2>
                         <div className="rounded border bg-card">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-sm data-table">
                                 <thead>
-                                    <tr className="border-b text-xs text-muted-foreground">
+                                    <tr className="text-muted-foreground">
                                         <th className="px-4 py-2 text-left font-medium">Email</th>
                                         <th className="px-4 py-2 text-left font-medium">Sent</th>
                                         <th className="px-4 py-2" />
