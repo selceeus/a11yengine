@@ -9,6 +9,8 @@ An enterprise web accessibility auditing and risk management platform. It automa
 - **Automated Crawling & Scanning** — Discovers all pages and PDF documents on a domain via headless Playwright and runs axe-core (WCAG 2.0/2.1 A/AA) and Lighthouse audits on each page
 - **Screen Reader Simulation** — A virtual screen reader runner (`screenReaderRunner.js`) executes 40 deterministic WCAG checks per page covering landmarks, headings, form labelling, focus management, live regions, tables, and language attributes; violations flow through the same Finding + Issue pipeline as axe-core results using `sr-` prefixed rule keys; toggleable via `SCREEN_READER_ENABLED`
 - **Content Quality Checks** — A deterministic content runner (`contentRunner.js`) executes 14 per-page checks covering image alt quality, link text quality, heading conventions, generic page titles, and video/audio caption and transcript availability (HTML5, YouTube, Vimeo, and other embed services); violations use `content-` prefixed rule keys and flow through the same Finding + Issue pipeline; toggleable via `CONTENT_ENABLED`
+- **Keyboard Navigation Testing** — A deterministic keyboard runner (`keyboardRunner.js`) executes 7 per-page checks covering positive tabindex usage, non-interactive focusable elements, onclick-without-keyboard handlers, autofocus misuse, offscreen-focusable elements, `aria-disabled` inconsistencies, and composite widget roving-tabindex patterns; violations use `kb-` prefixed rule keys and flow through the same Finding + Issue pipeline; toggleable via `KEYBOARD_ENABLED`
+- **Interactive Element Checks** — A live interaction runner (`interactiveRunner.js`) performs 8 per-page checks by simulating Tab key navigation and pointer interaction: missing focus indicators, unreachable interactive elements, keyboard focus traps, tab order mismatches, hover and focus colour contrast failures, reflow at 320 px, and reduced-motion preference compliance; violations use `int-` prefixed rule keys and flow through the same Finding + Issue pipeline; toggleable via `INTERACTIVE_ENABLED`
 - **Server-Side Reading Metrics** — During a scan each page's visible text is extracted by the crawler and stored on the `ScanPage` record; `ContentMetricsService` computes Flesch-Kincaid grade level, reading ease score, word count, and estimated reading time server-side — no LLM calls required
 - **Scan Journeys** — Define ordered multi-step URL sequences (journeys) per property; each journey is a named, reusable list of labelled pages that can be run as a single targeted scan, enabling consistent auditing of critical user flows such as checkout, login, or onboarding
 - **Single-Page Scan** — Scope any scan to a single URL by providing a `target_url`; the crawler is forced into single-page mode, auditing only that URL rather than crawling the whole domain — ideal for quick spot-checks of a specific page without triggering a full site crawl
@@ -83,7 +85,8 @@ Agency
         │   └── ScanJourneyStep   (labelled URL at a given position)
         └── Scan
             ├── ScanPage          (per-page crawl record; stores screen_reader_completed,
-            │                      content_completed, and extracted visible_text)
+            │                      content_completed, keyboard_completed, interactive_completed,
+            │                      and extracted visible_text)
             ├── ScanMetric        (immutable time-series metrics per page)
             ├── Finding           (raw violation from axe-core, screen reader, or content runner)
             ├── Issue             (deduplicated, tracked violation)
@@ -94,7 +97,7 @@ Agency
                 └── PdfViolation  (WCAG finding within the PDF)
 ```
 
-Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages and PDF documents. The crawler now runs three parallel audit passes per page: axe-core (WCAG rule violations), the virtual screen reader runner (40 SR-specific checks), and the content quality runner (14 deterministic content checks); each page's extracted visible text is also returned for server-side reading metrics. `RunScanJob` then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop) + `RunScreenReaderAuditJob` + `RunContentAuditJob` per page. All three Finding tracks share the same `ProcessHtmlScan` pipeline; SR violations use `sr-` prefixed rule keys and content violations use `content-` prefixed keys. For each discovered PDF, a `PdfDocument` record is created and `ScanPdfJob` is dispatched to the dedicated `pdf` queue, which calls the veraPDF REST microservice and stores any `PdfViolation` records. During a scan, `ScanProgressUpdated` events are broadcast over the private `agency.{agencyId}` WebSocket channel (via Laravel Reverb) to push real-time progress to connected clients. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
+Scans are orchestrated by queued jobs. `RunScanJob` invokes the Node.js crawler to discover pages and PDF documents. The crawler now runs five audit passes per page: axe-core (WCAG rule violations), the virtual screen reader runner (40 SR-specific checks), the content quality runner (14 deterministic content checks), the keyboard navigation runner (7 keyboard checks), and the interactive element runner (8 interaction checks); each page's extracted visible text is also returned for server-side reading metrics. `RunScanJob` then dispatches a `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop) + `RunScreenReaderAuditJob` + `RunContentAuditJob` + `RunKeyboardAuditJob` + `RunInteractiveAuditJob` per page. All five Finding tracks share the same `ProcessHtmlScan` pipeline; SR violations use `sr-` prefixed rule keys, content violations use `content-` prefixed keys, keyboard violations use `kb-` prefixed keys, and interactive violations use `int-` prefixed keys. For each discovered PDF, a `PdfDocument` record is created and `ScanPdfJob` is dispatched to the dedicated `pdf` queue, which calls the veraPDF REST microservice and stores any `PdfViolation` records. During a scan, `ScanProgressUpdated` events are broadcast over the private `agency.{agencyId}` WebSocket channel (via Laravel Reverb) to push real-time progress to connected clients. When the batch completes, the scan transitions to `completed`, risk snapshots are recorded at the property, organisation, and agency levels, and an AI audit report is optionally generated.
 
 The platform also maintains a suite of on-demand AI intelligence jobs: `GenerateIssueClusteringJob` groups related issues into themes, `GenerateRiskAdvisoryJob` surfaces prioritised action plans, `GenerateContentAuditJob` checks prose-level accessibility, and `GenerateGovernanceReportJob` assembles executive governance documents. All AI jobs are scoped to either a property, organisation, or agency and store their results as first-class models.
 
@@ -214,6 +217,8 @@ composer run dev:ssr
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SCREEN_READER_ENABLED` | Enable virtual screen reader checks per page (default: `true`); set `false` to skip the 40 SR checks and store `screen_reader_completed` as `null`        |
 | `CONTENT_ENABLED`       | Enable deterministic content quality checks per page (default: `true`); set `false` to skip the 14 content checks and store `content_completed` as `null` |
+| `KEYBOARD_ENABLED`      | Enable keyboard navigation checks per page (default: `true`); set `false` to skip the 7 keyboard checks and store `keyboard_completed` as `null`          |
+| `INTERACTIVE_ENABLED`   | Enable interactive element checks per page (default: `true`); set `false` to skip the 8 interactive checks and store `interactive_completed` as `null`    |
 
 ---
 
@@ -234,8 +239,8 @@ composer run dev:ssr
 
 1. A `Scan` record is created with status `pending`
 2. `RunScanJob` is dispatched; invokes the Node.js crawler to discover all pages
-3. The crawler runs three audit passes per page: axe-core violations, virtual screen reader checks (`sr-` prefix), and deterministic content quality checks (`content-` prefix); each page's visible text is extracted and returned for server-side reading metrics
-4. A `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop) + `RunScreenReaderAuditJob` + `RunContentAuditJob` is dispatched per discovered page; all three violation tracks share the same `ProcessHtmlScan` Finding + Issue pipeline
+3. The crawler runs five audit passes per page: axe-core violations, virtual screen reader checks (`sr-` prefix), deterministic content quality checks (`content-` prefix), keyboard navigation checks (`kb-` prefix), and interactive element checks (`int-` prefix); each page's visible text is extracted and returned for server-side reading metrics
+4. A `Bus::batch()` of `RunAxeScanPageJob` + two `RunLighthouseScanJob` instances (mobile and desktop) + `RunScreenReaderAuditJob` + `RunContentAuditJob` + `RunKeyboardAuditJob` + `RunInteractiveAuditJob` is dispatched per discovered page; all five violation tracks share the same `ProcessHtmlScan` Finding + Issue pipeline
 5. On batch completion the scan transitions to `completed`; risk snapshots are recorded at property, organisation, and agency levels
 6. `ScanCompleted` is fired — notifies users, sends routed emails, and dispatches webhook payloads
 7. If `AI_AUDIT_AUTO_GENERATE=true`, `GenerateAiAuditJob` is dispatched to produce an executive audit report
@@ -654,25 +659,27 @@ Reports can be exported via the `Exportable` concern:
 
 ## Background Jobs
 
-| Job                           | Purpose                                                                                                                                                    | Retries                      | Timeout |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------- |
-| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                                                                           | 3 (10s / 30s backoff)        | 600s    |
-| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                                                                                       | 2 (10s / 30s backoff)        | 120s    |
-| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop)                                                         | 2 (30s backoff)              | 180s    |
-| `RunScreenReaderAuditJob`     | Persists pre-computed screen reader violations (from `screenReaderRunner.js`) through the Finding + Issue pipeline; always marks `screen_reader_completed` | 2 (15s backoff)              | 60s     |
-| `RunContentAuditJob`          | Persists pre-computed content violations (from `contentRunner.js`) and stores `visible_text` on `ScanPage`; always marks `content_completed`               | 2 (15s backoff)              | 60s     |
-| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                                                                             | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                                                                           | 2 (30s / 60s backoff)        | 120s    |
-| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                                                                                    | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                                                                           | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on pre-computed findings and stored visible text                                                                    | 2 (60s / 120s backoff)       | 300s    |
-| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                                                                            | 2 (60s / 120s backoff)       | 300s    |
-| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                                                                                     | 3 (30s / 120s backoff)       | —       |
-| `ScanPdfJob`                  | Downloads a PDF and runs PDF/UA-1 checks via the veraPDF REST microservice; stores PdfViolation records                                                    | 2 (30s / 60s backoff)        | 120s    |
-| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                                                                                  | 3 (30s / 60s backoff)        | —       |
-| `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                                                                         | 3 (30s / 60s / 120s backoff) | 120s    |
-| `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                                                                        | 3 (30s / 60s / 120s backoff) | 120s    |
-| `IndexRemediationPatternJob`  | Indexes a resolved issue's remediation pattern into the vector store                                                                                       | 3 (30s / 60s / 120s backoff) | 120s    |
+| Job                           | Purpose                                                                                                                                                       | Retries                      | Timeout |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------- |
+| `RunScanJob`                  | Orchestrates full scan lifecycle                                                                                                                              | 3 (10s / 30s backoff)        | 600s    |
+| `RunAxeScanPageJob`           | Runs axe-core audit on a single page                                                                                                                          | 2 (10s / 30s backoff)        | 120s    |
+| `RunLighthouseScanJob`        | Runs Lighthouse performance audit on a single page (dispatched twice per page: mobile and desktop)                                                            | 2 (30s backoff)              | 180s    |
+| `RunScreenReaderAuditJob`     | Persists pre-computed screen reader violations (from `screenReaderRunner.js`) through the Finding + Issue pipeline; always marks `screen_reader_completed`    | 2 (15s backoff)              | 60s     |
+| `RunContentAuditJob`          | Persists pre-computed content violations (from `contentRunner.js`) and stores `visible_text` on `ScanPage`; always marks `content_completed`                  | 2 (15s backoff)              | 60s     |
+| `RunKeyboardAuditJob`         | Persists pre-computed keyboard navigation violations (from `keyboardRunner.js`) through the Finding + Issue pipeline; always marks `keyboard_completed`       | 2 (15s backoff)              | 60s     |
+| `RunInteractiveAuditJob`      | Persists pre-computed interactive element violations (from `interactiveRunner.js`) through the Finding + Issue pipeline; always marks `interactive_completed` | 2 (15s backoff)              | 60s     |
+| `GenerateAiAuditJob`          | Creates AI-powered audit report from scan data                                                                                                                | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateIssueRemediationJob` | Generates AI remediation suggestion for an issue                                                                                                              | 2 (30s / 60s backoff)        | 120s    |
+| `GenerateIssueClusteringJob`  | Clusters open issues into themes via AI                                                                                                                       | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateRiskAdvisoryJob`     | Produces prioritised risk recommendations via AI                                                                                                              | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateContentAuditJob`     | Runs AI content accessibility analysis on pre-computed findings and stored visible text                                                                       | 2 (60s / 120s backoff)       | 300s    |
+| `GenerateGovernanceReportJob` | Assembles a full AI-generated governance report                                                                                                               | 2 (60s / 120s backoff)       | 300s    |
+| `PushIssueToIntegrationJob`   | Pushes an issue to an external PM tool                                                                                                                        | 3 (30s / 120s backoff)       | —       |
+| `ScanPdfJob`                  | Downloads a PDF and runs PDF/UA-1 checks via the veraPDF REST microservice; stores PdfViolation records                                                       | 2 (30s / 60s backoff)        | 120s    |
+| `SendWebhookNotificationJob`  | Delivers a notification payload to a Slack, Teams, or Discord webhook URL                                                                                     | 3 (30s / 60s backoff)        | —       |
+| `EmbedWcagDocumentJob`        | Embeds a WCAG document chunk into the vector store                                                                                                            | 3 (30s / 60s / 120s backoff) | 120s    |
+| `IngestLawsuitDataJob`        | Ingests an ADA lawsuit record into the vector store                                                                                                           | 3 (30s / 60s / 120s backoff) | 120s    |
+| `IndexRemediationPatternJob`  | Indexes a resolved issue's remediation pattern into the vector store                                                                                          | 3 (30s / 60s / 120s backoff) | 120s    |
 
 ---
 
@@ -721,16 +728,20 @@ Each page entry in `pages` includes:
 - `violations` — axe-core WCAG violations
 - `srViolations` — virtual screen reader violations (`sr-` prefix; present when `SCREEN_READER_ENABLED=true`)
 - `contentViolations` — deterministic content quality violations (`content-` prefix; present when `CONTENT_ENABLED=true`)
+- `keyboardViolations` — keyboard navigation violations (`kb-` prefix; present when `KEYBOARD_ENABLED=true`)
+- `interactiveViolations` — interactive element violations (`int-` prefix; present when `INTERACTIVE_ENABLED=true`)
 - `visibleText` — stripped visible page text (up to 8 000 chars) used for server-side Flesch-Kincaid computation
 
-| File                            | Purpose                                                                                                               |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `crawler/scan.js`               | Main entry point; orchestrates all runners and collects per-page results                                              |
-| `crawler/axeRunner.js`          | axe-core audit execution                                                                                              |
-| `crawler/screenReaderRunner.js` | Virtual screen reader simulation — 40 checks across 7 categories (`sr-` prefix)                                       |
-| `crawler/contentRunner.js`      | Deterministic content quality checks — 14 checks across 5 categories (`content-` prefix); also extracts `visibleText` |
-| `crawler/crawlUtils.js`         | URL normalisation, link extraction, PDF link extraction, robots.txt parsing                                           |
-| `crawler/config.js`             | Playwright/axe configuration (environment-driven); feature flags for each runner                                      |
+| File                            | Purpose                                                                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `crawler/scan.js`               | Main entry point; orchestrates all runners and collects per-page results                                                                                                                   |
+| `crawler/axeRunner.js`          | axe-core audit execution                                                                                                                                                                   |
+| `crawler/screenReaderRunner.js` | Virtual screen reader simulation — 40 checks across 7 categories (`sr-` prefix)                                                                                                            |
+| `crawler/contentRunner.js`      | Deterministic content quality checks — 14 checks across 5 categories (`content-` prefix); also extracts `visibleText`                                                                      |
+| `crawler/keyboardRunner.js`     | Keyboard navigation checks — 7 checks covering tabindex misuse, onclick-without-keyboard handlers, offscreen-focusable elements, and composite widget patterns (`kb-` prefix)              |
+| `crawler/interactiveRunner.js`  | Interactive element checks — 8 checks covering focus indicators, unreachable elements, focus traps, tab order, hover/focus contrast, reflow, and reduced-motion compliance (`int-` prefix) |
+| `crawler/crawlUtils.js`         | URL normalisation, link extraction, PDF link extraction, robots.txt parsing                                                                                                                |
+| `crawler/config.js`             | Playwright/axe configuration (environment-driven); feature flags for each runner                                                                                                           |
 
 ### Screen Reader Runner (`screenReaderRunner.js`)
 
@@ -757,6 +768,35 @@ Each page entry in `pages` includes:
 | **Headings**    | Multiple `<h1>` elements (`content-multiple-h1`)                                                                                                                                                              |
 | **Document**    | Generic page title (`content-generic-page-title`)                                                                                                                                                             |
 | **Video/Media** | HTML5 video missing captions track, HTML5 video/audio missing transcript, YouTube embed unknown captions, Vimeo embed unknown captions, unrecognised embed service                                            |
+
+### Keyboard Runner (`keyboardRunner.js`)
+
+7 deterministic WCAG checks executed via `page.evaluate()` DOM inspection:
+
+| Check                           | Impact   | Description                                                                                             |
+| ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `kb-positive-tabindex`          | Serious  | Element uses `tabindex > 0`, overriding natural tab order                                               |
+| `kb-non-interactive-focusable`  | Moderate | Non-interactive element made focusable with no ARIA role or keyboard handler                            |
+| `kb-onclick-no-keyboard`        | Critical | `onclick` handler present but no keyboard event handler — keyboard-only users cannot trigger the action |
+| `kb-autofocus-misuse`           | Moderate | `autofocus` applied to a non-form element or to multiple elements                                       |
+| `kb-offscreen-focusable`        | Serious  | Visually hidden element (clip/clip-path) remains in the tab order                                       |
+| `kb-aria-disabled-focusable`    | Moderate | `aria-disabled="true"` element still in the tab order because `tabindex="-1"` is not set                |
+| `kb-composite-widget-no-roving` | Serious  | Composite widget (tablist, listbox, menu, radiogroup) does not implement the roving tabindex pattern    |
+
+### Interactive Runner (`interactiveRunner.js`)
+
+8 checks across four phases executed via live Playwright interaction (Tab navigation, pointer hover, and viewport resize):
+
+| Phase             | Check                          | Impact   | Description                                                        |
+| ----------------- | ------------------------------ | -------- | ------------------------------------------------------------------ |
+| Tab Navigation    | `int-focus-indicator-missing`  | Serious  | Element receives focus but has no visible focus indicator          |
+| Tab Navigation    | `int-unreachable-interactive`  | Critical | Interactive element not reachable via Tab key                      |
+| Tab Navigation    | `int-focus-trap`               | Critical | Keyboard focus became trapped — no path to escape                  |
+| Tab Navigation    | `int-focus-order-wrong`        | Moderate | Tab order does not match visual reading order                      |
+| Interaction State | `int-hover-contrast-fail`      | Serious  | Insufficient colour contrast on hover                              |
+| Interaction State | `int-focus-contrast-fail`      | Serious  | Insufficient colour contrast when focused                          |
+| Reflow            | `int-reflow-horizontal-scroll` | Serious  | Horizontal scrolling required at 320 px viewport width             |
+| Reduced Motion    | `int-reduced-motion-ignored`   | Moderate | Animated content does not respect `prefers-reduced-motion: reduce` |
 
 ### PDF Scanner Microservice
 
@@ -834,6 +874,8 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 | `config/lighthouse.php`    | Lighthouse binary path, timeout, feature flag, Chrome path                     |
 | `config/screen_reader.php` | Screen reader runner feature flag (`SCREEN_READER_ENABLED`)                    |
 | `config/content.php`       | Content runner feature flag (`CONTENT_ENABLED`)                                |
+| `config/keyboard.php`      | Keyboard runner feature flag (`KEYBOARD_ENABLED`)                              |
+| `config/interactive.php`   | Interactive element runner feature flag (`INTERACTIVE_ENABLED`)                |
 | `config/fortify.php`       | Authentication feature flags (2FA, email verification, etc.)                   |
 | `config/services.php`      | External service configuration including `pdf_scanner` (url, timeout, enabled) |
 
