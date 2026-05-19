@@ -30,7 +30,7 @@ enum ApiKeyScope: string
             self::ScansTrigger => 'Initiate new scans via API',
             self::IssuesRead => 'Read accessibility issues',
             self::ReportsRead => 'Access governance reports',
-            self::Mcp => 'Connect AI tools via MCP protocol',
+            self::Mcp => 'Connect tools via MCP protocol',
             self::WordPress => 'Authenticate the WordPress plugin',
         };
     }

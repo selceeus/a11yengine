@@ -63,7 +63,7 @@ export default function Index({ properties }: PageProps) {
                 },
             });
 
-            router.visit(PropertyController.show(property.id).url + '#ai-content-audit');
+            router.visit(PropertyController.show(property.id).url + '#content-audit');
         } catch {
             setGenerating((prev) => ({ ...prev, [property.id]: false }));
         }
@@ -168,7 +168,7 @@ export default function Index({ properties }: PageProps) {
                                                             <Link
                                                                 href={
                                                                     PropertyController.show(property.id).url +
-                                                                    '#ai-content-audit'
+                                                                    '#content-audit'
                                                                 }
                                                                 className="text-sm text-primary hover:underline"
                                                             >

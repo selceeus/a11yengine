@@ -84,7 +84,7 @@ export function PropertyRiskTrendsChart({ propertyId }: { propertyId: number }) 
 
     const options: ChartOptions<'line'> = {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
@@ -107,8 +107,8 @@ export function PropertyRiskTrendsChart({ propertyId }: { propertyId: number }) 
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-end">
+        <div className="flex h-full flex-col gap-2">
+            <div className="flex shrink-0 items-center justify-end">
                 <ToggleGroup
                     type="single"
                     value={String(window)}
@@ -126,17 +126,20 @@ export function PropertyRiskTrendsChart({ propertyId }: { propertyId: number }) 
                 </ToggleGroup>
             </div>
 
-            {loading && <Skeleton className="h-48 w-full rounded" />}
+            {loading && <Skeleton className="h-full w-full rounded" />}
             {error && <p className="text-sm text-destructive">{error}</p>}
             {noData && <p className="text-sm text-muted-foreground">No risk trend data yet.</p>}
 
             {!loading && !error && data && !noData && (
-                <Line
-                    data={chartData}
-                    options={options}
-                    aria-label="Property risk trend"
-                    role="img"
-                />
+                <div className="min-h-0 flex-1">
+                    <Line
+                        data={chartData}
+                        options={options}
+                        aria-label="Property risk trend"
+                        role="img"
+                        style={{ height: '100%' }}
+                    />
+                </div>
             )}
         </div>
     );

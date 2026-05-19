@@ -75,7 +75,7 @@ export function PropertyScanActivityChart({ propertyId }: { propertyId: number }
 
     const options: ChartOptions<'line'> = {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
@@ -98,14 +98,17 @@ export function PropertyScanActivityChart({ propertyId }: { propertyId: number }
     };
 
     return (
-        <div className="w-full">
-            <Line
-                data={chartData}
-                options={options}
-                aria-label="Scan activity over the last 30 days"
-                role="img"
-            />
-            <p className="mt-1 text-right text-xs text-muted-foreground">
+        <div className="flex h-full flex-col">
+            <div className="min-h-0 flex-1">
+                <Line
+                    data={chartData}
+                    options={options}
+                    aria-label="Scan activity over the last 30 days"
+                    role="img"
+                    style={{ height: '100%' }}
+                />
+            </div>
+            <p className="mt-1 shrink-0 text-right text-xs text-muted-foreground">
                 {totalScans} completed scan{totalScans !== 1 ? 's' : ''} in the last 30 days
             </p>
         </div>

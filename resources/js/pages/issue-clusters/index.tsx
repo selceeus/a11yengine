@@ -61,7 +61,7 @@ export default function Index({ properties }: { properties: PropertyRow[] }) {
             });
 
             // Navigate to property show page where the IssueClusterPanel will poll for progress
-            router.visit(PropertyController.show(property.id).url + '#ai-clusters');
+            router.visit(PropertyController.show(property.id).url + '#clusters');
         } catch {
             setGenerating((prev) => ({ ...prev, [property.id]: false }));
         }
@@ -151,7 +151,7 @@ export default function Index({ properties }: { properties: PropertyRow[] }) {
                                                     ) : cluster ? (
                                                         <Link
                                                             href={
-                                                                PropertyController.show(property.id).url + '#ai-clusters'
+                                                                PropertyController.show(property.id).url + '#clusters'
                                                             }
                                                             className="text-sm text-primary hover:underline"
                                                         >

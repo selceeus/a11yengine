@@ -177,64 +177,226 @@ export default function Show({
 
             <div className="flex flex-col gap-6 p-6">
                 {/* Header */}
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold pb-2">
+                        <h1 className="text-2xl font-semibold">
                             {scan.property?.name ?? `Scan #${scan.id}`}
                         </h1>
-                        {scan.property && (
-                            <p className="text-sm text-muted-foreground">{scan.property.base_url}</p>
-                        )}
-                        {scan.target_url && (
-                            <p className="text-sm text-muted-foreground">Single page: {scan.target_url}</p>
-                        )}
-                        {scan.scan_journey && (
-                            <p className="text-sm text-muted-foreground">Journey: {scan.scan_journey.name} ({scan.scan_journey.steps.length} steps)</p>
-                        )}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
+                            {scan.property && <span>{scan.property.base_url}</span>}
+                            {scan.target_url && <span>· Single page: {scan.target_url}</span>}
+                            {scan.scan_journey && <span>· Journey: {scan.scan_journey.name} ({scan.scan_journey.steps.length} steps)</span>}
+                        </div>
                     </div>
-                    <Badge variant={statusVariant(scan.status)} className="mt-1 capitalize">
-                        {scan.status === 'running' && (
-                            <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-current" />
-                        )}
-                        {scan.status}
-                    </Badge>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <GenerateReports scan={scan} />
+                        <Badge variant={statusVariant(scan.status)} className="capitalize">
+                            {scan.status === 'running' && (
+                                <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-current" />
+                            )}
+                            {scan.status}
+                        </Badge>
+                    </div>
                 </div>
 
-                {/* Stats */}
+                {/* Stats — compact strip */}
                 {(() => {
                     const pdfViolations = pdfDocuments
                         .filter((d) => d.status === 'completed')
                         .reduce((sum, d) => sum + d.violation_count, 0);
                     const srViolations = screenReaderResults.reduce((sum, r) => sum + r.count, 0);
+                    const items: { label: string; value: string | number }[] = [
+                        { label: 'Pages scanned', value: scan.pages_scanned ?? '—' },
+                        { label: 'Violations', value: scan.total_violations ?? '—' },
+                        { label: 'Started', value: scan.started_at ? new Date(scan.started_at).toLocaleTimeString() : '—' },
+                        { label: 'Completed', value: scan.completed_at ? new Date(scan.completed_at).toLocaleTimeString() : '—' },
+                        ...(scan.status === 'completed' ? [
+                            { label: 'PDFs found', value: pdfDocuments.length },
+                            { label: 'PDF violations', value: pdfViolations },
+                            { label: 'Screen reader violations', value: srViolations },
+                        ] : []),
+                    ];
                     return (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            <StatCard label="Pages scanned" value={scan.pages_scanned ?? '—'} />
-                            <StatCard label="Total violations" value={scan.total_violations ?? '—'} />
-                            <StatCard
-                                label="Started"
-                                value={scan.started_at ? new Date(scan.started_at).toLocaleTimeString() : '—'}
-                            />
-                            <StatCard
-                                label="Completed"
-                                value={scan.completed_at ? new Date(scan.completed_at).toLocaleTimeString() : '—'}
-                            />
-                            <StatCard
-                                label="PDFs found"
-                                value={scan.status === 'completed' ? pdfDocuments.length : '—'}
-                            />
-                            <StatCard
-                                label="PDF violations"
-                                value={scan.status === 'completed' ? pdfViolations : '—'}
-                            />
-                            <StatCard
-                                label="Screen reader violations"
-                                value={scan.status === 'completed' ? srViolations : '—'}
-                            />
-                        </div>
+                        <dl className="flex flex-wrap gap-x-6 gap-y-2 rounded border bg-card px-4 py-3 text-sm">
+                            {items.map(({ label, value }) => (
+                                <div key={label} className="flex items-baseline gap-1.5">
+                                    <dt className="text-muted-foreground">{label}:</dt>
+                                    <dd className="font-semibold tabular-nums">{value}</dd>
+                                </div>
+                            ))}
+                        </dl>
                     );
                 })()}
 
+                {/* Pending / running state */}
+                {isActive && (
+                    <div className="rounded border bg-muted/40 px-6 py-5 space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2 font-medium">
+                                <span className="inline-block size-2 animate-pulse rounded-full bg-primary" />
+                                Scan in progress — refreshing automatically…
+                            </span>
+                            {scan.pages_discovered != null && scan.pages_scanned != null && (
+                                <span className="tabular-nums text-muted-foreground">
+                                    {scan.pages_scanned} / {scan.pages_discovered} pages
+                                    {' '}&#40;{Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%&#41;
+                                </span>
+                            )}
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            {scan.pages_discovered != null && scan.pages_scanned != null ? (
+                                <div
+                                    className="h-full rounded-full bg-primary transition-all duration-500"
+                                    style={{ width: `${Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%` }}
+                                />
+                            ) : (
+                                <div className="h-full w-full animate-pulse rounded-full bg-primary/40" />
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Failed state error message */}
+                {scan.status === 'failed' && scan.error_message && (
+                    <div className="rounded border border-destructive/30 bg-destructive/5 px-6 py-4 text-sm text-destructive">
+                        <span className="font-semibold mr-2">Scan failed:</span>
+                        {scan.error_message}
+                    </div>
+                )}
+
+                {/* Scores summary — 3-col grid (only when completed) */}
+                {scan.status === 'completed' && (
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        {/* Col 1: WCAG violations */}
+                        <div className="rounded border bg-card p-4">
+                            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">WCAG Violations</h3>
+                            {severityBreakdown.length > 0 ? (
+                                <>
+                                    <div className="space-y-1.5 mb-3">
+                                        {severityBreakdown.map((row) => {
+                                            const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
+                                            const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                                            return (
+                                                <div key={row.severity}>
+                                                    <div className="mb-1 flex justify-between text-xs">
+                                                        <span className="capitalize">{row.severity}</span>
+                                                        <span className="tabular-nums text-muted-foreground">{row.count} ({pct}%)</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div className={`h-1.5 rounded-full ${SEVERITY_COLOURS[row.severity]}`} style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No violations recorded.</p>
+                            )}
+                        </div>
+
+                        {/* Col 2: Experience Score */}
+                        <div className="rounded border bg-card p-4">
+                            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Experience Score</h3>
+                            {experiencePillars !== null ? (
+                                <>
+                                    <div className="mb-3 flex items-baseline gap-2">
+                                        <span className={`text-3xl font-bold tabular-nums ${
+                                            experiencePillars.experience_score >= 90 ? 'text-green-600' :
+                                            experiencePillars.experience_score >= 50 ? 'text-orange-500' :
+                                            'text-red-600'
+                                        }`}>{Math.round(experiencePillars.experience_score)}</span>
+                                        <span className="text-xs text-muted-foreground">/ 100</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {([
+                                            { label: 'Accessibility', weight: '40%', score: experiencePillars.accessibility_score },
+                                            { label: 'Performance', weight: '25%', score: experiencePillars.performance_score },
+                                            { label: 'Tech Quality', weight: '20%', score: experiencePillars.best_practices_score },
+                                            { label: 'Discoverability', weight: '15%', score: experiencePillars.seo_score },
+                                        ] as { label: string; weight: string; score: number | null }[]).map(({ label, weight, score }) => {
+                                            const pct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
+                                            const colour = score === null ? 'bg-slate-300' : score >= 90 ? 'bg-green-500' : score >= 50 ? 'bg-orange-500' : 'bg-red-500';
+                                            const textColour = score === null ? 'text-muted-foreground' : score >= 90 ? 'text-green-600' : score >= 50 ? 'text-orange-500' : 'text-red-600';
+                                            return (
+                                                <div key={label} className="flex items-center gap-2 text-xs">
+                                                    <span className="w-28 shrink-0 text-muted-foreground">{label} <span className="opacity-60">{weight}</span></span>
+                                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                                                        <div className={`h-1.5 rounded-full ${colour}`} style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                    <span className={`w-6 shrink-0 text-right font-medium tabular-nums ${textColour}`}>{score !== null ? Math.round(score) : '—'}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No experience score yet.</p>
+                            )}
+                        </div>
+
+                        {/* Col 3: Lighthouse averages */}
+                        <div className="rounded border bg-card p-4">
+                            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lighthouse Averages</h3>
+                            {lighthouseResults.length > 0 ? (() => {
+                                const avgFor = (results: LighthouseResult[], pick: (r: LighthouseResult) => number | null) => {
+                                    const vals = results.map(pick).filter((v): v is number => v !== null);
+                                    return vals.length > 0 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
+                                };
+                                const rows = [
+                                    { label: 'Performance', mobile: avgFor(mobileLighthouse, (r) => r.performance_score), desktop: avgFor(desktopLighthouse, (r) => r.performance_score) },
+                                    { label: 'Accessibility', mobile: avgFor(mobileLighthouse, (r) => r.accessibility_score), desktop: avgFor(desktopLighthouse, (r) => r.accessibility_score) },
+                                    { label: 'Best Practices', mobile: avgFor(mobileLighthouse, (r) => r.best_practices_score), desktop: avgFor(desktopLighthouse, (r) => r.best_practices_score) },
+                                    { label: 'SEO', mobile: avgFor(mobileLighthouse, (r) => r.seo_score), desktop: avgFor(desktopLighthouse, (r) => r.seo_score) },
+                                ];
+                                const hasBoth = mobileLighthouse.length > 0 && desktopLighthouse.length > 0;
+                                return (
+                                    <>
+                                        {hasBoth && (
+                                            <div className="mb-2 flex gap-2 text-xs text-muted-foreground">
+                                                <span className="w-28 shrink-0" />
+                                                <span className="flex-1 text-center">Mobile</span>
+                                                <span className="flex-1 text-center">Desktop</span>
+                                            </div>
+                                        )}
+                                        <div className="space-y-2.5">
+                                            {rows.map(({ label, mobile, desktop }) => {
+                                                const score = mobileLighthouse.length > 0 ? mobile : desktop;
+                                                const pct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
+                                                const colour = score === null ? 'bg-slate-300' : score >= 90 ? 'bg-green-500' : score >= 50 ? 'bg-orange-500' : 'bg-red-500';
+                                                const textColour = score === null ? 'text-muted-foreground' : score >= 90 ? 'text-green-600' : score >= 50 ? 'text-orange-500' : 'text-red-600';
+                                                return (
+                                                    <div key={label} className="flex items-center gap-2 text-xs">
+                                                        <span className="w-28 shrink-0 text-muted-foreground">{label}</span>
+                                                        {hasBoth ? (
+                                                            <>
+                                                                <span className={`flex-1 text-center font-medium tabular-nums ${mobile === null ? 'text-muted-foreground' : mobile >= 90 ? 'text-green-600' : mobile >= 50 ? 'text-orange-500' : 'text-red-600'}`}>{mobile ?? '—'}</span>
+                                                                <span className={`flex-1 text-center font-medium tabular-nums ${desktop === null ? 'text-muted-foreground' : desktop >= 90 ? 'text-green-600' : desktop >= 50 ? 'text-orange-500' : 'text-red-600'}`}>{desktop ?? '—'}</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                                                                    <div className={`h-1.5 rounded-full ${colour}`} style={{ width: `${pct}%` }} />
+                                                                </div>
+                                                                <span className={`w-6 shrink-0 text-right font-medium tabular-nums ${textColour}`}>{score ?? '—'}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                );
+                            })() : (
+                                <p className="text-sm text-muted-foreground">No Lighthouse data.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+
                 {/* Delta bar — changes since last scan */}
+
                 {delta && scan.status === 'completed' && (
                     <div className="flex flex-wrap items-center gap-4 rounded border bg-muted/30 px-5 py-3 text-sm">
                         <span className="font-medium text-foreground">Changes vs. previous scan</span>
@@ -279,154 +441,18 @@ export default function Show({
                     </div>
                 )}
 
-                {/* Pending / running state */}
-                {isActive && (
-                    <div className="rounded border bg-muted/40 px-6 py-5 space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-2 font-medium">
-                                <span className="inline-block size-2 animate-pulse rounded-full bg-primary" />
-                                Scan in progress — refreshing automatically…
-                            </span>
-                            {scan.pages_discovered != null && scan.pages_scanned != null && (
-                                <span className="tabular-nums text-muted-foreground">
-                                    {scan.pages_scanned} / {scan.pages_discovered} pages
-                                    {' '}&#40;{Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%&#41;
-                                </span>
-                            )}
-                        </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                            {scan.pages_discovered != null && scan.pages_scanned != null ? (
-                                <div
-                                    className="h-full rounded-full bg-primary transition-all duration-500"
-                                    style={{ width: `${Math.round((scan.pages_scanned / scan.pages_discovered) * 100)}%` }}
-                                />
-                            ) : (
-                                <div className="h-full w-full animate-pulse rounded-full bg-primary/40" />
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Failed state error message */}
-                {scan.status === 'failed' && scan.error_message && (
-                    <div className="rounded border border-destructive/30 bg-destructive/5 px-6 py-4 text-sm text-destructive">
-                        <span className="font-semibold mr-2">Scan failed:</span>
-                        {scan.error_message}
-                    </div>
-                )}
-
-                {/* Lighthouse averages — only show once completed */}
-                {scan.status === 'completed' && lighthouseResults.length > 0 && (() => {
-                    const avgFor = (results: LighthouseResult[], pick: (r: LighthouseResult) => number | null) => {
-                        const vals = results.map(pick).filter((v): v is number => v !== null);
-                        return vals.length > 0 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
-                    };
-                    return (
-                        <div>
-                            <h3 className="mb-3 text-sm font-semibold">Lighthouse Averages</h3>
-                            <div className="flex flex-col gap-4">
-                                {mobileLighthouse.length > 0 && (
-                                    <div>
-                                        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Mobile</p>
-                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                                            <GaugeCard label="Performance" score={avgFor(mobileLighthouse, (r) => r.performance_score)} />
-                                            <GaugeCard label="Accessibility" score={avgFor(mobileLighthouse, (r) => r.accessibility_score)} />
-                                            <GaugeCard label="Best Practices" score={avgFor(mobileLighthouse, (r) => r.best_practices_score)} />
-                                            <GaugeCard label="SEO" score={avgFor(mobileLighthouse, (r) => r.seo_score)} />
-                                        </div>
-                                    </div>
-                                )}
-                                {desktopLighthouse.length > 0 && (
-                                    <div>
-                                        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Desktop</p>
-                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                                            <GaugeCard label="Performance" score={avgFor(desktopLighthouse, (r) => r.performance_score)} />
-                                            <GaugeCard label="Accessibility" score={avgFor(desktopLighthouse, (r) => r.accessibility_score)} />
-                                            <GaugeCard label="Best Practices" score={avgFor(desktopLighthouse, (r) => r.best_practices_score)} />
-                                            <GaugeCard label="SEO" score={avgFor(desktopLighthouse, (r) => r.seo_score)} />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })()}
-
-                 {/* Experience Score pillar breakdown */}
-                {scan.status === 'completed' && experiencePillars !== null && (
-                    <div>
-                        <h3 className="mb-3 text-sm font-semibold">Experience Score</h3>
-                        <div className="rounded border bg-card p-5">
-                            <div className="mb-4">
-                                <GaugeCard label="Composite score (0–100)" score={Math.round(experiencePillars.experience_score)} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                                <PillarCard label="Accessibility" weight="40%" score={experiencePillars.accessibility_score} />
-                                <PillarCard label="Performance" weight="25%" score={experiencePillars.performance_score} />
-                                <PillarCard label="Tech Quality" weight="20%" score={experiencePillars.best_practices_score} />
-                                <PillarCard label="Discoverability" weight="15%" score={experiencePillars.seo_score} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                 {/* Breakdown — only show once completed */}
-                {scan.status === 'completed' && severityBreakdown.length > 0 && (
-                    <div>
-                        <h3 className="mb-3 text-sm font-semibold">WCAG Results</h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            {/* Severity breakdown */}
-                            <div className="rounded border p-4">
-                                <h3 className="mb-3 text-sm font-semibold">Violations by severity</h3>
-                                <div className="space-y-2">
-                                    {severityBreakdown.map((row) => {
-                                        const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
-                                        const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
-                                        return (
-                                            <div key={row.severity}>
-                                                <div className="mb-1 flex justify-between text-xs">
-                                                    <span className="capitalize">{row.severity}</span>
-                                                    <span className="tabular-nums text-muted-foreground">
-                                                        {row.count} ({pct}%)
-                                                    </span>
-                                                </div>
-                                                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                                                    <div
-                                                        className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
-                                                        style={{ width: `${pct}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Top rules */}
-                            <div className="rounded border p-4">
-                                <h2 className="mb-3 text-sm font-semibold">Top violated rules</h2>
-                                <ol className="space-y-1.5">
-                                    {Object.entries(topRules).map(([rule, count], i) => (
-                                        <li key={rule} className="flex items-center gap-2 text-xs">
-                                            <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">
-                                                {i + 1}.
-                                            </span>
-                                            <span className="flex-1 truncate font-mono">{rule}</span>
-                                            <span className="tabular-nums font-medium">{count}</span>
-                                        </li>
-                                    ))}
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* Tabbed results — only shown once completed */}
                 {scan.status === 'completed' && (
                     <div className="flex flex-col gap-4">
-                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'screen-reader' | 'lighthouse' | 'pdfs')}>
+                        <Tabs value={tab} onValueChange={(v) => setTab(v as 'wcag' | 'lighthouse' | 'screen-reader' | 'pdfs')}>
                             <TabsList>
                                 <TabsTrigger value="wcag">WCAG Scores</TabsTrigger>
+                                <TabsTrigger value="lighthouse" disabled={lighthouseResults.length === 0}>
+                                    Lighthouse Scores
+                                    {lighthouseResults.length === 0 && (
+                                        <span className="ml-1.5 text-xs opacity-50">(none)</span>
+                                    )}
+                                </TabsTrigger>
                                 <TabsTrigger value="screen-reader" disabled={screenReaderResults.length === 0}>
                                     Screen Reader
                                     {screenReaderResults.length > 0 && (
@@ -435,12 +461,6 @@ export default function Show({
                                         </span>
                                     )}
                                     {screenReaderResults.length === 0 && (
-                                        <span className="ml-1.5 text-xs opacity-50">(none)</span>
-                                    )}
-                                </TabsTrigger>
-                                <TabsTrigger value="lighthouse" disabled={lighthouseResults.length === 0}>
-                                    Lighthouse Scores
-                                    {lighthouseResults.length === 0 && (
                                         <span className="ml-1.5 text-xs opacity-50">(none)</span>
                                     )}
                                 </TabsTrigger>
@@ -720,8 +740,6 @@ export default function Show({
                     </div>
                 )}
 
-                <GenerateReports scan={scan} />
-
                 <div className="text-sm">
                     <Link href={ScanController.index().url} className="text-primary hover:underline">
                         ← Back to scans
@@ -787,18 +805,13 @@ function GenerateReports({ scan }: { scan: Scan }) {
     }
 
     return (
-        <div className="rounded border bg-card p-5">
-            <h3 className="mb-1 text-sm font-semibold">Generate reports</h3>
-            <p className="mb-4 text-xs text-muted-foreground">
-                Run AI-powered analysis on this scan to produce remediation plans and insights.
-            </p>
-            <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
                 <Button
                     onClick={generateAudit}
                     disabled={anyLoading}
                     size="sm"
                 >
-                    {auditLoading ? 'Creating…' : 'AI Accessibility Audit'}
+                    {auditLoading ? 'Creating…' : 'Accessibility Audit'}
                 </Button>
                 <Button
                     variant="outline"
@@ -816,7 +829,6 @@ function GenerateReports({ scan }: { scan: Scan }) {
                 >
                     {riskLoading ? 'Creating…' : 'Risk Advisory'}
                 </Button>
-            </div>
         </div>
     );
 }

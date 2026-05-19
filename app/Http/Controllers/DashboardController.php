@@ -49,25 +49,27 @@ class DashboardController extends Controller
                     ->all();
             }),
             'activityFeed' => Inertia::defer(function (): array {
-                $logs = ActivityLog::query()
+                $paginated = ActivityLog::query()
                     ->latest()
-                    ->limit(50)
-                    ->get();
+                    ->cursorPaginate(25);
 
-                return $logs->map(fn (ActivityLog $log): array => [
-                    'id' => $log->id,
-                    'event' => $log->event->value,
-                    'event_label' => $log->event->label(),
-                    'event_category' => $log->event->category(),
-                    'actor_type' => $log->actor_type,
-                    'actor_label' => $log->actor_label,
-                    'subject_type' => $log->subject_type,
-                    'subject_id' => $log->subject_id,
-                    'subject_label' => $log->subject_label,
-                    'metadata' => $log->metadata,
-                    'ip_address' => $log->ip_address,
-                    'created_at' => $log->created_at->toIso8601String(),
-                ])->all();
+                return [
+                    'data' => collect($paginated->items())->map(fn (ActivityLog $log): array => [
+                        'id' => $log->id,
+                        'event' => $log->event->value,
+                        'event_label' => $log->event->label(),
+                        'event_category' => $log->event->category(),
+                        'actor_type' => $log->actor_type,
+                        'actor_label' => $log->actor_label,
+                        'subject_type' => $log->subject_type,
+                        'subject_id' => $log->subject_id,
+                        'subject_label' => $log->subject_label,
+                        'metadata' => $log->metadata,
+                        'ip_address' => $log->ip_address,
+                        'created_at' => $log->created_at->toIso8601String(),
+                    ])->all(),
+                    'next_cursor' => $paginated->nextCursor()?->encode(),
+                ];
             }),
         ]);
     }

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PropertyRiskTrendsChart } from '@/components/charts/PropertyRiskTrendsChart';
 import { PropertyScanActivityChart } from '@/components/charts/PropertyScanActivityChart';
 import { IssueClusterPanel } from '@/components/IssueClusterPanel';
@@ -339,40 +340,52 @@ export default function Show({
                     </div>
                 </div>
 
-                {/* Meta */}
-                <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    <StatCard label="Organization" value={property.organization?.name ?? '—'} />
-                    <StatCard label="Status" value={property.status} capitalize />                    {property.industry_label && (
-                        <div className="rounded border p-4">
-                            <dt className="text-xs text-muted-foreground">Industry</dt>
-                            <dd className="mt-1 flex items-center gap-2">
-                                <span className="font-medium">{property.industry_label}</span>
-                                {property.legal_risk_level && (
-                                    <Badge
-                                        variant={
-                                            property.legal_risk_level === 'high'
-                                                ? 'destructive'
-                                                : property.legal_risk_level === 'medium'
-                                                  ? 'default'
-                                                  : 'secondary'
-                                        }
-                                        className="capitalize"
-                                    >
-                                        {property.legal_risk_level} legal risk
-                                    </Badge>
-                                )}
-                            </dd>
-                        </div>
-                    )}                </dl>
+                {/* Scores & Metadata — 3-column grid */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                    {/* Col 1: Property meta */}
+                    <div className="rounded border bg-card p-4">
+                        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Property</h2>
+                        <dl className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between gap-2">
+                                <dt className="text-muted-foreground">Organisation</dt>
+                                <dd className="font-medium">{property.organization?.name ?? '—'}</dd>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                                <dt className="text-muted-foreground">Status</dt>
+                                <dd className="font-medium capitalize">{property.status}</dd>
+                            </div>
+                            {property.industry_label && (
+                                <div className="flex items-center justify-between gap-2">
+                                    <dt className="text-muted-foreground">Industry</dt>
+                                    <dd className="flex items-center gap-1.5">
+                                        <span className="font-medium">{property.industry_label}</span>
+                                        {property.legal_risk_level && (
+                                            <Badge
+                                                variant={
+                                                    property.legal_risk_level === 'high'
+                                                        ? 'destructive'
+                                                        : property.legal_risk_level === 'medium'
+                                                          ? 'default'
+                                                          : 'secondary'
+                                                }
+                                                className="capitalize text-xs"
+                                            >
+                                                {property.legal_risk_level} risk
+                                            </Badge>
+                                        )}
+                                    </dd>
+                                </div>
+                            )}
+                        </dl>
+                    </div>
 
-                {/* Experience Score */}
-                {latestExperienceScore !== null && (
-                    <div className="rounded border bg-card p-5">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-sm font-semibold">Experience Score</h2>
+                    {/* Col 2: Experience Score */}
+                    <div className="rounded border bg-card p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Experience Score</h2>
                             {experienceScoreDelta !== null && (
                                 <span
-                                    className={`text-sm font-medium tabular-nums ${
+                                    className={`text-xs font-medium tabular-nums ${
                                         experienceScoreDelta > 0
                                             ? 'text-green-600'
                                             : experienceScoreDelta < 0
@@ -385,32 +398,65 @@ export default function Show({
                                 </span>
                             )}
                         </div>
-                        <GaugeCard label="Composite score (0–100)" score={Math.round(latestExperienceScore)} />
-                        <p className="mt-3 text-xs text-muted-foreground">
-                            Accessibility 40% · Performance 25% · Tech Quality 20% · Discoverability 15%
-                        </p>
+                        {latestExperienceScore !== null ? (
+                            <>
+                                <GaugeCard label="Composite (0–100)" score={Math.round(latestExperienceScore)} />
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    A11y 40% · Perf 25% · Tech 20% · SEO 15%
+                                </p>
+                            </>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No score yet.</p>
+                        )}
                     </div>
-                )}
 
-                {/* Lighthouse averages */}
-                {lighthouseAverages && (
-                    <div>
-                        <h2 className="mb-3 text-sm font-semibold">Lighthouse averages (all scans)</h2>
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            <GaugeCard label="Performance" score={lighthouseAverages.performance_score} />
-                            <GaugeCard label="Accessibility" score={lighthouseAverages.accessibility_score} />
-                            <GaugeCard label="Best Practices" score={lighthouseAverages.best_practices_score} />
-                            <GaugeCard label="SEO" score={lighthouseAverages.seo_score} />
-                        </div>
+                    {/* Col 3: Lighthouse averages (compact list) */}
+                    <div className="rounded border bg-card p-4">
+                        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lighthouse averages</h2>
+                        {lighthouseAverages ? (
+                            <div className="space-y-2.5">
+                                {(
+                                    [
+                                        { label: 'Performance', score: lighthouseAverages.performance_score },
+                                        { label: 'Accessibility', score: lighthouseAverages.accessibility_score },
+                                        { label: 'Best Practices', score: lighthouseAverages.best_practices_score },
+                                        { label: 'SEO', score: lighthouseAverages.seo_score },
+                                    ] as { label: string; score: number }[]
+                                ).map(({ label, score }) => {
+                                    const pct = Math.max(0, Math.min(100, score ?? 0));
+                                    const colour =
+                                        score === null ? 'bg-slate-300' :
+                                        score >= 90 ? 'bg-green-500' :
+                                        score >= 50 ? 'bg-orange-500' :
+                                        'bg-red-500';
+                                    const textColour =
+                                        score === null ? 'text-muted-foreground' :
+                                        score >= 90 ? 'text-green-600' :
+                                        score >= 50 ? 'text-orange-500' :
+                                        'text-red-600';
+                                    return (
+                                        <div key={label} className="flex items-center gap-3 text-xs">
+                                            <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
+                                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                                                <div className={`h-1.5 rounded-full ${colour}`} style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <span className={`w-6 shrink-0 text-right font-medium tabular-nums ${textColour}`}>{score ?? '—'}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No Lighthouse data yet.</p>
+                        )}
                     </div>
-                )}
+                </div>
 
                 {/* Violations by severity & top rules */}
                 {severityBreakdown.length > 0 && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="rounded border p-4">
-                            <h2 className="mb-3 text-sm font-semibold">Violations by Severity (Avg)</h2>
-                            <div className="space-y-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded border p-3">
+                            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Violations by Severity (Avg)</h2>
+                            <div className="space-y-6">
                                 {severityBreakdown.map((row) => {
                                     const total = severityBreakdown.reduce((s, r) => s + r.count, 0);
                                     const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
@@ -422,9 +468,9 @@ export default function Show({
                                                     {row.count} ({pct}%)
                                                 </span>
                                             </div>
-                                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                                 <div
-                                                    className={`h-2 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
+                                                    className={`h-1.5 rounded-full ${SEVERITY_COLOURS[row.severity]}`}
                                                     style={{ width: `${pct}%` }}
                                                 />
                                             </div>
@@ -433,9 +479,9 @@ export default function Show({
                                 })}
                             </div>
                         </div>
-                        <div className="rounded border p-4">
-                            <h2 className="mb-3 text-sm font-semibold">Top Violated Rules (Avg)</h2>
-                            <ol className="space-y-1.5">
+                        <div className="rounded border p-3">
+                            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top Violated Rules (Avg)</h2>
+                            <ol className="space-y-1">
                                 {Object.entries(topRules).map(([rule, count], i) => (
                                     <li key={rule} className="flex items-center gap-2 text-xs">
                                         <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">
@@ -453,51 +499,49 @@ export default function Show({
                 {/* Charts */}
                 <div className="grid gap-4 md:grid-cols-2">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Scan Activity</CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">Scan Activity</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <PropertyScanActivityChart propertyId={property.id} />
+                            <div className="h-40">
+                                <PropertyScanActivityChart propertyId={property.id} />
+                            </div>
                         </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Property Risk Trends</CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">Property Risk Trends</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <PropertyRiskTrendsChart propertyId={property.id} />
+                            <div className="h-40">
+                                <PropertyRiskTrendsChart propertyId={property.id} />
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Issue Clusters */}
-                <Card id="ai-clusters">
-                    <CardHeader>
-                        <CardTitle>Issue Clusters</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <IssueClusterPanel propertyId={property.id} />
-                    </CardContent>
-                </Card>
-
-                {/* Risk Advisory */}
-                <Card id="ai-risk-advisory">
-                    <CardHeader>
-                        <CardTitle>Risk Advisory</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <RiskPriorityPanel propertyId={property.id} />
-                    </CardContent>
-                </Card>
-
-                {/* Content Audit */}
-                <Card id="ai-content-audit">
-                    <CardHeader>
-                        <CardTitle>Content Audit</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ContentAuditPanel propertyId={property.id} />
-                    </CardContent>
+                {/* Analysis — tabbed to avoid stacking */}
+                <Card>
+                    <Tabs defaultValue="clusters">
+                        <CardHeader className="pb-0">
+                            <TabsList>
+                                <TabsTrigger value="clusters">Issue Clusters</TabsTrigger>
+                                <TabsTrigger value="risk">Risk Advisory</TabsTrigger>
+                                <TabsTrigger value="content">Content Audit</TabsTrigger>
+                            </TabsList>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <TabsContent value="clusters" className="mt-0 data-[state=inactive]:hidden" forceMount>
+                                <IssueClusterPanel propertyId={property.id} />
+                            </TabsContent>
+                            <TabsContent value="risk" className="mt-0 data-[state=inactive]:hidden" forceMount>
+                                <RiskPriorityPanel propertyId={property.id} />
+                            </TabsContent>
+                            <TabsContent value="content" className="mt-0 data-[state=inactive]:hidden" forceMount>
+                                <ContentAuditPanel propertyId={property.id} />
+                            </TabsContent>
+                        </CardContent>
+                    </Tabs>
                 </Card>
 
                 {/* Recent scans */}
@@ -884,25 +928,6 @@ export default function Show({
                 </DialogContent>
             </Dialog>
         </AppLayout>
-    );
-}
-
-function StatCard({
-    label,
-    value,
-    capitalize,
-}: {
-    label: string;
-    value: string | number;
-    capitalize?: boolean;
-}) {
-    return (
-        <div className="rounded border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className={`mt-1 text-base font-semibold ${capitalize ? 'capitalize' : ''}`}>
-                {value}
-            </p>
-        </div>
     );
 }
 

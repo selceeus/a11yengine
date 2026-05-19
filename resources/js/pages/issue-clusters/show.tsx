@@ -158,7 +158,7 @@ export default function Show({ cluster }: PageProps) {
                                             <p className="mt-1 text-sm">{c.recommended_fix}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs font-medium text-muted-foreground">AI Notes</p>
+                                            <p className="text-xs font-medium text-muted-foreground">Notes</p>
                                             <p className="mt-1 text-sm text-muted-foreground">{c.ai_notes}</p>
                                         </div>
                                     </div>

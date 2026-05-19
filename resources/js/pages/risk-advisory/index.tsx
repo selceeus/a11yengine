@@ -66,7 +66,7 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
                 },
             });
 
-            router.visit(PropertyController.show(property.id).url + '#ai-risk-advisory');
+            router.visit(PropertyController.show(property.id).url + '#risk-advisory');
         } catch {
             setGenerating((prev) => ({ ...prev, [property.id]: false }));
         }
@@ -176,7 +176,7 @@ export default function Index({ properties, selectedPropertyId }: PageProps) {
                                                             <Link
                                                                 href={
                                                                     PropertyController.show(property.id).url +
-                                                                    '#ai-risk-advisory'
+                                                                    '#risk-advisory'
                                                                 }
                                                                 className="text-sm text-primary hover:underline"
                                                             >

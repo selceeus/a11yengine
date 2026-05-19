@@ -49,7 +49,7 @@ class AuditController extends Controller
 
         $this->authorize('create', [Audit::class, $property]);
 
-        $title = $request->string('title')->toString() ?: 'AI Audit — '.$property->name.' — '.now()->format('M j, Y');
+        $title = $request->string('title')->toString() ?: 'Audit — '.$property->name.' — '.now()->format('M j, Y');
 
         $audit = Audit::create([
             'agency_id' => Auth::user()->agency_id,
