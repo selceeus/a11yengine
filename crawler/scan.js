@@ -265,7 +265,8 @@ async function scan() {
         } finally {
             await browser.close();
         }
-        process.exit(0);
+        process.exitCode = 0;
+        return;
     }
 
     const robotsTxt = await fetchRobotsTxt(baseUrl);
@@ -401,7 +402,8 @@ async function scan() {
         clearTimeout(selfExitTimer);
         await browser.close();
     }
-    process.exit(0);
+    process.stdout.write(JSON.stringify({ pages: results, pdfs: [...discoveredPdfs] }));
+    process.exitCode = 0;
 }
 
 module.exports = { scan, scanUrlList, log, parseArgs };

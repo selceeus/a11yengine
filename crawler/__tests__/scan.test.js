@@ -57,6 +57,7 @@ beforeEach(() => {
 
     mockStdoutWrite = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     mockStderrWrite = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    process.exitCode = undefined;
     mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {});
 });
 
@@ -166,10 +167,10 @@ describe('scan — single page', () => {
         expect(written.pdfs).toEqual([]);
     });
 
-    test('calls process.exit(0) after a successful scan', async () => {
+    test('sets process.exitCode to 0 after a successful scan', async () => {
         await scan();
 
-        expect(mockExit).toHaveBeenCalledWith(0);
+        expect(process.exitCode).toBe(0);
     });
 });
 
@@ -281,7 +282,7 @@ describe('scan — page error resilience', () => {
 
         // Should still write JSON (empty results since page failed)
         expect(mockStdoutWrite).toHaveBeenCalled();
-        expect(mockExit).toHaveBeenCalledWith(0);
+        expect(process.exitCode).toBe(0);
     });
 
     test('closes the page even when runAxe throws', async () => {
@@ -290,7 +291,7 @@ describe('scan — page error resilience', () => {
         await scan();
 
         expect(mockPage.close).toHaveBeenCalledTimes(1);
-        expect(mockExit).toHaveBeenCalledWith(0);
+        expect(process.exitCode).toBe(0);
     });
 });
 
@@ -352,5 +353,38 @@ describe('scan — robots.txt enforcement', () => {
         expect(fetchRobotsTxt).toHaveBeenCalledTimes(1);
         // normaliseUrl adds trailing slash to bare origins
         expect(fetchRobotsTxt).toHaveBeenCalledWith('https://example.com/');
+    });
+});
+
+// ─── PDF discovery ────────────────────────────────────────────────────────────
+
+describe('scan — PDF discovery', () => {
+    test('BFS path writes discovered PDFs into the pdfs array in stdout JSON', async () => {
+        // extractLinks calls $$eval first → return no regular links so BFS stays on one page
+        // extractPdfLinks calls $$eval second → return a PDF URL
+        mockPage.$$eval
+            .mockResolvedValueOnce([]) // extractLinks
+            .mockResolvedValueOnce(['https://example.com/report.pdf']); // extractPdfLinks
+
+        await scan();
+
+        const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
+        expect(written).toHaveProperty('pdfs');
+        expect(written.pdfs).toContain('https://example.com/report.pdf');
+    });
+
+    test('BFS path deduplicates PDF URLs across pages', async () => {
+        // Two pages both link to the same PDF
+        mockPage.$$eval
+            .mockResolvedValueOnce(['https://example.com/page2']) // extractLinks page 1
+            .mockResolvedValueOnce(['https://example.com/report.pdf']) // extractPdfLinks page 1
+            .mockResolvedValueOnce([]) // extractLinks page 2
+            .mockResolvedValueOnce(['https://example.com/report.pdf']); // extractPdfLinks page 2
+
+        await scan();
+
+        const written = JSON.parse(mockStdoutWrite.mock.calls[0][0]);
+        const pdfCount = written.pdfs.filter((p) => p === 'https://example.com/report.pdf').length;
+        expect(pdfCount).toBe(1);
     });
 });
