@@ -122,7 +122,7 @@ An MCP server at `/mcp/property-accessibility` exposes property issues, risk sum
 ### Quick Setup
 
 ```bash
-# Install all dependencies, copy .env, generate key, migrate, and seed
+# Install all dependencies, copy .env, generate key, migrate, generate Wayfinder routes, and build assets
 composer run setup
 cd crawler && npm install && cd ..
 ```
@@ -137,17 +137,18 @@ cd crawler && npm install && cd ..
 cp .env.example .env
 php artisan key:generate
 
-php artisan migrate --seed
+php artisan migrate
+php artisan wayfinder:generate
 npm run build
 ```
 
 ### Development
 
 ```bash
-# Start HTTP server, queue worker, and Vite concurrently
+# Start HTTP server, queue worker (default + pdf queues), and Vite concurrently
 composer run dev
 
-# Start HTTP server, queue worker, Vite, Pail log viewer, and SSR server concurrently
+# Build SSR assets, then start HTTP server, queue worker, Pail log viewer, and SSR server
 composer run dev:ssr
 ```
 
@@ -186,7 +187,7 @@ composer run dev:ssr
 | Variable                   | Purpose                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------ |
 | `CRAWLER_SCRIPT_PATH`      | Path to `crawler/scan.js` (default: `crawler/scan.js`)                         |
-| `CRAWLER_TIMEOUT`          | Max seconds for a full crawl (default: `300`)                                  |
+| `CRAWLER_TIMEOUT`          | Max seconds for a full crawl (default: `600`)                                  |
 | `CRAWLER_MAX_PAGES`        | Maximum pages to crawl per scan (default: `50`)                                |
 | `CRAWLER_MAX_DEPTH`        | Maximum link depth to follow (default: `5`)                                    |
 | `CRAWLER_PAGE_TIMEOUT_MS`  | Page load timeout in milliseconds (default: `30000`)                           |
@@ -497,14 +498,14 @@ Clients subscribe to the private `agency.{agencyId}` channel (authorised via `ro
 
 **Reverb environment variables:**
 
-| Variable            | Purpose                              |
-| ------------------- | ------------------------------------ |
-| `REVERB_APP_KEY`    | Reverb application key               |
-| `REVERB_APP_SECRET` | Reverb application secret            |
-| `REVERB_APP_ID`     | Reverb application ID                |
-| `REVERB_HOST`       | Reverb server host                   |
-| `REVERB_PORT`       | Reverb server port (default: `443`)  |
-| `REVERB_SCHEME`     | `https` or `http` (default: `https`) |
+| Variable            | Purpose                                                               |
+| ------------------- | --------------------------------------------------------------------- |
+| `REVERB_APP_KEY`    | Reverb application key                                                |
+| `REVERB_APP_SECRET` | Reverb application secret                                             |
+| `REVERB_APP_ID`     | Reverb application ID                                                 |
+| `REVERB_HOST`       | Reverb server host                                                    |
+| `REVERB_PORT`       | Reverb server port (`.env.example` uses `8080` for local development) |
+| `REVERB_SCHEME`     | `https` or `http` (`.env.example` uses `http` for local development)  |
 
 ---
 
@@ -818,9 +819,9 @@ docker compose up pdf-scanner
 **PHP / Composer**
 
 ```bash
-composer run setup      # Full initial setup (install, migrate, build)
-composer run dev        # Start server, queue worker, and Vite concurrently
-composer run dev:ssr    # Start server, queue, Vite, Pail, and SSR server
+composer run setup      # Full initial setup (install, migrate, generate Wayfinder routes, build)
+composer run dev        # Start server, queue worker (default + pdf), and Vite concurrently
+composer run dev:ssr    # Build SSR assets, then start server, queue worker, Pail, and SSR server
 composer run lint       # Run Laravel Pint formatter
 composer run test:lint  # Pint lint check only (no tests)
 composer run test       # Lint check + full test suite
