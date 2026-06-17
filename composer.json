@@ -1,13 +1,16 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "a11yengine/a11yengine",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Enterprise web accessibility auditing and risk management platform. Automated WCAG crawling, AI-powered governance reports, multi-tenant agency hierarchy, and project management integrations.",
     "keywords": [
+        "accessibility",
+        "wcag",
+        "a11y",
         "laravel",
-        "framework"
+        "audit"
     ],
-    "license": "MIT",
+    "license": "AGPL-3.0-only",
     "require": {
         "php": "^8.2",
         "inertiajs/inertia-laravel": "^2.0",

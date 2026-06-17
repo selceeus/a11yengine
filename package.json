@@ -1,5 +1,9 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
+    "name": "a11yengine",
+    "version": "1.0.0",
+    "description": "Enterprise web accessibility auditing and risk management platform.",
+    "license": "AGPL-3.0-only",
     "private": true,
     "type": "module",
     "scripts": {

@@ -1,5 +1,10 @@
 # A11y Engine
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Tests](https://github.com/your-org/a11yengine/actions/workflows/tests.yml/badge.svg)](../../actions/workflows/tests.yml)
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php)](https://www.php.net)
+[![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel)](https://laravel.com)
+
 An enterprise web accessibility auditing and risk management platform. It automatically crawls digital properties, runs WCAG and Lighthouse audits, tracks violations as managed issues, generates AI-powered governance reports, risk advisories, content audits, and per-issue remediation guidance — and routes notifications to any email address or Slack/Teams/Discord webhook — all within a strict multi-tenant agency hierarchy.
 
 ---
@@ -135,11 +140,21 @@ npm install
 cd crawler && npm install && cd ..
 
 cp .env.example .env
+# Edit .env — at minimum configure DB_* and APP_URL
 php artisan key:generate
 
 php artisan migrate
 php artisan wayfinder:generate
 npm run build
+```
+
+### Seed Demo Data
+
+Populate the database with a demo agency, organisations, properties, and ADA lawsuit precedents:
+
+```bash
+php artisan db:seed --class=DemoSeeder
+php artisan db:seed --class=LawsuitDataSeeder
 ```
 
 ### Development
@@ -151,6 +166,35 @@ composer run dev
 # Build SSR assets, then start HTTP server, queue worker, Pail log viewer, and SSR server
 composer run dev:ssr
 ```
+
+### WebSockets (Real-Time Scan Progress)
+
+Real-time scan progress requires [Laravel Reverb](https://laravel.com/docs/reverb). Start it alongside the dev server:
+
+```bash
+php artisan reverb:start
+```
+
+Ensure `REVERB_APP_ID`, `REVERB_APP_KEY`, and `REVERB_APP_SECRET` are set in `.env` and that `BROADCAST_CONNECTION=reverb`.
+
+### PDF Accessibility Scanning (Optional)
+
+PDF scanning depends on the [veraPDF REST microservice](https://docs.verapdf.org/). Start it with Docker:
+
+```bash
+docker run -d -p 8080:8080 verapdf/rest:latest
+```
+
+Then set in `.env`:
+
+```
+PDF_SCANNER_URL=http://localhost:8080
+PDF_SCANNER_ENABLED=true
+```
+
+### AI Features (Optional)
+
+Set `AI_DRIVER=openai` (or `anthropic`) and provide the corresponding API key. All crawler and WCAG auditing features work without AI configured.
 
 ---
 
@@ -900,3 +944,17 @@ Tests use Pest v3 with `Ai::fakeAgent()` for structured AI output faking, `Http:
 | Notification Emails   | `/settings/notification-email-routes`   | Route notification categories to additional non-user email addresses                                      |
 | Notification Webhooks | `/settings/notification-webhook-routes` | Route notification categories to Slack, Teams, or Discord webhook URLs                                    |
 | SOC2 Evidence         | `/settings/soc2-evidence`               | Download user-role, API key, and access review exports for auditors                                       |
+
+---
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) for setup instructions, branch naming conventions, and the PR checklist.
+
+To report a security vulnerability, see [SECURITY.md](.github/SECURITY.md) — please do not use public issues for security reports.
+
+## License
+
+A11y Engine is open-source software licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+Under AGPL v3, you are free to use, modify, and self-host this software. If you distribute a modified version or offer it as a network service, you must make your modified source code available under the same licence.
