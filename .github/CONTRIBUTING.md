@@ -61,11 +61,11 @@ Set `AI_DRIVER=openai` (or `anthropic`) and provide the corresponding API key in
 
 ## Branch Naming
 
-| Type | Pattern | Example |
-|---|---|---|
-| Feature | `feature/short-description` | `feature/pdf-report-export` |
-| Bug fix | `fix/short-description` | `fix/scan-timeout-handling` |
-| Chore / refactor | `chore/short-description` | `chore/update-dependencies` |
+| Type             | Pattern                     | Example                     |
+| ---------------- | --------------------------- | --------------------------- |
+| Feature          | `feature/short-description` | `feature/pdf-report-export` |
+| Bug fix          | `fix/short-description`     | `fix/scan-timeout-handling` |
+| Chore / refactor | `chore/short-description`   | `chore/update-dependencies` |
 
 All branches should be cut from `main`.
 

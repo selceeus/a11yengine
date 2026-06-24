@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+
 - AGPL v3 open-source licence
 - GitHub Actions CI workflows (tests, lint) now in `.github/workflows/`
 - Complete `.env.example` covering all environment variables (AI, crawler, PDF scanner, Reverb, audit tracks)
@@ -21,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [1.0.0] - 2026-06-16
 
 ### Added
+
 - Automated WCAG 2.0/2.1 A/AA crawling and axe-core scanning via headless Playwright
 - Virtual screen reader runner (40 deterministic WCAG checks per page, `sr-` prefixed rule keys)
 - Content quality runner (14 deterministic checks — alt text, link text, heading conventions, readability)
