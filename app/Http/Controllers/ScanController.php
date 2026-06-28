@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Concerns\Exportable;
 use App\Domain\Scans\ScanConfig;
+use App\Enums\ScanPageStatus;
 use App\Enums\ScanStatus;
 use App\Http\Requests\StoreScanRequest;
 use App\Jobs\RunScanJob;
@@ -103,9 +104,16 @@ class ScanController extends Controller
             'property:id,name,base_url',
             'scanJourney:id,name',
             'scanJourney.steps' => fn ($q) => $q->orderBy('position'),
-            'scanPages' => fn ($q) => $q->orderByDesc('violations_count'),
+            'scanPages' => fn ($q) => $q->select(['id', 'scan_id', 'url', 'violations_count', 'status'])->orderByDesc('violations_count'),
             'pdfDocuments' => fn ($q) => $q->orderByDesc('created_at'),
         ]);
+
+        if (in_array($scan->status, [ScanStatus::Pending, ScanStatus::Running], true)) {
+            $scan->pages_discovered = $scan->scanPages->count() ?: null;
+            $scan->pages_scanned = $scan->scanPages
+                ->filter(fn ($p) => $p->status === ScanPageStatus::Scanned || $p->status === ScanPageStatus::Failed)
+                ->count() ?: null;
+        }
 
         $severityBreakdown = Finding::query()
             ->where('scan_id', $scan->id)

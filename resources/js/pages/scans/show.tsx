@@ -152,7 +152,7 @@ export default function Show({
     pdfScannerAvailable: boolean;
 }) {
     const isActive = scan.status === 'pending' || scan.status === 'running';
-    const { start, stop } = usePoll(3000, {}, { autoStart: false });
+    const { start, stop } = usePoll(3000, {}, { autoStart: false, only: ['scan', 'severityBreakdown', 'topRules', 'screenReaderResults', 'lighthouseResults'] });
     const [tab, setTab] = useState<'wcag' | 'screen-reader' | 'lighthouse' | 'pdfs'>('wcag');
     const [lighthouseFormFactor, setLighthouseFormFactor] = useState<'mobile' | 'desktop'>('mobile');
 

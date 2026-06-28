@@ -10,6 +10,7 @@ use App\Models\ScanPage;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RunAxeScanPageJob implements ShouldQueue
@@ -61,12 +62,21 @@ class RunAxeScanPageJob implements ShouldQueue
             ->where('status', ScanPageStatus::Scanned)
             ->count();
 
-        ScanProgressUpdated::dispatch(
-            $this->scan->id,
-            $this->scan->agency_id,
-            $scannedCount,
-            $this->scan->status->value,
-        );
+        $this->scan->update(['pages_scanned' => $scannedCount]);
+
+        try {
+            ScanProgressUpdated::dispatch(
+                $this->scan->id,
+                $this->scan->agency_id,
+                $scannedCount,
+                $this->scan->status->value,
+            );
+        } catch (Throwable $e) {
+            Log::warning('Failed to broadcast scan progress', [
+                'scan_id' => $this->scan->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

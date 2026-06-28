@@ -133,7 +133,7 @@ export default function Show({
     const { delete: destroy, processing } = useForm();
     const [overview, setOverview] = useState<OverviewState>({ open: false });
     const hasActiveScans = recentScans.some((s) => s.status === 'pending' || s.status === 'running');
-    const { start, stop } = usePoll(3000, {}, { autoStart: false });
+    const { start, stop } = usePoll(3000, {}, { autoStart: false, only: ['recentScans'] });
     useEffect(() => {
         if (hasActiveScans) {
             start();

@@ -196,7 +196,7 @@ export default function Index({ scans, properties }: { scans: Scan[]; properties
     }
 
     const hasActiveScans = scans.some((s) => s.status === 'pending' || s.status === 'running');
-    const { start, stop } = usePoll(3000, {}, { autoStart: false });
+    const { start, stop } = usePoll(3000, {}, { autoStart: false, only: ['scans'] });
     useEffect(() => {
         if (hasActiveScans) {
             start();
